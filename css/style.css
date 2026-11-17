@@ -273,65 +273,66 @@ button.chip:focus-visible { outline: 3px solid var(--mint); outline-offset: 2px;
   .entry-go { margin-top: 8px; min-height: 48px; }
 }
 
-/* ---------- 입장 화면: 보내준 그림(assets/ui/entry-screen.webp)을 그대로 쓰는 모드 ----------
-   가로 화면(컴퓨터·태블릿)에서는 그림을 통째로 배경으로 깔고, 그 위의 정확한 자리에
-   투명한 실제 입력칸·학년 버튼·출발 버튼을 올립니다(글씨는 그림의 것을 그대로 보임).
-   좌표는 그림 크기 1672×941 기준 백분율. 세로로 좁은 화면은 위의 CSS 버전을 씁니다. */
+/* ---------- 입장 화면: 보내준 그림을 그대로 쓰는 모드 ----------
+   그림에서 패널(문장·성 포함)만 오려 낸 entry-panel.webp 를 화면 높이의 72% 크기로 가운데에 두고,
+   뒤는 패널 자리를 양옆 풍경으로 채운 배경(entry-bg-wide.webp, 넓은 화면은 거울로 이어 붙임)으로 꽉 채웁니다.
+   패널 위 정확한 자리에 투명한 실제 입력칸·학년 버튼·출발 버튼을 올립니다(글씨는 그림 그대로 보임).
+   좌표는 오려 낸 패널 그림(1012×918) 기준 백분율. 세로로 좁은 화면은 위의 CSS 버전을 씁니다. */
 @media (min-width: 720px) and (min-height: 520px) and (min-aspect-ratio: 5/4) {
-  #title.entry-overlay { padding: 0; align-items: center; overflow: hidden; isolation: isolate; background: #f6e9cf; }
-  /* 그림은 항상 화면 높이에 맞추고, 화면이 더 넓으면 양옆을 거울로 이어 붙인 그림(entry-screen-wide)으로 채움 */
+  #title.entry-overlay { padding: 0; align-items: center; overflow: hidden; isolation: isolate; background: #cfe8f5; }
   #title.entry-overlay::before {
     content: ""; position: absolute; inset: 0; z-index: -1;
-    background: url("../assets/ui/entry-screen-wide.webp") center / auto 100% no-repeat;
+    background: url("../assets/ui/entry-bg-wide.webp") center / auto 100% no-repeat;
   }
   .entry-main {
-    flex: none; height: 100%; width: auto; aspect-ratio: 1672 / 941; max-width: none;
-    margin: 0; padding: 0; filter: none; container-type: inline-size;
-    background: url("../assets/ui/entry-screen.webp") center / 100% 100% no-repeat;
+    flex: none; height: 72%; width: auto; aspect-ratio: 1012 / 918; max-width: 96vw;
+    margin: 0; padding: 0; container-type: inline-size;
+    background: url("../assets/ui/entry-panel.webp") center / 100% 100% no-repeat;
+    filter: drop-shadow(0 10px 24px rgba(40, 30, 10, 0.25));
   }
   .entry-main::before { display: none; }
   .entry-main .entry-crest, .entry-main .entry-title, .entry-main .entry-sub, .entry-main .entry-welcome,
   .entry-main .nick-label, .entry-main .grade-legend, .entry-main .entry-note, .entry-main .bottom-star { display: none !important; }
 
-  /* 닉네임 입력칸: 그림의 금색 테두리 안쪽에 딱 맞게 */
-  .entry-main .nick-row { position: absolute; left: 34.9%; top: 37.4%; width: 39.1%; height: 6.4%; margin: 0; display: block; }
+  /* 닉네임 입력칸 */
+  .entry-main .nick-row { position: absolute; left: 25.1%; top: 38.35%; width: 64.45%; height: 6.55%; margin: 0; display: block; }
   .entry-main .nick-input {
-    width: 100%; height: 100%; min-height: 0; padding: 0 1.5cqw; border: 0; border-radius: 1.2cqw;
-    font-size: 1.75cqw; background: #fffaf0; box-shadow: none; color: var(--e-brown);
+    width: 100%; height: 100%; min-height: 0; padding: 0 2.5cqw; border: 0; border-radius: 2cqw;
+    font-size: 2.9cqw; background: #fffaf0; box-shadow: none; color: var(--e-brown);
   }
   .entry-main .nick-input::placeholder { color: #9b8466; }
-  .entry-main .nick-input:focus { box-shadow: 0 0 0 0.25cqw rgba(18, 131, 122, 0.55); }
-  .entry-main #nickError { position: absolute; left: 34.9%; top: 45.2%; margin: 0; padding: 0; font-size: 1.05cqw; min-height: 0; }
+  .entry-main .nick-input:focus { box-shadow: 0 0 0 0.4cqw rgba(18, 131, 122, 0.55); }
+  .entry-main #nickError { position: absolute; left: 25.1%; top: 46.2%; margin: 0; padding: 0; font-size: 1.75cqw; min-height: 0; }
 
-  /* 학년 버튼: 평소엔 투명(그림의 버튼이 보임), 고르면 청록으로 채워 표시 */
-  .entry-main .grade-set { position: absolute; left: 25.4%; top: 53.55%; width: 49.25%; height: 16.4%; margin: 0; }
+  /* 학년 버튼: 평소엔 투명(그림의 버튼이 보임), 고르면 청록으로 채움 */
+  .entry-main .grade-set { position: absolute; left: 9.4%; top: 54.9%; width: 81.3%; height: 16.8%; margin: 0; }
   .entry-main .grade-grid {
     height: 100%; padding: 0; gap: 0; column-gap: 2.75%; row-gap: 9%;
     grid-template-columns: 31.6% 31.4% 31.5%; grid-template-rows: 45.5% 45.5%;
   }
   .entry-main .grade-opt span {
-    height: 100%; min-height: 0; padding: 0; border: 0; border-radius: 1cqw; box-shadow: none;
-    background: transparent; color: transparent; font-size: 2.1cqw;
+    height: 100%; min-height: 0; padding: 0; border: 0; border-radius: 1.65cqw; box-shadow: none;
+    background: transparent; color: transparent; font-size: 3.45cqw;
   }
   .entry-main .grade-opt:hover input:not(:checked) + span { background: rgba(18, 131, 122, 0.08); }
   .entry-main .grade-opt input:checked + span {
     color: #fff; background: linear-gradient(180deg, #1a998e, var(--e-teal));
-    box-shadow: inset 0 0 0 0.22cqw var(--e-gold), 0 0.2cqw 0 var(--e-teal-dark);
+    box-shadow: inset 0 0 0 0.36cqw var(--e-gold), 0 0.33cqw 0 var(--e-teal-dark);
   }
-  .entry-main .grade-opt input:focus-visible + span { outline: 0.25cqw solid var(--e-purple); outline-offset: 0.2cqw; }
+  .entry-main .grade-opt input:focus-visible + span { outline: 0.4cqw solid var(--e-purple); outline-offset: 0.33cqw; }
 
-  /* 출발 버튼: 그림의 버튼 위에 투명하게. 아직 못 누를 때는 옅게 덮어 표시 */
+  /* 출발 버튼 */
   .entry-main .entry-go {
-    position: absolute; left: 28.1%; top: 78.1%; width: 43.55%; height: 12.45%; min-height: 0;
+    position: absolute; left: 13.85%; top: 80.05%; width: 71.95%; height: 12.75%; min-height: 0;
     margin: 0; padding: 0; border: 0; border-radius: 999px; box-shadow: none;
-    background: transparent; color: transparent; text-shadow: none; font-size: 2cqw;
+    background: transparent; color: transparent; text-shadow: none; font-size: 3.3cqw;
   }
   .entry-main .entry-go:disabled { background: rgba(255, 250, 240, 0.5); border: 0; box-shadow: none; }
   .entry-main .entry-go:not(:disabled):hover { background: rgba(255, 255, 255, 0.1); }
   .entry-main .entry-go:active:not(:disabled) { transform: none; background: rgba(0, 40, 35, 0.15); box-shadow: none; }
-  .entry-main .entry-go:focus-visible { outline: 0.3cqw solid var(--e-purple); outline-offset: 0.3cqw; }
-  .entry-main .entry-hint { position: absolute; left: 0; right: 0; top: 91.2%; margin: 0; font-size: 1.1cqw; min-height: 0; }
-  .entry-main .entry-storage { position: absolute; left: 0; right: 0; top: 93.6%; margin: 0; font-size: 1cqw; }
+  .entry-main .entry-go:focus-visible { outline: 0.5cqw solid var(--e-purple); outline-offset: 0.5cqw; }
+  .entry-main .entry-hint { position: absolute; left: 0; right: 0; top: 101%; margin: 0; font-size: 1.8cqw; min-height: 0; color: #fff; text-shadow: 0 1px 3px rgba(60, 40, 20, 0.8); }
+  .entry-main .entry-storage { position: absolute; left: 0; right: 0; top: 105%; margin: 0; font-size: 1.65cqw; color: #fff; text-shadow: 0 1px 3px rgba(120, 20, 10, 0.9); }
 }
 
 @media (prefers-reduced-motion: reduce) { .grade-opt span, .entry-go { transition: none; } }

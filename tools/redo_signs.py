@@ -6,7 +6,7 @@
 1) 간판 바탕(크림색 / 보라색)과 이어진 영역을 찾고, 그 바탕에 둘러싸인 '구멍' = 글자 픽셀만 고릅니다.
    간판 테두리·장식은 바탕 밖이므로 건드리지 않습니다.
 2) 글자 픽셀은 둘레 바탕색에서 부드럽게 번져 들어오도록 메웁니다(확산 채우기). 줄무늬·네모 덮개가 생기지 않습니다.
-3) 지운 자리 가운데에 맑은 고딕 Bold로 글자만 씁니다(배경 없이).
+3) 간판 바탕(안쪽 판)의 정중앙에 둥근 글씨체(Cafe24 써라운드)로 글자만 씁니다(배경·덧그린 획 없이).
 좌표는 1배 지도(1448×1086) 기준이며 그림 크기에 맞춰 배율을 적용합니다.
 """
 import sys
@@ -14,7 +14,9 @@ from collections import deque
 import numpy as np
 from PIL import Image, ImageDraw, ImageFont
 
-FONT = 'C:/Windows/Fonts/malgunbd.ttf'
+import os
+# 둥근 글씨체: Cafe24 써라운드(무료 글꼴, 이 PC에 설치된 것을 사용. 글꼴 파일은 저장소에 넣지 않음)
+FONT = os.environ.get('MAKEPARK_SIGN_FONT') or os.path.expandvars(r'%LOCALAPPDATA%\Microsoft\Windows\Fonts\Cafe24Ssurround.ttf')
 WORLD_W = 1448
 # id, 글자, 글자 대략 상자(1배 x0,y0,x1,y1), 간판 종류(cream: 크림 바탕 진한 글씨 / purple: 보라 바탕 흰 글씨)
 SIGNS = [
@@ -95,7 +97,7 @@ def draw_text(img, text, cx, cy, h, max_w, ink):
     S = 4
     font = ImageFont.truetype(FONT, 32 * S)
     tmp = Image.new('L', (len(text) * 46 * S, 64 * S), 0)
-    ImageDraw.Draw(tmp).text((8 * S, 6 * S), text, font=font, fill=255, stroke_width=S, stroke_fill=255)
+    ImageDraw.Draw(tmp).text((8 * S, 6 * S), text, font=font, fill=255)
     g = tmp.crop(tmp.getbbox())
     k = h / g.height
     w = g.width * k
@@ -157,7 +159,24 @@ def process(img):
         rows = np.where(inner[:, int((tx0 + tx1) // 2)])[0]
         inner_h = (rows.max() - rows.min()) if len(rows) else (ty1 - ty0)
         th = min(ty1 - ty0 + 1, inner_h * 0.6)
-        jobs.append((text, X0 + (tx0 + tx1) / 2, Y0 + (ty0 + ty1) / 2, th, min(inner_w * 0.86, (tx1 - tx0) * 1.04), INK[kind]))
+        # 간판 안쪽 판(바탕+지운 글자 자리)의 정중앙: 글자 줄 높이에서 좌우 끝의 가운데, 그 열에서 위아래 끝의 가운데
+        plate = inner | holes
+        cxp = (tx0 + tx1) / 2
+        def run(line, i):
+            # line 에서 i 를 포함해 끊김 없이 이어진 구간(테두리에서 멈춤 → 바깥 눈·바탕으로 새지 않음)
+            if not line[i]:
+                return None
+            a_, b_ = i, i
+            while a_ > 0 and line[a_ - 1]: a_ -= 1
+            while b_ < len(line) - 1 and line[b_ + 1]: b_ += 1
+            return a_, b_
+        cyp = (ty0 + ty1) / 2
+        for _ in range(3):
+            r_ = run(plate[int(round(cyp))], int(round(cxp)))
+            if r_: cxp = (r_[0] + r_[1]) / 2
+            c_ = run(plate[:, int(round(cxp))], int(round(cyp)))
+            if c_: cyp = (c_[0] + c_[1]) / 2
+        jobs.append((text, X0 + cxp, Y0 + cyp, th, min(inner_w * 0.84, (tx1 - tx0) * 1.06), INK[kind]))
         print(sid, 'letters', int(holes.sum()), 'text box', (X0 + tx0, Y0 + ty0, X0 + tx1, Y0 + ty1))
     res = Image.fromarray(out.clip(0, 255).astype(np.uint8))
     for text, cx, cy, th, mw, ink in jobs:
