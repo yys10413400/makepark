@@ -279,13 +279,13 @@ button.chip:focus-visible { outline: 3px solid var(--mint); outline-offset: 2px;
    좌표는 그림 크기 1672×941 기준 백분율. 세로로 좁은 화면은 위의 CSS 버전을 씁니다. */
 @media (min-width: 720px) and (min-height: 520px) and (min-aspect-ratio: 5/4) {
   #title.entry-overlay { padding: 0; align-items: center; overflow: hidden; isolation: isolate; background: #f6e9cf; }
+  /* 그림은 항상 화면 높이에 맞추고, 화면이 더 넓으면 양옆을 거울로 이어 붙인 그림(entry-screen-wide)으로 채움 */
   #title.entry-overlay::before {
-    content: ""; position: absolute; inset: -30px; z-index: -1;
-    background: url("../assets/ui/entry-screen.webp") center / cover no-repeat;
-    filter: blur(14px) saturate(1.05) brightness(0.92);
+    content: ""; position: absolute; inset: 0; z-index: -1;
+    background: url("../assets/ui/entry-screen-wide.webp") center / auto 100% no-repeat;
   }
   .entry-main {
-    width: min(100vw, calc(100vh * 1672 / 941)); aspect-ratio: 1672 / 941; height: auto; max-width: none;
+    flex: none; height: 100%; width: auto; aspect-ratio: 1672 / 941; max-width: none;
     margin: 0; padding: 0; filter: none; container-type: inline-size;
     background: url("../assets/ui/entry-screen.webp") center / 100% 100% no-repeat;
   }
