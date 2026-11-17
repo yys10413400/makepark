@@ -181,9 +181,7 @@
     if (ix || iy) {
       stopMoving();
       var len = Math.hypot(ix, iy), dx = ix / len * speed * dt, dy = iy / len * speed * dt;
-      if (grid.isWalkable(p.x + dx, p.y + dy)) { p.x += dx; p.y += dy; }
-      else if (dx && grid.isWalkable(p.x + dx, p.y)) { p.x += dx; }
-      else if (dy && grid.isWalkable(p.x, p.y + dy)) { p.y += dy; }
+      tryMove(dx, dy);
       setDir(ix, iy); p.moving = true;
       return;
     }
@@ -198,6 +196,23 @@
       if (!state.path.length) stopMoving();
     }
   }
+  // 키보드 이동: 막히면 벽을 따라 미끄러지듯 이동 (굽은 길에서도 멈추지 않게)
+  var SLIDE_ANGLES = [0.35, -0.35, 0.7, -0.7, 1.05, -1.05];
+  function tryMove(dx, dy) {
+    var p = state.player;
+    if (grid.isWalkable(p.x + dx, p.y + dy)) { p.x += dx; p.y += dy; return true; }
+    if (dx && dy) { // 대각선: 한 축이라도 갈 수 있으면 그쪽으로
+      if (grid.isWalkable(p.x + dx, p.y)) { p.x += dx; return true; }
+      if (grid.isWalkable(p.x, p.y + dy)) { p.y += dy; return true; }
+    }
+    for (var i = 0; i < SLIDE_ANGLES.length; i++) {
+      var a = SLIDE_ANGLES[i], c = Math.cos(a), s = Math.sin(a), k = 0.85;
+      var rx = (dx * c - dy * s) * k, ry = (dx * s + dy * c) * k;
+      if (grid.isWalkable(p.x + rx, p.y + ry)) { p.x += rx; p.y += ry; return true; }
+    }
+    return false;
+  }
+
   function setDir(dx, dy) {
     var p = state.player;
     if (Math.abs(dx) > Math.abs(dy)) p.dir = dx > 0 ? 'right' : 'left'; else p.dir = dy > 0 ? 'down' : 'up';
