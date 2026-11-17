@@ -22,7 +22,7 @@ SMOOTH = 1    # 가장자리의 한 칸짜리 홈을 메워 키보드 이동 때
 def paving(path):
     a = np.asarray(Image.open(path).convert('RGB')).astype(int)
     r, g, b = a[..., 0], a[..., 1], a[..., 2]
-    return (r > 215) & (r - g >= 14) & (r - g <= 48) & (g - b >= -4) & (g - b <= 26) & (b > 160)
+    return (r > 215) & (r - g >= 20) & (r - g <= 48) & (g - b >= -4) & (g - b <= 26) & (b > 160)
 
 
 def dilate(m, r):

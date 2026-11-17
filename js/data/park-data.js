@@ -79,7 +79,7 @@ window.MP_PARK = {
     { id: 'thrill', name: '짜릿 어드벤처', desc: '범퍼카와 전망 탑이 있는 모험 놀이터예요.',
       entrance: { x: 995, y: 645 }, radius: 60, pin: { x: 1110, y: 481 } },
     { id: 'ghost', name: '유령의 집', desc: '살금살금, 귀여운 유령들이 사는 집이에요.',
-      entrance: { x: 1160, y: 850 }, radius: 60, pin: { x: 1160, y: 761 } },
+      entrance: { x: 1158, y: 856 }, radius: 60, pin: { x: 1160, y: 761 } },
     { id: 'arcade', name: '플레이 아케이드', desc: '여러 가지 게임기가 모여 있는 오락실이에요.',
       entrance: { x: 825, y: 838 }, radius: 60, pin: { x: 825, y: 737 } },
     { id: 'star', name: '스타 페스티벌', desc: '반짝이는 작품을 뽐내는 축제 마당이에요.',

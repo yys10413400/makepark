@@ -58,7 +58,7 @@
   // ---------- 가림 레이어 (캐릭터가 건물 뒤로 지나갈 때) ----------
   // tools/build_walkmask.py 의 길 판정과 같은 규칙. 길 픽셀은 투명하게 빼고 건물·나무만 남김.
   function isPavingPixel(r, g, b) {
-    return r > 215 && r - g >= 14 && r - g <= 48 && g - b >= -4 && g - b <= 26 && b > 160;
+    return r > 215 && r - g >= 20 && r - g <= 48 && g - b >= -4 && g - b <= 26 && b > 160;
   }
   function buildOccluders(img) {
     // 지도 좌표 = 이미지 픽셀 (같은 크기일 때). 크기가 다르면 비율대로 맞춤
