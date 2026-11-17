@@ -13,27 +13,27 @@
   <div id="app">
     <canvas id="stage" aria-label="메이크파크 공원 지도"></canvas>
 
-    <!-- 첫 입장 화면 (시안: entry-screen-reference.png / 배경은 실제 공원 지도) -->
+    <!-- 첫 입장 화면 (시안 2: 금색 테두리 크림 패널 / 배경은 실제 공원 지도) -->
     <section id="title" class="entry-overlay">
-      <form id="titleForm" class="entry-panel" autocomplete="off" novalidate>
-        <div class="entry-badge" aria-hidden="true"><span>MAKE PARK</span></div>
-        <h1 class="entry-title">
-          <svg class="sprig" viewBox="0 0 40 40" aria-hidden="true"><path d="M34 34C24 30 14 22 8 8" /><path d="M14 16c-6 1-9-2-10-6 5-1 9 1 10 6zM20 23c-6 2-10-1-12-5 5-2 10 0 12 5zM27 29c-5 3-10 1-12-3 5-3 10-2 12 3zM15 14c1-6 5-8 9-7 0 5-3 8-9 7zM22 21c2-6 6-7 10-6-1 5-4 8-10 6z" /></svg>
-          <span>반가워요, 메이크파크!</span>
-          <svg class="sprig flip" viewBox="0 0 40 40" aria-hidden="true"><path d="M34 34C24 30 14 22 8 8" /><path d="M14 16c-6 1-9-2-10-6 5-1 9 1 10 6zM20 23c-6 2-10-1-12-5 5-2 10 0 12 5zM27 29c-5 3-10 1-12-3 5-3 10-2 12 3zM15 14c1-6 5-8 9-7 0 5-3 8-9 7zM22 21c2-6 6-7 10-6-1 5-4 8-10 6z" /></svg>
-        </h1>
-        <p class="entry-sub" id="entrySub">닉네임과 학년을 선택해 주세요</p>
+      <form id="titleForm" class="entry-panel entry-main" autocomplete="off" novalidate>
+        <div class="entry-crest" aria-hidden="true">
+          <svg class="crest-castle" viewBox="0 0 120 40"><path d="M20 40V22l8-8 8 8v18zM44 40V16l10-12 10 12v24zM76 40V20l9-9 9 9v20zM98 40V24l6-6 6 6v16z"/><path class="flag" d="M54 4V0h8l-3 2 3 2zM28 14V9h7l-3 2 3 2zM85 11V6h7l-3 2 3 2z"/></svg>
+          <span>MAKE PARK</span>
+          <svg class="sparkle crest-star" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 0C13 8 16 11 24 12 16 13 13 16 12 24 11 16 8 13 0 12 8 11 11 8 12 0Z"/></svg>
+        </div>
+        <h1 class="entry-title"><svg class="sparkle" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 0C13 8 16 11 24 12 16 13 13 16 12 24 11 16 8 13 0 12 8 11 11 8 12 0Z"/></svg><span>메이크파크에 오신 걸 환영해요!</span><svg class="sparkle" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 0C13 8 16 11 24 12 16 13 13 16 12 24 11 16 8 13 0 12 8 11 11 8 12 0Z"/></svg></h1>
+        <p class="entry-sub line-deco" id="entrySub"><span>닉네임과 학년을 고르고 출발해요</span></p>
         <p id="welcomeBack" class="entry-welcome" hidden></p>
 
         <div class="nick-row">
-          <label class="nick-label" for="nickname">닉네임</label>
+          <label class="nick-label" for="nickname"><svg class="sparkle" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 0C13 8 16 11 24 12 16 13 13 16 12 24 11 16 8 13 0 12 8 11 11 8 12 0Z"/></svg>닉네임</label>
           <input id="nickname" class="nick-input" type="text" maxlength="40" placeholder="공원에서 사용할 이름"
                  autocomplete="off" spellcheck="false" aria-describedby="nickError">
         </div>
         <p id="nickError" class="field-msg" aria-live="polite"></p>
 
-        <fieldset class="grade-set" aria-describedby="gradeError">
-          <legend class="grade-legend"><span>나는 몇 학년인가요?</span></legend>
+        <fieldset class="grade-set">
+          <legend class="grade-legend"><svg class="sparkle" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 0C13 8 16 11 24 12 16 13 13 16 12 24 11 16 8 13 0 12 8 11 11 8 12 0Z"/></svg>학년</legend>
           <div class="grade-grid">
             <label class="grade-opt"><input type="radio" name="grade" value="1"><span>1학년</span></label>
             <label class="grade-opt"><input type="radio" name="grade" value="2"><span>2학년</span></label>
@@ -43,16 +43,12 @@
             <label class="grade-opt"><input type="radio" name="grade" value="6"><span>6학년</span></label>
           </div>
         </fieldset>
-        <p id="gradeError" class="field-msg" aria-live="polite"></p>
 
-        <p class="entry-note">
-          <svg class="sprig tiny" viewBox="0 0 40 40" aria-hidden="true"><path d="M34 34C24 30 14 22 8 8" /><path d="M14 16c-6 1-9-2-10-6 5-1 9 1 10 6zM20 23c-6 2-10-1-12-5 5-2 10 0 12 5zM15 14c1-6 5-8 9-7 0 5-3 8-9 7z" /></svg>
-          학년에 맞는 놀이 미션을 준비할게요!
-          <svg class="sprig tiny flip" viewBox="0 0 40 40" aria-hidden="true"><path d="M34 34C24 30 14 22 8 8" /><path d="M14 16c-6 1-9-2-10-6 5-1 9 1 10 6zM20 23c-6 2-10-1-12-5 5-2 10 0 12 5zM15 14c1-6 5-8 9-7 0 5-3 8-9 7z" /></svg>
-        </p>
+        <p class="entry-note line-deco"><span>학년에 맞는 미션을 준비해 드려요</span></p>
         <button id="enterPark" type="submit" class="entry-go" disabled>공원으로 출발!</button>
         <p id="titleHint" class="entry-hint" aria-live="polite"></p>
         <p id="storageNote" class="entry-storage" hidden>이 기기에는 저장할 수 없어요. 이번에만 기억하고, 다음에 다시 입력해야 해요.</p>
+        <svg class="sparkle bottom-star" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 0C13 8 16 11 24 12 16 13 13 16 12 24 11 16 8 13 0 12 8 11 11 8 12 0Z"/></svg>
       </form>
     </section>
 
