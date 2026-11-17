@@ -42,9 +42,14 @@
 `park-data.js`의 `occluders`에 건물·정문마다 영역과 바닥선(`baseY`)을 적어 둡니다. 캐릭터 발이 바닥선보다 위(북쪽)에 있으면 그 영역의 그림을 캐릭터 위에 다시 그려서 건물 뒤에 있는 것처럼 보입니다. 길 색 픽셀은 투명하게 빼므로 건물·나무만 덮습니다. 가려진 동안에는 캐릭터의 흐린 윤곽이 보입니다.
 `walkUnder`는 건물 위쪽 길 가장자리에서 그만큼 아래까지를 '건물에 가려진 길'로 보고 걸을 수 있게 합니다. 정문 아치 아래, 매표소·마이파크 문 뒤의 길은 `walkEdits`로 열었습니다.
 
+## 지도 선명도(AI 업스케일)
+게임에 쓰는 지도는 받은 2배 지도(`maps-src/*-2x-original.png`)를 Real-ESRGAN `realesrgan-x4plus` 모델로 4배 키운 뒤 다시 2배 크기(2896×2172)로 줄인 것입니다(`maps-src/*-2x-ai.png`). 크기는 그대로이고 선과 글자가 또렷해집니다.
+도구: github.com/xinntao/Real-ESRGAN 공식 배포판 `realesrgan-ncnn-vulkan-20220424-windows.zip` (저장소에는 넣지 않음)
+`realesrgan-ncnn-vulkan.exe -i 2x-original.png -o x4.png -n realesrgan-x4plus -s 4` → 2896×2172로 LANCZOS 축소 → 간판 다시 쓰기 → WebP 94
+
 ## 간판 글씨
 지도 그림의 간판 글씨 11개는 `tools/rewrite_signs.py`로 지우고 맑은 고딕 Bold로 다시 썼습니다. 원본 그림(1배·2배)은 `assets/maps-src`에 있습니다. 2배 지도는 1배 원본에서 글자 위치를 찾아 씁니다:
-`python tools/rewrite_signs.py assets/maps-src/makepark-christmas-2x-original.png out.png assets/maps-src/makepark-christmas-original.png` (결과에 선명 보정 UnsharpMask(radius 1.6, percent 90, threshold 2)을 준 뒤 WebP 품질 94로 저장)
+`python tools/rewrite_signs.py assets/maps-src/makepark-christmas-2x-original.png out.png assets/maps-src/makepark-christmas-original.png` (결과를 WebP 품질 94로 저장)
 글자를 바꾸려면 `SIGNS`의 글자를 고친 뒤 두 지도에 다시 실행하세요.
 
 ## 입장 화면과 프로필
