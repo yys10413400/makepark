@@ -44,7 +44,7 @@
 
 ## 간판 글씨
 지도 그림의 간판 글씨 11개는 `tools/rewrite_signs.py`로 지우고 맑은 고딕 Bold로 다시 썼습니다. 원본 그림(1배·2배)은 `assets/maps-src`에 있습니다. 2배 지도는 1배 원본에서 글자 위치를 찾아 씁니다:
-`python tools/rewrite_signs.py assets/maps-src/makepark-christmas-2x-original.png out.png assets/maps-src/makepark-christmas-original.png` (결과를 WebP 품질 92로 저장)
+`python tools/rewrite_signs.py assets/maps-src/makepark-christmas-2x-original.png out.png assets/maps-src/makepark-christmas-original.png` (결과에 선명 보정 UnsharpMask(radius 1.6, percent 90, threshold 2)을 준 뒤 WebP 품질 94로 저장)
 글자를 바꾸려면 `SIGNS`의 글자를 고친 뒤 두 지도에 다시 실행하세요.
 
 ## 입장 화면과 프로필
