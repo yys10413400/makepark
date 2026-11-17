@@ -1,7 +1,7 @@
 """시즌 지도들에서 '포장길' 픽셀을 찾아 공통 이동 격자(js/data/walkmask.js)를 만든다.
 
 사용법:
-  python tools/build_walkmask.py js/data/walkmask.js assets/maps/makepark-christmas.png assets/maps/makepark-normal.png
+  python tools/build_walkmask.py js/data/walkmask.js assets/maps/makepark-christmas.webp assets/maps/makepark-normal.webp
 
 - 모든 지도에서 길로 판정된 칸만 남긴다(공통 충돌 영역). 시즌을 바꿔도 같은 영역을 쓴다.
 - 길 판정: 밝은 분홍빛 베이지 포장(빨강 > 초록 > 파랑, 밝음). 눈, 물, 잔디, 건물은 제외된다.
@@ -19,8 +19,14 @@ CURB = 2      # 포장길 가장자리의 흐린 경계 픽셀만 포함(크게 
 SMOOTH = 1    # 가장자리의 한 칸짜리 홈을 메워 키보드 이동 때 걸리지 않게 함
 
 
+WORLD = (1448, 1086)  # 게임 좌표계(1배 지도) 크기. 2배 지도도 이 크기로 줄여서 판정
+
+
 def paving(path):
-    a = np.asarray(Image.open(path).convert('RGB')).astype(int)
+    im = Image.open(path).convert('RGB')
+    if im.size != WORLD:
+        im = im.resize(WORLD, Image.LANCZOS)
+    a = np.asarray(im).astype(int)
     r, g, b = a[..., 0], a[..., 1], a[..., 2]
     return (r > 215) & (r - g >= 20) & (r - g <= 48) & (g - b >= -4) & (g - b <= 26) & (b > 160)
 

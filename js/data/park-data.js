@@ -13,8 +13,8 @@ window.MP_PARK = {
   // (이전 지도와 개별 장식은 assets/legacy 에 보관만 합니다.)
   defaultSeason: 'christmas',
   seasons: {
-    christmas: { label: '크리스마스', map: 'assets/maps/makepark-christmas.png' },
-    normal: { label: '일반', map: 'assets/maps/makepark-normal.png' }
+    christmas: { label: '크리스마스', map: 'assets/maps/makepark-christmas.webp' },
+    normal: { label: '일반', map: 'assets/maps/makepark-normal.webp' }
   },
 
   // 캐릭터 시작 위치: 정문 아치 바로 안쪽 길

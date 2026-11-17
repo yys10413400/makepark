@@ -23,7 +23,7 @@
 | `js/walkgrid.js` | 이동 격자와 A* 경로 탐색 |
 | `js/character.js` | 캐릭터 그리기(**임시 캐릭터**). PNG 걷기 스프라이트로 바꾸는 방법은 파일 머리말에 있습니다. |
 | `js/game.js` | 화면, 카메라, 입력, 시설 안내, 저장 |
-| `assets/maps/makepark-christmas.png`, `makepark-normal.png` | 시즌 완성 지도(1448×1086, 같은 배치). 모든 좌표의 기준입니다. |
+| `assets/maps/makepark-christmas.webp`, `makepark-normal.webp` | 시즌 지도 2배 해상도(2896×2172, WebP). 게임 좌표는 1배(1448×1086) 기준이고 그림만 2배로 그립니다. |
 | `assets/legacy/` | 이전 지도들(첫 기본 지도, maps-v2)과 개별 장식 12종. 보관만 하고 화면에는 쓰지 않습니다. |
 
 ## 좌표계
@@ -32,7 +32,7 @@
 ## 지도를 바꿨을 때
 1. `assets/maps`의 지도 파일을 바꿉니다(같은 크기·같은 배치 권장).
 2. 이동 격자 다시 만들기:
-   `python tools/build_walkmask.py js/data/walkmask.js assets/maps/makepark-christmas.png assets/maps/makepark-normal.png`
+   `python tools/build_walkmask.py js/data/walkmask.js assets/maps/makepark-christmas.webp assets/maps/makepark-normal.webp`
 3. `?debug=1`로 열어 시설 입구·핀 좌표를 확인하고, 콘솔에서 `await MP_SELFTEST()`로 점검합니다.
 
 ## 충돌 판정
@@ -43,7 +43,8 @@
 `walkUnder`는 건물 위쪽 길 가장자리에서 그만큼 아래까지를 '건물에 가려진 길'로 보고 걸을 수 있게 합니다. 정문 아치 아래, 매표소·마이파크 문 뒤의 길은 `walkEdits`로 열었습니다.
 
 ## 간판 글씨
-지도 그림의 간판 글씨 11개는 `tools/rewrite_signs.py`로 지우고 맑은 고딕 Bold로 다시 썼습니다. 원본 그림은 `assets/maps-src`에 있습니다.
+지도 그림의 간판 글씨 11개는 `tools/rewrite_signs.py`로 지우고 맑은 고딕 Bold로 다시 썼습니다. 원본 그림(1배·2배)은 `assets/maps-src`에 있습니다. 2배 지도는 1배 원본에서 글자 위치를 찾아 씁니다:
+`python tools/rewrite_signs.py assets/maps-src/makepark-christmas-2x-original.png out.png assets/maps-src/makepark-christmas-original.png` (결과를 WebP 품질 92로 저장)
 글자를 바꾸려면 `SIGNS`의 글자를 고친 뒤 두 지도에 다시 실행하세요.
 
 ## 입장 화면과 프로필
