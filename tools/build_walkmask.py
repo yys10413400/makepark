@@ -12,8 +12,10 @@ import sys
 import numpy as np
 from PIL import Image
 
-CELL = 8
+CELL = 4
 STRONG = 0.5  # 칸 안의 포장 픽셀 비율이 이 값보다 크면 길
+CURB = 2      # 포장길 가장자리의 흐린 경계 픽셀만 포함(크게 넓히면 얇은 울타리를 넘어감)
+SMOOTH = 1    # 가장자리의 한 칸짜리 홈을 메워 키보드 이동 때 걸리지 않게 함
 
 
 def paving(path):
@@ -23,8 +25,22 @@ def paving(path):
     return (b - np.maximum(r, g) >= 8) & (mn > 135) & (mx < 248) & (mx - mn < 70)
 
 
+def dilate(m, r):
+    # 반지름 r 원 모양으로 넓히기 (numpy만 사용)
+    out = m.copy()
+    H, W = m.shape
+    for dy in range(-r, r + 1):
+        for dx in range(-r, r + 1):
+            if dx * dx + dy * dy > r * r or (dx == 0 and dy == 0):
+                continue
+            ys, yd = (slice(dy, H), slice(0, H - dy)) if dy >= 0 else (slice(0, H + dy), slice(-dy, H))
+            xs, xd = (slice(dx, W), slice(0, W - dx)) if dx >= 0 else (slice(0, W + dx), slice(-dx, W))
+            out[yd, xd] |= m[ys, xs]
+    return out
+
+
 def cells_of(path):
-    m = paving(path)
+    m = dilate(paving(path), CURB)
     rows, cols = m.shape[0] // CELL, m.shape[1] // CELL
     frac = m[:rows * CELL, :cols * CELL].reshape(rows, CELL, cols, CELL).mean((1, 3))
     cells = frac > STRONG
@@ -39,6 +55,10 @@ for path in maps:
     c = cells_of(path)
     print(path, 'cells', int(c.sum()))
     common = c if common is None else (common & c)
+# 닫기(넓혔다가 같은 만큼 줄이기): 길 가장자리의 작은 홈·튀어나온 점을 정리
+def erode(m, r):
+    return ~dilate(~m, r)
+common = erode(dilate(common, SMOOTH), SMOOTH) | common
 rows, cols = common.shape
 lines = [''.join('1' if v else '0' for v in row) for row in common]
 with open(out, 'w', encoding='utf-8') as f:

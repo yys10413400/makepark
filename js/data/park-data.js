@@ -21,12 +21,16 @@ window.MP_PARK = {
   start: { x: 835, y: 630 },
 
   // 충돌 판정은 캐릭터 발밑의 작은 영역(가로 2×halfWidth, 세로 2×halfHeight)으로 합니다.
-  foot: { halfWidth: 7, halfHeight: 3 },
+  foot: { halfWidth: 5, halfHeight: 2 },
 
   // 이동 가능 영역 = 두 지도 공통 자동 추출 격자(walkmask.js) + 아래 수정 → 시작점과 연결된 칸만 사용
   // add: 이동 가능하게 추가, remove: 막기.  rect = {x,y,w,h}, ellipse = {cx,cy,rx,ry}
   walkEdits: [
-    { op: 'remove', rect: { x: 570, y: 690, w: 535, h: 150 }, note: '정문 아치·기둥: 간판 위로 캐릭터가 떠 보이지 않게 막음' }
+    { op: 'remove', rect: { x: 570, y: 690, w: 535, h: 150 }, note: '정문 아치·기둥: 간판 위로 캐릭터가 떠 보이지 않게 막음' },
+    { op: 'add', rect: { x: 818, y: 632, w: 36, h: 58 }, note: '아치 위로 솟은 깃대: 광장 한가운데서 걸리지 않게 통과' },
+    { op: 'remove', rect: { x: 1160, y: 110, w: 280, h: 178 }, note: '짜릿 어드벤처 건물·범퍼카 지붕(회색 지붕이 길로 잡힘)' },
+    { op: 'remove', rect: { x: 1290, y: 590, w: 210, h: 72 }, note: '플레이 아케이드 안쪽 바닥(게임기 위로 걷지 않게)' },
+    { op: 'remove', ellipse: { cx: 1150, cy: 418, rx: 108, ry: 60 }, note: '스타 페스티벌 안쪽 전시대 (앞쪽 열린 입구는 남김)' }
   ],
 
   // 공원 중심 장소 (입장 시설 아님)

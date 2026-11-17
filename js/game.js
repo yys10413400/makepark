@@ -197,7 +197,9 @@
     if (ix || iy) {
       stopMoving();
       var len = Math.hypot(ix, iy), dx = ix / len * speed * dt, dy = iy / len * speed * dt;
-      tryMove(dx, dy);
+      // 한 번에 2px 이하로 나눠 움직여 가장자리에서 자연스럽게 미끄러지게
+      var steps = Math.max(1, Math.ceil(Math.hypot(dx, dy) / 2));
+      for (var k = 0; k < steps; k++) tryMove(dx / steps, dy / steps);
       setDir(ix, iy); p.moving = true;
       return;
     }
@@ -213,7 +215,8 @@
     }
   }
   // 키보드 이동: 막히면 벽을 따라 미끄러지듯 이동 (굽은 길에서도 멈추지 않게)
-  var SLIDE_ANGLES = [0.35, -0.35, 0.7, -0.7, 1.05, -1.05];
+  // 마지막 ±1.57(90°)은 계단 모양 가장자리에서 옆으로 한 걸음 비켜서는 동작
+  var SLIDE_ANGLES = [0.35, -0.35, 0.7, -0.7, 1.05, -1.05, 1.35, -1.35, 1.5708, -1.5708];
   function tryMove(dx, dy) {
     var p = state.player;
     if (grid.isWalkable(p.x + dx, p.y + dy)) { p.x += dx; p.y += dy; return true; }
