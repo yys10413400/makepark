@@ -20,7 +20,7 @@
   var CART = { E: 'cart-right', W: 'cart-left', N: 'cart-up', S: 'cart-down' };
   var DIR_KO = { E: '오른쪽', W: '왼쪽', N: '위쪽', S: '아래쪽' };
   // 게임 영역(빈 화면 그림의 잔디 안쪽, 안내 띠 아래) — 그림 좌표
-  var BOARD = { x: 30, y: 262, w: 1085, h: 508 };
+  var BOARD = { x: 30, y: 262, w: 1085, h: 450 };
 
   var ui = {}, S = { marks: {},
     course: 'low', list: [], idx: 0, mission: null, program: [], target: 'main',
