@@ -13,8 +13,10 @@
   var canvas = $('stage'), ctx = canvas.getContext('2d');
   var ui = {
     title: $('title'), form: $('titleForm'), nickname: $('nickname'), enterPark: $('enterPark'),
-    hint: $('titleHint'), welcome: $('welcomeBack'),
-    hud: $('hud'), playerName: $('playerName'), mapToggle: $('mapToggle'),
+    hint: $('titleHint'), welcome: $('welcomeBack'), nickError: $('nickError'), storageNote: $('storageNote'),
+    profile: $('profile'), profileForm: $('profileForm'), profileNick: $('profileNick'),
+    profileNickError: $('profileNickError'), profileCancel: $('profileCancel'), profileSave: $('profileSave'),
+    hud: $('hud'), playerChip: $('playerChip'), playerName: $('playerName'), playerGrade: $('playerGrade'), mapToggle: $('mapToggle'),
     seasonToggle: $('seasonToggle'), seasonLabel: $('seasonLabel'),
     mapBar: $('mapBar'), mapBack: $('mapBack'),
     enter: $('enterFacility'), enterName: $('enterName'),
@@ -54,6 +56,7 @@
     img.src = PARK.seasons[id].map;
   });
   var fade = { from: null, t: 1 };
+  var ringImg = new Image(); ringImg.src = 'assets/ui/entrance-ring.png';
 
   // ---------- 가림 레이어 (캐릭터가 건물 뒤로 지나갈 때) ----------
   // tools/build_walkmask.py 의 길 판정과 같은 규칙. 길 픽셀은 투명하게 빼고 건물·나무만 남김.
@@ -109,64 +112,162 @@
   }
 
   // ---------- 저장 ----------
+  // 기존 저장 키(makepark.save.v1) 하나에 모두 담습니다:
+  //   { version, nickname, grade(1~6), updatedAt, pos, season, ...앞으로 생길 티켓·스탬프·작품 }
+  // 프로필(닉네임·학년)을 바꿀 때도 나머지 값은 그대로 둡니다.
+  var storageOk = true;
   function readSave() {
-    try { return JSON.parse(localStorage.getItem(SAVE_KEY)) || null; } catch (e) { return null; }
+    try {
+      var v = JSON.parse(localStorage.getItem(SAVE_KEY));
+      return v && typeof v === 'object' && !Array.isArray(v) ? v : null;
+    } catch (e) { return null; }
+  }
+  function patchSave(patch) {
+    var data = readSave();
+    if (!data) {
+      // 저장값이 깨져서 읽을 수 없으면 덮어쓰기 전에 원본을 따로 보관(나중에 복구할 수 있게)
+      try { var raw = localStorage.getItem(SAVE_KEY); if (raw) localStorage.setItem(SAVE_KEY + '.broken', raw); } catch (e) { /* 무시 */ }
+      data = {};
+    }
+    for (var k in patch) data[k] = patch[k];
+    data.version = 1;
+    try { localStorage.setItem(SAVE_KEY, JSON.stringify(data)); storageOk = true; }
+    catch (e) { storageOk = false; } // 저장이 안 되는 환경: 이번 방문 동안 메모리 상태로 진행
+    ui.storageNote.hidden = storageOk;
   }
   function writeSave() {
     if (state.phase !== 'play') return;
-    var p = state.player, data = readSave() || {};
-    data.nickname = state.nickname; data.grade = state.grade;
-    if (grid.isWalkable(p.x, p.y)) data.pos = { x: Math.round(p.x), y: Math.round(p.y) };
-    try { localStorage.setItem(SAVE_KEY, JSON.stringify(data)); } catch (e) { /* 저장 불가 환경 */ }
+    var p = state.player, patch = {};
+    if (grid.isWalkable(p.x, p.y)) patch.pos = { x: Math.round(p.x), y: Math.round(p.y) };
+    patchSave(patch);
   }
   function validPos(pos) {
     return pos && isFinite(pos.x) && isFinite(pos.y) && grid.isWalkable(pos.x, pos.y);
   }
 
-  // ---------- 첫 화면 ----------
+  // ---------- 프로필: 닉네임·학년 ----------
+  var NICK_MAX = 12;
+  // 한글·이모지를 한 글자로 세기 (Intl.Segmenter 가 없으면 코드포인트 단위)
+  function nickLength(s) {
+    if (window.Intl && Intl.Segmenter) { var n = 0, it = new Intl.Segmenter('ko', { granularity: 'grapheme' }).segment(s); for (var x of it) n++; return n; }
+    return Array.from(s).length;
+  }
+  function checkNick(raw) {
+    var s = String(raw || '').trim();
+    if (!s) return { ok: false, value: s, msg: '' };
+    if (nickLength(s) > NICK_MAX) return { ok: false, value: s, msg: '닉네임은 ' + NICK_MAX + '글자까지 쓸 수 있어요.' };
+    return { ok: true, value: s, msg: '' };
+  }
+  function validGrade(g) { g = Number(g); return Number.isInteger(g) && g >= 1 && g <= 6 ? g : null; }
+  // 학년군(난이도): 1~2 low, 3~4 middle, 5~6 high. 학년 원본 값과 따로 둡니다.
+  function gradeBand(g) { return g <= 2 ? 'low' : g <= 4 ? 'middle' : 'high'; }
+  function loadProfile() {
+    var s = readSave() || {};
+    var n = checkNick(s.nickname);
+    // 손상되거나 범위를 벗어난 값만 비움(예전 '3-4' 같은 학년군 값은 미선택으로)
+    return { nickname: n.ok ? n.value : '', grade: validGrade(s.grade) };
+  }
+  function saveProfile(nickname, grade) {
+    patchSave({ nickname: nickname, grade: grade, updatedAt: new Date().toISOString() });
+  }
+  function setGradeRadios(name, g) {
+    document.querySelectorAll('input[name=' + name + ']').forEach(function (r) { r.checked = Number(r.value) === g; });
+  }
+  function radioGrade(name) {
+    var r = document.querySelector('input[name=' + name + ']:checked'); return r ? validGrade(r.value) : null;
+  }
+  // 한글 입력(IME) 조합 중 Enter 로 제출되지 않게
+  function guardIme(input) {
+    input.addEventListener('keydown', function (e) {
+      if (e.key === 'Enter' && (e.isComposing || e.keyCode === 229)) e.preventDefault();
+    });
+  }
+
+  // ---------- 첫 입장 화면 ----------
   var saved = readSave();
   setSeason((saved && saved.season) || PARK.defaultSeason, false);
   ui.seasonToggle.addEventListener('click', function () { setSeason(nextSeason(), true); ui.seasonToggle.blur(); });
-  if (saved) {
-    if (saved.nickname) ui.nickname.value = saved.nickname;
-    if (saved.grade) {
-      var r = ui.form.querySelector('input[name=grade][value="' + saved.grade + '"]');
-      if (r) r.checked = true;
-    }
-    if (saved.nickname) { ui.welcome.textContent = saved.nickname + '님, 다시 오셨네요!'; ui.welcome.hidden = false; }
-  }
-  function selectedGrade() {
-    var r = ui.form.querySelector('input[name=grade]:checked'); return r ? r.value : null;
-  }
+  var profile = loadProfile();
+  ui.nickname.value = profile.nickname;
+  setGradeRadios('grade', profile.grade);  // 첫 방문은 미선택
+  if (profile.nickname) { ui.welcome.textContent = profile.nickname + '님, 다시 만나서 반가워요!'; ui.welcome.hidden = false; }
+  guardIme(ui.nickname);
+  var titleTouched = false;
   function updateTitle() {
-    var name = ui.nickname.value.trim(), g = selectedGrade();
-    ui.enterPark.disabled = !(name && g);
-    ui.hint.textContent = !name ? '닉네임을 적어 주세요' : !g ? '학년을 골라 주세요' : '준비 완료!';
+    var n = checkNick(ui.nickname.value), g = radioGrade('grade');
+    ui.enterPark.disabled = !(n.ok && g);
+    ui.nickError.textContent = n.msg;
+    ui.nickname.setAttribute('aria-invalid', n.msg ? 'true' : 'false');
+    ui.hint.textContent = n.ok && g ? '준비 완료! 공원으로 출발해요.'
+      : !n.value ? (titleTouched ? '닉네임을 적어 주세요.' : '')
+      : !g ? '학년을 골라 주세요.' : '';
   }
-  ui.form.addEventListener('input', updateTitle);
-  ui.form.addEventListener('change', updateTitle);
+  ui.form.addEventListener('input', function () { titleTouched = true; updateTitle(); });
+  ui.form.addEventListener('change', function () { titleTouched = true; updateTitle(); });
   updateTitle();
   ui.form.addEventListener('submit', function (e) {
     e.preventDefault();
-    var name = ui.nickname.value.trim(), g = selectedGrade();
-    if (!name || !g) return;
-    enterPark(name, g);
+    var n = checkNick(ui.nickname.value), g = radioGrade('grade');
+    if (!n.ok || !g) { titleTouched = true; updateTitle(); return; }
+    enterPark(n.value, g);
   });
 
   function enterPark(name, grade) {
-    state.nickname = name; state.grade = grade;
-    var s = readSave();
-    var keepPos = s && validPos(s.pos);
+    if (state.phase === 'play') return; // 중복 클릭 방지
+    ui.enterPark.disabled = true;
+    state.nickname = name; state.grade = grade; state.gradeBand = gradeBand(grade);
+    saveProfile(name, grade);
+    var s = readSave() || {};
+    var keepPos = validPos(s.pos);
     state.player.x = keepPos ? s.pos.x : PARK.start.x;
     state.player.y = keepPos ? s.pos.y : PARK.start.y;
     state.player.dir = 'up';
+    state.keys = {}; state.path = null; state.dest = null;
     state.phase = 'play'; state.view = 'play';
     ui.title.hidden = true; ui.hud.hidden = false;
-    ui.playerName.textContent = name;
+    showPlayer();
     ui.nickname.blur();
     snapCamera();
     writeSave();
+    if (!storageOk) toast('이 기기에는 저장되지 않아요');
   }
+  function showPlayer() {
+    ui.playerName.textContent = state.nickname;
+    ui.playerGrade.textContent = state.grade + '학년';
+  }
+
+  // ---------- 공원 안 프로필 수정 ----------
+  guardIme(ui.profileNick);
+  function openProfile() {
+    if (state.phase !== 'play' || state.modalFacility || state.profileOpen) return;
+    stopMoving(); state.keys = {};
+    state.profileOpen = true;
+    ui.profileNick.value = state.nickname;
+    setGradeRadios('profileGrade', state.grade);
+    ui.profileNickError.textContent = '';
+    ui.profile.hidden = false; ui.enter.hidden = true; state.nearby = null;
+    ui.profileNick.focus();
+  }
+  function closeProfile() { // 취소: 기존 값 유지
+    state.profileOpen = false; ui.profile.hidden = true; state.keys = {};
+  }
+  ui.playerChip.addEventListener('click', openProfile);
+  ui.profileCancel.addEventListener('click', closeProfile);
+  ui.profile.addEventListener('pointerdown', function (e) { if (e.target === ui.profile) closeProfile(); });
+  ui.profileForm.addEventListener('input', function () {
+    var n = checkNick(ui.profileNick.value);
+    ui.profileNickError.textContent = n.value ? n.msg : '닉네임을 적어 주세요.';
+    ui.profileSave.disabled = !(n.ok && radioGrade('profileGrade'));
+  });
+  ui.profileForm.addEventListener('submit', function (e) {
+    e.preventDefault();
+    var n = checkNick(ui.profileNick.value), g = radioGrade('profileGrade');
+    if (!n.ok || !g) return;
+    // 지금은 진행 중인 미션이 없으므로 바로 적용. 미션이 생기면 '다음 미션부터' 새 학년군을 쓰도록 연결
+    state.nickname = n.value; state.grade = g; state.gradeBand = gradeBand(g);
+    saveProfile(n.value, g); showPlayer(); closeProfile();
+    toast(storageOk ? '내 정보를 바꿨어요' : '바꿨지만 이 기기에는 저장되지 않아요');
+  });
 
   // ---------- 카메라 ----------
   function fitScale() { return Math.min(view.w / W, view.h / H); }
@@ -230,7 +331,7 @@
     var p = state.player, speed = PARK.player.speed, k = state.keys;
     var ix = (k.right ? 1 : 0) - (k.left ? 1 : 0), iy = (k.down ? 1 : 0) - (k.up ? 1 : 0);
     p.moving = false;
-    if (state.modalFacility) return;
+    if (state.modalFacility || state.profileOpen) return;
     if (ix || iy) {
       stopMoving();
       var len = Math.hypot(ix, iy), dx = ix / len * speed * dt, dy = iy / len * speed * dt;
@@ -284,7 +385,7 @@
     return best;
   }
   function updateNearby() {
-    var f = state.phase === 'play' && state.view === 'play' && !state.modalFacility ? findNearby() : null;
+    var f = state.phase === 'play' && state.view === 'play' && !state.modalFacility && !state.profileOpen ? findNearby() : null;
     if (f !== state.nearby) {
       state.nearby = f;
       ui.enter.hidden = !f;
@@ -323,6 +424,10 @@
   window.addEventListener('keydown', function (e) {
     if (e.code === 'F2') { e.preventDefault(); state.debug = !state.debug; return; }
     if (state.phase !== 'play') return;
+    if (state.profileOpen) { // 프로필 수정 중: 글자 입력이 게임 조작으로 가지 않게
+      if (e.code === 'Escape') { e.preventDefault(); closeProfile(); }
+      return;
+    }
     if (state.modalFacility) {
       if (e.code === 'Escape' || e.code === 'Enter' || e.code === 'Space') { e.preventDefault(); closeFacility(); }
       return;
@@ -347,7 +452,7 @@
     return { x: e.clientX - r.left, y: e.clientY - r.top };
   }
   canvas.addEventListener('pointerdown', function (e) {
-    if (state.phase !== 'play' || state.modalFacility) return;
+    if (state.phase !== 'play' || state.modalFacility || state.profileOpen) return;
     e.preventDefault();
     var sp = eventPoint(e), w = screenToWorld(sp.x, sp.y);
     if (state.view === 'map') {
@@ -408,10 +513,22 @@
     }
     // 가까운 시설 입구 표시
     if (state.nearby && state.view === 'play') {
-      var e = state.nearby.entrance, a = 0.45 + Math.sin(state.time * 5) * 0.2;
-      ctx.fillStyle = 'rgba(255,230,120,' + a * 0.45 + ')';
-      ctx.strokeStyle = 'rgba(255,255,255,' + a + ')'; ctx.lineWidth = 3;
-      ctx.beginPath(); ctx.ellipse(e.x, e.y, 26, 11, 0, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+      var e = state.nearby.entrance, pulse = 1 + Math.sin(state.time * 4) * 0.06;
+      if (ringImg.complete && ringImg.naturalWidth) {
+        // 황금빛 입구 링 (assets/ui/entrance-ring.png): 바닥에 깔리도록 입구 좌표 중심에 그림
+        var rw = 96 * pulse, rh = rw * ringImg.naturalHeight / ringImg.naturalWidth;
+        ctx.globalAlpha = 1;
+        ctx.drawImage(ringImg, e.x - rw / 2, e.y - rh / 2, rw, rh);
+        // 밝은 분홍 길 위에서도 잘 보이도록 한 번 더 '빛 더하기'로 겹쳐 그림
+        ctx.globalCompositeOperation = 'lighter';
+        ctx.globalAlpha = 0.55 + Math.sin(state.time * 4) * 0.25;
+        ctx.drawImage(ringImg, e.x - rw / 2, e.y - rh / 2, rw, rh);
+        ctx.globalCompositeOperation = 'source-over';
+        ctx.globalAlpha = 1;
+      } else {
+        ctx.strokeStyle = 'rgba(255,214,90,0.9)'; ctx.lineWidth = 3;
+        ctx.beginPath(); ctx.ellipse(e.x, e.y, 26 * pulse, 11 * pulse, 0, 0, Math.PI * 2); ctx.stroke();
+      }
     }
 
     var p = state.player;
@@ -505,6 +622,7 @@
       '배율: ' + cam.s.toFixed(2) + '  화면: ' + Math.round(view.w) + '×' + Math.round(view.h) + ' @' + view.dpr + '\n' +
       '배경: ' + PARK.seasons[state.season].map + (seasonImgs[state.season] ? '' : ' (로딩 중)') + '\n' +
       '캐릭터 그림: ' + (character.isPlaceholder ? '임시 캐릭터' : '스프라이트') + '\n' +
+      '학년: ' + (state.grade || '-') + ' (' + (state.gradeBand || '-') + ')  저장: ' + (storageOk ? '됨' : '안 됨') + '\n' +
       '근처 시설: ' + (state.nearby ? state.nearby.name : '-') + '  fps ' + fps;
   }
 
