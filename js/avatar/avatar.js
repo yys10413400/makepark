@@ -45,26 +45,43 @@
   // ---------- 그리기 순서(레이어) ----------
   // ops: [경로, 상자[x,y,w,h] 또는 null, 옮김[dx,dy] 또는 null, 무리('body'|'head'|'top'|'hat'), 모자 정보]
   // body: 가방·몸·신발·끈 / head: 얼굴·안경·머리(모자를 쓰면 모자 가장자리 위쪽을 지움) / top: 머리핀 / hat: 모자
+  // 착용 그림(worn): 캐릭터 칸(256×376, 위 56px 모자 여유)에서 기준 캐릭터에 맞춰 그린 아이템.
+  // 있으면 위치 보정 없이 그대로 겹치고, 없으면 아래의 보정값(avatar-fit.js)으로 따로 그린 그림을 맞춥니다.
+  var WORN = {};
+  (window.MP_AVATAR_WORN || []).forEach(function (n) { WORN[n] = true; });
+  function worn(n) { return WORN[n] ? 'assets/worn/' + n + '.png' : null; }
+  var RAW = { raw: true };
   function layers(a, d, f) {
     var ops = [], fitted = M.fitted, o = a.outfit, group = 'body';
     var bag = a.bag !== 'none' ? FIT.bag[a.bag] : null, fbag = !!(bag && bag.fitted);
-    var hatHair = a.hair === '1' && a.hat === 'bucket';   // 머리1+버킷햇: 맞춤 그림 한 장(머리·모자 중복 없음)
+    var hatFront = a.hat !== 'none' ? worn('hat_' + a.hat + '_front_' + d) : null;
+    var hatBack = hatFront ? worn('hat_' + a.hat + '_back_' + d) : null;
+    var hatHairW = hatFront && a.hat !== 'headband' ? worn('hathair_' + a.hair + '_' + d) : null;
+    var hatHair = !hatFront && a.hair === '1' && a.hat === 'bucket';   // 머리1+버킷햇: 맞춤 그림 한 장(머리·모자 중복 없음)
+    var bagBody = bag ? worn(a.bag + '_body_' + d) : null, bagStraps = bag && d !== 'up' ? worn(a.bag + '_straps_' + d) : null;
     function add(p, box, off, extra) { if (p) ops.push([p, box || null, off || null, group, extra || null]); }
     // 1) 등 뒤 가방 (앞·옆에서는 몸 뒤)
     if (d !== 'up' && bag) {
-      if (fbag) add(fitted.bag_yellow[d]);
+      if (bagBody) add(bagBody, null, null, RAW);
+      else if (fbag) add(fitted.bag_yellow[d]);
       else if (bag[d]) add(M.accessories[a.bag][(bag.sideImage || {})[d] || d], bag[d]);
     }
     // 2) 몸(옷·팔다리 걷기 칸) → 신발
     add(M.bodies[o][d][f]);
     add(M.shoes[a.shoes][o][d][f]);
     // 3) 어깨끈: 몸 위, 머리 아래
-    if (d !== 'up' && bag) add(fbag ? fitted.bag_straps[d] : 'assets/fitted/' + bag.straps + '_' + d + '.png');
+    if (d !== 'up' && bag) {
+      if (bagStraps) add(bagStraps, null, null, RAW);
+      else if (!bagBody) add(fbag ? fitted.bag_straps[d] : 'assets/fitted/' + bag.straps + '_' + d + '.png');
+    }
     // 4) 뒷모습 가방: 머리보다 먼저 그려 긴 머리가 가방 위로 내려오게
     if (d === 'up' && bag) {
-      if (fbag) add(fitted.bag_yellow.up);
+      if (bagBody) add(bagBody, null, null, RAW);
+      else if (fbag) add(fitted.bag_yellow.up);
       else add(M.accessories[a.bag][bag.upImage || 'up'], bag.up);
     }
+    // 4-1) 착용 모자의 뒤 조각: 머리 뒤
+    if (hatBack) add(hatBack, null, null, RAW);
     // 5) 얼굴 → (옆모습 안경) → 머리 → (앞모습 안경)
     group = 'head';
     add(M.faces[a.face][d]);
@@ -73,13 +90,20 @@
       var g1 = FIT.glasses[d] || [0, 0], g2 = (FIT.glassesByFace[a.face] || {})[d] || [0, 0];
       gOff = [g1[0] + g2[0], g1[1] + g2[1]];
     }
-    add(hatHair ? fitted.bucket_hair1[d] : M.hair[a.hair][d]);
+    if (hatHairW) add(hatHairW, null, null, RAW);   // 모자 쓴 머리
+    else add(hatHair ? fitted.bucket_hair1[d] : M.hair[a.hair][d]);
     // 안경은 머리카락 위에(앞머리가 렌즈를 가리지 않게). 옆모습은 안경다리가 귀에서 끝나게 잘라 그림
     if (gOff) add(fitted[a.glasses][d], null, gOff, { clipX: (FIT.glassesClipX || {})[d] || null });
     // 6) 머리핀 → 모자 (모자는 그림 비율 그대로 [x, y, 배율])
     group = 'top';
-    if (a.clip !== 'none' && FIT.clip[d]) add(M.accessories[a.clip][d], scaled(FIT.clip[d], ((FIT.clipByHair[a.hair] || {})[d])));
-    if (a.hat !== 'none' && !hatHair) {
+    var clipW = a.clip !== 'none' ? worn(a.clip + '_' + d) : null;
+    if (clipW) add(clipW, null, null, RAW);
+    else if (a.clip !== 'none' && FIT.clip[d] && !worn(a.clip + '_down')) add(M.accessories[a.clip][d], scaled(FIT.clip[d], ((FIT.clipByHair[a.hair] || {})[d])));
+    if (hatFront) {
+      group = 'hat';
+      // 모자 쓴 머리 그림이 없으면 모자 아래 가장자리 위쪽 머리를 지움
+      add(hatFront, null, null, { raw: true, worn: true, cut: !hatHairW && (FIT.hatNoCut || []).indexOf(a.hat) < 0 });
+    } else if (a.hat !== 'none' && !hatHair) {
       group = 'hat';
       var hb = FIT.hatByHair[a.hair] || {}, adj = (hb[a.hat] || hb['*'] || {})[d] || [0, 0, 1], h = FIT.hat[a.hat][d];
       add(M.accessories[a.hat][d], null, null, { name: a.hat, d: d, x: h[0] + adj[0], y: h[1] + adj[1], s: h[2] * (adj[2] || 1),
@@ -176,6 +200,8 @@
       var name = op[0].split('/').pop().replace(/_(down|left|right|up)\.png$/, '');
       var sh = cropBottom[name] && cropBottom[name] < img.naturalHeight ? cropBottom[name] : img.naturalHeight;
       g.drawImage(img, 0, 0, img.naturalWidth, sh, box[0], box[1] + HEADROOM, box[2], box[3] * sh / img.naturalHeight);
+    } else if (op[4] && op[4].raw) {
+      g.drawImage(img, 0, 0);          // 착용 그림: 이미 캐릭터 칸(위 여유 포함)에 맞춰져 있음
     } else if (op[4] && op[4].clipX) {
       var cx = op[4].clipX;
       g.save(); g.beginPath(); g.rect(cx[0], 0, cx[1] - cx[0], TILE_H); g.clip();
@@ -221,10 +247,14 @@
       if (op[3] === 'body') drawOp(g, op);
       else if (op[3] === 'head') drawOp(hg, op);
       else if (op[3] === 'hat') {
-        var info = op[4], im = hatImage(info.name, info.d, images[op[0]].img);
+        var info = op[4];
         hat = canvas(TILE_W, TILE_H);
         var tg = hat.getContext('2d'); tg.imageSmoothingQuality = 'high';
-        tg.drawImage(im, info.x, info.y + HEADROOM, im.naturalWidth * info.s, im.naturalHeight * info.s);
+        if (info.worn) tg.drawImage(images[op[0]].img, 0, 0);
+        else {
+          var im = hatImage(info.name, info.d, images[op[0]].img);
+          tg.drawImage(im, info.x, info.y + HEADROOM, im.naturalWidth * info.s, im.naturalHeight * info.s);
+        }
         if (info.cut) cutHead(hg, tg);
       }
     });
