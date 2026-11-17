@@ -30,9 +30,9 @@ window.MP_COASTER_MISSIONS = (function () {
         rails: TWO_CORNERS, from: [0, 1], dir: 'E', to: [4, 0], blocks: ['fwd', 'left', 'right'], reward: 10,
         answer: [F, F, L, F, R, F, F] },
       { id: 'low-3', title: '틀린 명령 고치기', guide: '명령 하나가 틀렸어요. 찾아서 고쳐요', goal: '잘못된 명령 수정',
-        rails: [[0, 0, 'h'], [1, 0, 'sw'], [1, 1, 'v'], [1, 2, 'ne'], [2, 2, 'h'], [3, 2, 'h']], from: [0, 0], dir: 'E', to: [3, 2],
+        rails: [[0, 0, 'h'], [1, 0, 'sw'], [1, 1, 'ne'], [2, 1, 'h'], [3, 1, 'h']], from: [0, 0], dir: 'E', to: [3, 1],
         blocks: ['fwd', 'left', 'right'], reward: 10,
-        start: [F, L, F, F, L, F, F], answer: [F, R, F, F, L, F, F] }
+        start: [F, L, F, L, F, F], answer: [F, R, F, L, F, F] }
     ] },
     middle: { label: '3~4학년 과정', missions: [
       { id: 'mid-1', title: '이동·회전 복습', guide: '앞으로와 돌기로 도착역까지 가요', goal: '이동·회전 복습',
@@ -53,10 +53,10 @@ window.MP_COASTER_MISSIONS = (function () {
       { id: 'high-2', title: '신호 보고 가기', guide: '신호가 빨강이면 기다렸다 가요', goal: '만약 / 아니면',
         rails: line(5), from: [0, 0], dir: 'E', to: [4, 0], signals: [[2, 0]], blocks: ['fwd', 'wait', 'if'], reward: 10,
         answer: [F, ifg([F], [W, F]), F, F] },
-      { id: 'high-3', title: '신호가 많은 길', guide: '신호가 여러 개! 블록 5개 안에 가요', goal: '반복과 조건 함께 쓰기',
-        rails: line(6), from: [0, 0], dir: 'E', to: [5, 0], signals: [[1, 0], [2, 0], [3, 0], [4, 0], [5, 0]],
-        blocks: ['fwd', 'wait', 'repeat', 'if'], limit: 5, reward: 10,
-        answer: [rep(5, [ifg([F], [W, F])])] }
+      { id: 'high-3', title: '구불구불 신호길', guide: '구불구불 길에 신호까지! 블록 14개 안에 가요', goal: '반복과 조건 함께 쓰기',
+        rails: hills(2), from: [0, 1], dir: 'E', to: [5, 1], signals: [[1, 0], [3, 0]],
+        blocks: ['fwd', 'left', 'right', 'wait', 'repeat', 'if'], limit: 14, reward: 10,
+        answer: [rep(2, [F, L, ifg([F], [W, F]), R, F, R, F, L]), F] }
     ] }
   };
   return { common: COMMON, courses: COURSES, stampAfter: 3 };

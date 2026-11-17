@@ -120,13 +120,32 @@
   }
 
   // ---------- 게임 영역 ----------
+  // 미션 그림이 차지하는 범위(칸 단위): 레일 그림, 출발·도착역, 신호
+  var STATION_H = 1.5 * 327 / 420;
+  function bounds(m) {
+    var b = { x0: 1e9, y0: 1e9, x1: -1e9, y1: -1e9 };
+    function grow(x0, y0, x1, y1) { b.x0 = Math.min(b.x0, x0); b.y0 = Math.min(b.y0, y0); b.x1 = Math.max(b.x1, x1); b.y1 = Math.max(b.y1, y1); }
+    m.rails.forEach(function (t) { grow(t[0] - 0.125, t[1] - 0.125, t[0] + 1.125, t[1] + 1.125); });
+    [m.from, m.to].forEach(function (p) { grow(p[0] + 0.5 - 0.75, p[1] + 0.42 - STATION_H, p[0] + 1.25, p[1] + 1); });
+    (m.signals || []).forEach(function (c) { grow(c[0] - 0.06, c[1] - 0.5, c[0] + 0.3, c[1]); });
+    return b;
+  }
+  var CELL = 0;
+  function cellSize() {
+    if (CELL) return CELL;
+    var all = M.common.concat.apply(M.common, Object.keys(M.courses).map(function (k) { return M.courses[k].missions; }));
+    CELL = 190;
+    all.forEach(function (m) {
+      var b = bounds(m);
+      CELL = Math.min(CELL, BOARD.w * 0.94 / (b.x1 - b.x0), BOARD.h * 0.92 / (b.y1 - b.y0));
+    });
+    return CELL;
+  }
   function buildBoard() {
-    var m = S.mission, cols = 0, rows = 0;
-    m.rails.forEach(function (t) { cols = Math.max(cols, t[0] + 1); rows = Math.max(rows, t[1] + 1); });
-    // 역이 출발·도착 칸 위(뒤쪽)에 서므로 위에 1.15칸 여유
-    var s = Math.min(BOARD.w / (cols + 0.7), BOARD.h / (rows + 1.35), 190);
-    var gw = cols * s, gh = rows * s;
-    var ox = (BOARD.w - gw) / 2, oy = BOARD.h - gh - (BOARD.h - gh - 1.15 * s) / 2;
+    var m = S.mission;
+    // 모든 미션이 같은 칸 크기(가장 큰 코스가 들어가는 크기)를 쓰고, 역·신호까지 포함한 전체 모양을 게임 영역 가운데에 둠
+    var s = cellSize(), bb = bounds(m);
+    var ox = (BOARD.w - (bb.x1 - bb.x0) * s) / 2 - bb.x0 * s, oy = (BOARD.h - (bb.y1 - bb.y0) * s) / 2 - bb.y0 * s;
     S.layout = { s: s, ox: ox, oy: oy };
     var b = ui.board; b.innerHTML = '';
     function add(cls, x, y, w, h, html) {
@@ -191,6 +210,7 @@
   // ---------- 명령 버튼·목록 ----------
   function renderCommands() {
     ui.cmds.innerHTML = '';
+    ui.cmds.classList.toggle('many', S.mission.blocks.length > 4); // 버튼이 많으면 한 줄에 들어가게 작게
     S.mission.blocks.forEach(function (t) {
       var bt = document.createElement('button');
       bt.type = 'button'; bt.className = 'cs-cmd'; bt.dataset.type = t;

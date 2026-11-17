@@ -27,17 +27,17 @@ for (const m of all) {
   }
   if (m.limit && m.blocks.includes('repeat')) {
     // 반복 없이 앞으로·돌기만 나열한 답은 제한을 넘는지
-    const flat = []; (function f(list) { list.forEach(b => b.type === 'repeat' ? [...Array(b.n)].forEach(() => f(b.body)) : flat.push({ type: b.type })); })(m.answer);
-    if (!types(m.answer).has('if')) ok(LG.countBlocks(flat) > m.limit, `반복 없이 나열하면 ${LG.countBlocks(flat)}개 > 제한 ${m.limit} (반복이 필요함)`);
+    const flat = []; (function f(list) { list.forEach(b => b.type === 'repeat' ? [...Array(b.n)].forEach(() => f(b.body)) : flat.push(b)); })(m.answer);
+    ok(LG.countBlocks(flat) > m.limit, `반복 없이 나열하면 ${LG.countBlocks(flat)}개 > 제한 ${m.limit} (반복이 필요함)`);
   }
   if (m.signals) {
-    const n = m.signals.length + (m.to[0] - m.from[0]);
-    const onlyFwd = LG.withIds([...Array(m.to[0] - m.from[0])].map(() => ({ type: 'fwd' })));
-    const r1 = LG.solvesAll(m, onlyFwd);
-    ok(!r1.ok, `앞으로만 쓴 답은 일부 신호 조합에서 실패 (${r1.fails.length}/${r1.combos})`);
-    const alwaysWait = LG.withIds([].concat(...[...Array(m.to[0] - m.from[0])].map((_, i) => m.signals.some(s => s[0] === m.from[0] + i + 1) ? [{ type: 'wait' }, { type: 'fwd' }] : [{ type: 'fwd' }])));
-    const r2 = LG.solvesAll(m, alwaysWait);
-    ok(!r2.ok, `늘 기다리는 답도 일부 신호 조합에서 실패 (${r2.fails.length}/${r2.combos})`);
+    // 정답에서 '만약'을 한쪽 가지로만 바꾼 답(늘 그냥 가기 / 늘 기다리기)은 어떤 신호 조합에서는 실패해야 조건이 꼭 필요한 미션
+    const strip = (list, side) => list.reduce((a, b) => b.type === 'if' ? a.concat(strip(b[side], side))
+      : a.concat([b.type === 'repeat' ? { type: 'repeat', n: b.n, body: strip(b.body, side) } : { type: b.type }]), []);
+    const r1 = LG.solvesAll(m, LG.withIds(strip(m.answer, 'then')));
+    ok(!r1.ok, `신호를 안 보고 늘 그냥 가는 답은 일부 신호 조합에서 실패 (${r1.fails.length}/${r1.combos})`);
+    const r2 = LG.solvesAll(m, LG.withIds(strip(m.answer, 'else')));
+    ok(!r2.ok, `신호를 안 보고 늘 기다리는 답도 일부 신호 조합에서 실패 (${r2.fails.length}/${r2.combos})`);
   }
 }
 console.log('[첫 출발 세부]');

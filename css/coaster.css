@@ -138,3 +138,6 @@ body.coaster-open #hud, body.coaster-open #enterFacility { display: none !import
 .cs-tickets { padding-top: 0.4cqw; padding-bottom: 0.15cqw; }
 .cs-course { padding-top: 0.15em; }
 .cs-over { box-sizing: border-box; padding-top: 0.12em; }
+.cs-cmds.many { gap: 0.5cqw 0.5cqw; }
+.cs-cmds.many .cs-cmd { font-size: 1.02cqw; padding: 0.4cqw 0.75cqw; gap: 0.35cqw; }
+.cs-cmds.many .cs-limit { font-size: 0.95cqw; }
