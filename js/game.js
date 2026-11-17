@@ -239,7 +239,7 @@
   // ---------- 공원 안 프로필 수정 ----------
   guardIme(ui.profileNick);
   function openProfile() {
-    if (state.phase !== 'play' || state.modalFacility || state.profileOpen) return;
+    if (state.phase !== 'play' || state.modalFacility || state.profileOpen || state.coasterOpen) return;
     stopMoving(); state.keys = {};
     state.profileOpen = true;
     ui.profileNick.value = state.nickname;
@@ -331,7 +331,7 @@
     var p = state.player, speed = PARK.player.speed, k = state.keys;
     var ix = (k.right ? 1 : 0) - (k.left ? 1 : 0), iy = (k.down ? 1 : 0) - (k.up ? 1 : 0);
     p.moving = false;
-    if (state.modalFacility || state.profileOpen) return;
+    if (state.modalFacility || state.profileOpen || state.coasterOpen) return;
     if (ix || iy) {
       stopMoving();
       var len = Math.hypot(ix, iy), dx = ix / len * speed * dt, dy = iy / len * speed * dt;
@@ -385,7 +385,7 @@
     return best;
   }
   function updateNearby() {
-    var f = state.phase === 'play' && state.view === 'play' && !state.modalFacility && !state.profileOpen ? findNearby() : null;
+    var f = state.phase === 'play' && state.view === 'play' && !state.modalFacility && !state.profileOpen && !state.coasterOpen ? findNearby() : null;
     if (f !== state.nearby) {
       state.nearby = f;
       ui.enter.hidden = !f;
@@ -393,8 +393,13 @@
     }
   }
   function openFacility(f) {
-    if (!f || state.modalFacility) return;
+    if (!f || state.modalFacility || state.coasterOpen) return;
     stopMoving(); state.keys = {};
+    if (f.id === 'coaster' && window.MPCoaster) { // 코딩 놀이기구: 코스터 익스프레스
+      state.coasterOpen = true; state.nearby = null; ui.enter.hidden = true;
+      window.MPCoaster.open();
+      return;
+    }
     state.modalFacility = f;
     ui.modalTitle.textContent = f.name; ui.modalDesc.textContent = f.desc;
     ui.modal.hidden = false; ui.enter.hidden = true; state.nearby = null;
@@ -428,6 +433,7 @@
       if (e.code === 'Escape') { e.preventDefault(); closeProfile(); }
       return;
     }
+    if (state.coasterOpen) return; // 코스터 화면이 열려 있는 동안 공원 조작 멈춤
     if (state.modalFacility) {
       if (e.code === 'Escape' || e.code === 'Enter' || e.code === 'Space') { e.preventDefault(); closeFacility(); }
       return;
@@ -452,7 +458,7 @@
     return { x: e.clientX - r.left, y: e.clientY - r.top };
   }
   canvas.addEventListener('pointerdown', function (e) {
-    if (state.phase !== 'play' || state.modalFacility || state.profileOpen) return;
+    if (state.phase !== 'play' || state.modalFacility || state.profileOpen || state.coasterOpen) return;
     e.preventDefault();
     var sp = eventPoint(e), w = screenToWorld(sp.x, sp.y);
     if (state.view === 'map') {
@@ -654,6 +660,31 @@
   if (/[?&]debug=1/.test(location.search)) {
     var t = document.createElement('script'); t.src = 'js/dev-selftest.js'; document.body.appendChild(t);
   }
+
+  // ---------- 놀이기구 화면과 연결 ----------
+  // 놀이기구(js/coaster/ui.js)는 이 창구로만 저장·프로필·공원 복귀를 다룸
+  function exitCoaster() {
+    state.coasterOpen = false; state.keys = {};
+    // 코스터 입구에서 입장 범위 밖, 이동할 수 있는 가장 가까운 곳에 세워 바로 다시 들어가지 않게
+    var f = PARK.facilities.filter(function (x) { return x.id === 'coaster'; })[0], e = f.entrance, best = null;
+    for (var dist = f.radius + 12; dist < f.radius + 90 && !best; dist += 6) {
+      for (var a = 0; a < 360; a += 15) {
+        var rad = (a + 90) * Math.PI / 180, x = e.x + Math.cos(rad) * dist, y = e.y + Math.sin(rad) * dist;
+        if (grid.isWalkable(x, y)) { best = { x: x, y: y }; break; }
+      }
+    }
+    if (best) { state.player.x = best.x; state.player.y = best.y; state.player.dir = 'down'; }
+    stopMoving(); snapCamera(); writeSave();
+    state.nearby = null; ui.enter.hidden = true;
+    canvas.focus && canvas.blur();
+  }
+  window.MP_API = {
+    readSave: readSave,
+    patchSave: patchSave,
+    storageOk: function () { return storageOk; },
+    profile: function () { return { nickname: state.nickname, grade: state.grade, band: state.gradeBand }; },
+    exitCoaster: exitCoaster
+  };
 
   // 개발·검증용 핸들 (게임 동작에는 쓰이지 않음)
   window.MP_DEV = {
