@@ -334,3 +334,33 @@ button.chip:focus-visible { outline: 3px solid var(--mint); outline-offset: 2px;
 }
 
 @media (prefers-reduced-motion: reduce) { .grade-opt span, .entry-go { transition: none; } }
+
+/* 캐릭터 꾸미기 */
+#avatarDlg { overflow-y: auto; }
+.avatar-panel { width: min(780px, 100%); padding: 18px clamp(14px, 3vw, 28px) 18px; }
+.av-preview { margin: 10px 0 6px; background: #f3e6d2; border: 3px solid #e7dcc5; border-radius: 18px; padding: 6px; }
+.av-preview canvas { display: block; width: 100%; height: auto; }
+.av-walk { display: inline-flex; align-items: center; gap: 6px; font-size: 15px; color: var(--e-brown-soft); margin: 4px 0 2px; cursor: pointer; }
+.av-walk input { width: 18px; height: 18px; accent-color: var(--e-teal); }
+.av-groups { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 8px 14px; text-align: left; }
+.av-group { border: 0; margin: 0; padding: 0; min-width: 0; }
+.av-group legend { font-size: 16px; color: var(--e-brown); padding: 0; margin-bottom: 4px; }
+.av-opts { display: flex; flex-wrap: wrap; gap: 6px; }
+.av-opt { position: relative; }
+.av-opt input { position: absolute; opacity: 0; inset: 0; margin: 0; cursor: pointer; }
+.av-opt span {
+  display: inline-block; padding: 6px 11px; border-radius: 999px; font-size: 14px; line-height: 1.2;
+  background: #fffdf5; border: 2px solid #e7dcc5; color: var(--e-navy);
+}
+.av-opt input:checked + span { background: var(--e-teal); border-color: var(--e-teal-dark); color: #fff; }
+.av-opt input:focus-visible + span { outline: 3px solid var(--e-purple); outline-offset: 2px; }
+@media (max-width: 480px) { .av-groups { grid-template-columns: 1fr; } }
+/* 좁은 화면: 위쪽 버튼이 4개라 닉네임이 보이도록 버튼을 줄임 */
+@media (max-width: 520px) {
+  #hud { gap: 6px; left: 8px; right: 8px; }
+  .hud-right { gap: 5px; }
+  .hud-right .hud-btn { padding: 8px 9px; font-size: 15px; min-height: 42px; }
+  .season-btn small { display: none; }
+  .chip { padding: 8px 10px; font-size: 15px; gap: 5px; min-width: 0; flex: 1 1 auto; }
+  .chip-edit { display: none; }
+}

@@ -81,6 +81,23 @@
       </form>
     </section>
 
+    <!-- 캐릭터 꾸미기 (공원 위쪽 '꾸미기' 버튼) -->
+    <section id="avatarDlg" class="overlay dim" hidden>
+      <form id="avatarForm" class="entry-panel avatar-panel" role="dialog" aria-modal="true" aria-labelledby="avatarTitle" novalidate>
+        <h2 id="avatarTitle" class="profile-title">내 캐릭터 꾸미기</h2>
+        <div class="av-preview">
+          <canvas id="avPreview" width="720" height="250" role="img" aria-label="앞·왼쪽·오른쪽·뒤 네 방향 캐릭터 미리보기"></canvas>
+          <label class="av-walk"><input type="checkbox" id="avWalk" checked> 걷는 모습 보기</label>
+        </div>
+        <div id="avGroups" class="av-groups"></div>
+        <p id="avMsg" class="entry-hint" aria-live="polite"></p>
+        <div class="profile-actions">
+          <button id="avatarCancel" type="button" class="profile-cancel">취소</button>
+          <button id="avatarSave" type="submit" class="entry-go">저장하기</button>
+        </div>
+      </form>
+    </section>
+
     <!-- 코스터 익스프레스 (코딩 놀이기구) -->
     <section id="coaster" class="coaster-overlay" hidden aria-label="코스터 익스프레스">
       <div class="cs-stage">
@@ -123,6 +140,7 @@
     <div id="hud" hidden>
       <button class="chip" id="playerChip" type="button" aria-label="내 정보 바꾸기"><span class="dot"></span><span id="playerName"></span><span class="chip-grade" id="playerGrade"></span><span class="chip-edit" aria-hidden="true">✎</span></button>
       <div class="hud-right">
+        <button id="avatarOpen" class="btn hud-btn" type="button">꾸미기</button>
         <button id="seasonToggle" class="btn hud-btn season-btn" type="button"><small>계절</small> <span id="seasonLabel">크리스마스</span></button>
         <button id="mapToggle" class="btn hud-btn" type="button">전체 지도</button>
       </div>
@@ -158,6 +176,9 @@
   <script src="js/data/walkmask.js"></script>
   <script src="js/walkgrid.js"></script>
   <script src="js/character.js"></script>
+  <script src="js/avatar/manifest.js"></script>
+  <script src="js/avatar/avatar-fit.js"></script>
+  <script src="js/avatar/avatar.js"></script>
   <script src="js/game.js"></script>
   <script src="js/coaster/missions.js"></script>
   <script src="js/coaster/logic.js"></script>
