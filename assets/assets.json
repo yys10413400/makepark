@@ -1,0 +1,130 @@
+{
+  "map": {
+    "file": "maps/base-map.png",
+    "width": 1672,
+    "height": 941
+  },
+  "assets": [
+    {
+      "id": "tree-grand",
+      "file": "decorations/tree-grand.png",
+      "width": 381,
+      "height": 476,
+      "anchor": [
+        0.5,
+        1
+      ]
+    },
+    {
+      "id": "tree-medium",
+      "file": "decorations/tree-medium.png",
+      "width": 421,
+      "height": 472,
+      "anchor": [
+        0.5,
+        1
+      ]
+    },
+    {
+      "id": "tree-planter",
+      "file": "decorations/tree-planter.png",
+      "width": 336,
+      "height": 481,
+      "anchor": [
+        0.5,
+        1
+      ]
+    },
+    {
+      "id": "snowman",
+      "file": "decorations/snowman.png",
+      "width": 344,
+      "height": 460,
+      "anchor": [
+        0.5,
+        1
+      ]
+    },
+    {
+      "id": "wreath",
+      "file": "decorations/wreath.png",
+      "width": 366,
+      "height": 321,
+      "anchor": [
+        0.5,
+        1
+      ]
+    },
+    {
+      "id": "garland",
+      "file": "decorations/garland.png",
+      "width": 416,
+      "height": 251,
+      "anchor": [
+        0.5,
+        1
+      ]
+    },
+    {
+      "id": "string-lights",
+      "file": "decorations/string-lights.png",
+      "width": 386,
+      "height": 231,
+      "anchor": [
+        0.5,
+        1
+      ]
+    },
+    {
+      "id": "red-bow",
+      "file": "decorations/red-bow.png",
+      "width": 336,
+      "height": 301,
+      "anchor": [
+        0.5,
+        1
+      ]
+    },
+    {
+      "id": "gift-cluster",
+      "file": "decorations/gift-cluster.png",
+      "width": 366,
+      "height": 337,
+      "anchor": [
+        0.5,
+        1
+      ]
+    },
+    {
+      "id": "sleigh",
+      "file": "decorations/sleigh.png",
+      "width": 466,
+      "height": 392,
+      "anchor": [
+        0.5,
+        1
+      ]
+    },
+    {
+      "id": "lamppost",
+      "file": "decorations/lamppost.png",
+      "width": 221,
+      "height": 393,
+      "anchor": [
+        0.5,
+        1
+      ]
+    },
+    {
+      "id": "snowy-planter",
+      "file": "decorations/snowy-planter.png",
+      "width": 455,
+      "height": 352,
+      "anchor": [
+        0.5,
+        1
+      ]
+    }
+  ],
+  "note": "Wall decorations may use center anchors. Sizes are source pixels, not target game scale."
+}

@@ -1,0 +1,74 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+  <title>메이크파크</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Jua&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <div id="app">
+    <canvas id="stage" aria-label="메이크파크 공원 지도"></canvas>
+
+    <!-- 첫 화면 -->
+    <section id="title" class="overlay">
+      <form id="titleForm" class="card title-card" autocomplete="off">
+        <h1 class="logo">메이크파크</h1>
+        <p id="welcomeBack" class="welcome" hidden></p>
+        <label class="field">
+          <span>닉네임</span>
+          <input id="nickname" type="text" maxlength="10" placeholder="이름을 적어 주세요" required>
+        </label>
+        <fieldset class="field grades">
+          <legend>학년</legend>
+          <label><input type="radio" name="grade" value="1-2"><span>1~2학년</span></label>
+          <label><input type="radio" name="grade" value="3-4"><span>3~4학년</span></label>
+          <label><input type="radio" name="grade" value="5-6"><span>5~6학년</span></label>
+        </fieldset>
+        <button id="enterPark" type="submit" class="btn primary big" disabled>공원 입장</button>
+        <p id="titleHint" class="hint">닉네임을 적고 학년을 골라 주세요</p>
+      </form>
+    </section>
+
+    <!-- 게임 화면 UI -->
+    <div id="hud" hidden>
+      <div class="chip" id="playerChip"><span class="dot"></span><span id="playerName"></span></div>
+      <button id="mapToggle" class="btn hud-btn" type="button">전체 지도</button>
+    </div>
+
+    <div id="mapBar" hidden>
+      <p>핀을 누르면 그 시설로 걸어가요</p>
+      <button id="mapBack" class="btn primary hud-btn" type="button">플레이 화면으로</button>
+    </div>
+
+    <button id="enterFacility" class="btn primary enter-btn" type="button" hidden>
+      <span class="enter-name" id="enterName"></span>
+      <span class="enter-label">입장하기 <kbd>스페이스</kbd></span>
+    </button>
+
+    <div id="toast" class="toast" hidden></div>
+
+    <!-- 시설 안내창 -->
+    <section id="modal" class="overlay dim" hidden>
+      <div class="card modal-card" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
+        <h2 id="modalTitle"></h2>
+        <p id="modalDesc" class="desc"></p>
+        <p class="soon">곧 문을 열어요!</p>
+        <button id="modalClose" class="btn primary big" type="button">닫기</button>
+      </div>
+    </section>
+
+    <!-- 개발용 디버그 정보 (?debug=1 또는 F2) -->
+    <pre id="debugPanel" hidden></pre>
+  </div>
+
+  <script src="js/data/park-data.js"></script>
+  <script src="js/data/walkmask.js"></script>
+  <script src="js/walkgrid.js"></script>
+  <script src="js/character.js"></script>
+  <script src="js/game.js"></script>
+</body>
+</html>
