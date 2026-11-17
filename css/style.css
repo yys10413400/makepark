@@ -272,4 +272,66 @@ button.chip:focus-visible { outline: 3px solid var(--mint); outline-offset: 2px;
   .entry-note { margin-top: 8px; }
   .entry-go { margin-top: 8px; min-height: 48px; }
 }
+
+/* ---------- 입장 화면: 보내준 그림(assets/ui/entry-screen.webp)을 그대로 쓰는 모드 ----------
+   가로 화면(컴퓨터·태블릿)에서는 그림을 통째로 배경으로 깔고, 그 위의 정확한 자리에
+   투명한 실제 입력칸·학년 버튼·출발 버튼을 올립니다(글씨는 그림의 것을 그대로 보임).
+   좌표는 그림 크기 1672×941 기준 백분율. 세로로 좁은 화면은 위의 CSS 버전을 씁니다. */
+@media (min-width: 720px) and (min-height: 520px) and (min-aspect-ratio: 5/4) {
+  #title.entry-overlay { padding: 0; align-items: center; overflow: hidden; isolation: isolate; background: #f6e9cf; }
+  #title.entry-overlay::before {
+    content: ""; position: absolute; inset: -30px; z-index: -1;
+    background: url("../assets/ui/entry-screen.webp") center / cover no-repeat;
+    filter: blur(14px) saturate(1.05) brightness(0.92);
+  }
+  .entry-main {
+    width: min(100vw, calc(100vh * 1672 / 941)); aspect-ratio: 1672 / 941; height: auto; max-width: none;
+    margin: 0; padding: 0; filter: none; container-type: inline-size;
+    background: url("../assets/ui/entry-screen.webp") center / 100% 100% no-repeat;
+  }
+  .entry-main::before { display: none; }
+  .entry-main .entry-crest, .entry-main .entry-title, .entry-main .entry-sub, .entry-main .entry-welcome,
+  .entry-main .nick-label, .entry-main .grade-legend, .entry-main .entry-note, .entry-main .bottom-star { display: none !important; }
+
+  /* 닉네임 입력칸: 그림의 금색 테두리 안쪽에 딱 맞게 */
+  .entry-main .nick-row { position: absolute; left: 34.9%; top: 37.4%; width: 39.1%; height: 6.4%; margin: 0; display: block; }
+  .entry-main .nick-input {
+    width: 100%; height: 100%; min-height: 0; padding: 0 1.5cqw; border: 0; border-radius: 1.2cqw;
+    font-size: 1.75cqw; background: #fffaf0; box-shadow: none; color: var(--e-brown);
+  }
+  .entry-main .nick-input::placeholder { color: #9b8466; }
+  .entry-main .nick-input:focus { box-shadow: 0 0 0 0.25cqw rgba(18, 131, 122, 0.55); }
+  .entry-main #nickError { position: absolute; left: 34.9%; top: 45.2%; margin: 0; padding: 0; font-size: 1.05cqw; min-height: 0; }
+
+  /* 학년 버튼: 평소엔 투명(그림의 버튼이 보임), 고르면 청록으로 채워 표시 */
+  .entry-main .grade-set { position: absolute; left: 25.4%; top: 53.55%; width: 49.25%; height: 16.4%; margin: 0; }
+  .entry-main .grade-grid {
+    height: 100%; padding: 0; gap: 0; column-gap: 2.75%; row-gap: 9%;
+    grid-template-columns: 31.6% 31.4% 31.5%; grid-template-rows: 45.5% 45.5%;
+  }
+  .entry-main .grade-opt span {
+    height: 100%; min-height: 0; padding: 0; border: 0; border-radius: 1cqw; box-shadow: none;
+    background: transparent; color: transparent; font-size: 2.1cqw;
+  }
+  .entry-main .grade-opt:hover input:not(:checked) + span { background: rgba(18, 131, 122, 0.08); }
+  .entry-main .grade-opt input:checked + span {
+    color: #fff; background: linear-gradient(180deg, #1a998e, var(--e-teal));
+    box-shadow: inset 0 0 0 0.22cqw var(--e-gold), 0 0.2cqw 0 var(--e-teal-dark);
+  }
+  .entry-main .grade-opt input:focus-visible + span { outline: 0.25cqw solid var(--e-purple); outline-offset: 0.2cqw; }
+
+  /* 출발 버튼: 그림의 버튼 위에 투명하게. 아직 못 누를 때는 옅게 덮어 표시 */
+  .entry-main .entry-go {
+    position: absolute; left: 28.1%; top: 78.1%; width: 43.55%; height: 12.45%; min-height: 0;
+    margin: 0; padding: 0; border: 0; border-radius: 999px; box-shadow: none;
+    background: transparent; color: transparent; text-shadow: none; font-size: 2cqw;
+  }
+  .entry-main .entry-go:disabled { background: rgba(255, 250, 240, 0.5); border: 0; box-shadow: none; }
+  .entry-main .entry-go:not(:disabled):hover { background: rgba(255, 255, 255, 0.1); }
+  .entry-main .entry-go:active:not(:disabled) { transform: none; background: rgba(0, 40, 35, 0.15); box-shadow: none; }
+  .entry-main .entry-go:focus-visible { outline: 0.3cqw solid var(--e-purple); outline-offset: 0.3cqw; }
+  .entry-main .entry-hint { position: absolute; left: 0; right: 0; top: 91.2%; margin: 0; font-size: 1.1cqw; min-height: 0; }
+  .entry-main .entry-storage { position: absolute; left: 0; right: 0; top: 93.6%; margin: 0; font-size: 1cqw; }
+}
+
 @media (prefers-reduced-motion: reduce) { .grade-opt span, .entry-go { transition: none; } }

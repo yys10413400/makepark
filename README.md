@@ -45,14 +45,16 @@
 ## 지도 선명도(AI 업스케일)
 게임에 쓰는 지도는 받은 2배 지도(`maps-src/*-2x-original.png`)를 Real-ESRGAN `realesrgan-x4plus` 모델로 4배 키운 뒤 다시 2배 크기(2896×2172)로 줄인 것입니다(`maps-src/*-2x-ai.png`). 크기는 그대로이고 선과 글자가 또렷해집니다.
 도구: github.com/xinntao/Real-ESRGAN 공식 배포판 `realesrgan-ncnn-vulkan-20220424-windows.zip` (저장소에는 넣지 않음)
-`realesrgan-ncnn-vulkan.exe -i 2x-original.png -o x4.png -n realesrgan-x4plus -s 4` → 2896×2172로 LANCZOS 축소 → 간판 다시 쓰기 → WebP 94
+`realesrgan-ncnn-vulkan.exe -i 2x-original.png -o x4.png -n realesrgan-x4plus -s 4` → 2896×2172로 LANCZOS 축소 → `python tools/fix_glyph.py`(멜로디 스테이지 첫 글자 '엘'→'멜'만 고침) → WebP 94
 
 ## 간판 글씨
+간판은 AI 지도의 원래 글씨를 그대로 씁니다(지우고 다시 쓰면 간판 그림이 상해서). 틀린 글자만 `tools/fix_glyph.py`로 바꿉니다. 아래 `rewrite_signs.py`는 예전 1배 지도용입니다.
 지도 그림의 간판 글씨 11개는 `tools/rewrite_signs.py`로 지우고 맑은 고딕 Bold로 다시 썼습니다. 원본 그림(1배·2배)은 `assets/maps-src`에 있습니다. 2배 지도는 1배 원본에서 글자 위치를 찾아 씁니다:
 `python tools/rewrite_signs.py assets/maps-src/makepark-christmas-2x-original.png out.png assets/maps-src/makepark-christmas-original.png` (결과를 WebP 품질 94로 저장)
 글자를 바꾸려면 `SIGNS`의 글자를 고친 뒤 두 지도에 다시 실행하세요.
 
 ## 입장 화면과 프로필
+가로 화면(폭 720px 이상, 높이 520px 이상, 가로가 더 긴 화면)에서는 받은 시안 그림 `assets/ui/entry-screen.webp`를 그대로 보여 주고, 그 위 정확한 자리에 투명한 실제 입력칸·학년 버튼·출발 버튼을 올립니다. 세로 핸드폰 화면에서는 그림이 너무 작아져 누르기 어려우므로 같은 디자인을 CSS로 만든 화면을 씁니다.
 닉네임(앞뒤 공백 제거, 1~12글자)과 학년(1~6, 첫 방문은 미선택)을 입력하면 공원으로 들어갑니다. 공원 안에서는 왼쪽 위 닉네임을 누르면 닉네임과 학년을 바꿀 수 있습니다(취소하면 그대로).
 학년군: 1~2학년 low, 3~4학년 middle, 5~6학년 high (`state.gradeBand`). 학년별 미션 내용은 아직 없습니다.
 
