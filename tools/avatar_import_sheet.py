@@ -47,14 +47,35 @@ def write_index():
 
 
 def import_hat(sheet, name, width=1.12, dy=(0, 0, 0, 0)):
+    """앞모습 너비로 배율을 정하고, 네 방향 모두 같은 배율(그림 속 크기 비율 그대로)을 씀.
+    앞·뒤는 머리 가운데에, 옆모습은 모자 뒤쪽 끝을 뒤통수에 맞춤(챙은 앞으로 나옴)."""
     parts = components(Image.open(sheet).convert('RGBA'))
     WORN.mkdir(parents=True, exist_ok=True)
+    hu = T.head_union('down'); ys, xs = np.where(hu)
+    s = (xs.max() - xs.min()) * width / parts[0].width
     for d, c, oy in zip(T.DIRS, parts, dy):
         hu = T.head_union(d); ys, xs = np.where(hu)
-        tw = (xs.max() - xs.min()) * width; cx = (xs.max() + xs.min()) / 2
-        s = tw / c.width; nh = round(c.height * s)
-        c = c.resize((round(tw), nh), Image.LANCZOS)
-        out = Image.new('RGBA', (T.W, T.H)); out.alpha_composite(c, (round(cx - tw / 2), T.GUIDE[d]['band'] + oy - nh))
+        w, h = round(c.width * s), round(c.height * s)
+        c = c.resize((w, h), Image.LANCZOS)
+        if d == 'left': x = xs.max() + 6 - w           # 왼쪽을 봄: 뒤통수는 화면 오른쪽
+        elif d == 'right': x = xs.min() - 6            # 오른쪽을 봄: 뒤통수는 화면 왼쪽
+        else: x = round((xs.max() + xs.min()) / 2 - w / 2)
+        out = Image.new('RGBA', (T.W, T.H)); out.alpha_composite(c, (x, T.GUIDE[d]['band'] + oy - h))
+        out.save(WORN / f'hat_{name}_front_{d}.png')
+        print(f'hat_{name}_front_{d}.png  배율 {s:.3f}  크기 {c.size}  x {x}')
+
+
+def import_headband(sheet, name='headband', width=1.0, dy=(0, 0, 0, 0)):
+    """머리띠: 머리카락 위에 얹으므로 띠 윗부분을 머리 꼭대기에 맞춤. 네 방향 같은 배율."""
+    parts = components(Image.open(sheet).convert('RGBA'))
+    hu = T.head_union('down'); ys, xs = np.where(hu)
+    s = (xs.max() - xs.min()) * width / parts[0].width
+    for d, c, oy in zip(T.DIRS, parts, dy):
+        hu = T.head_union(d); ys, xs = np.where(hu)
+        w, h = round(c.width * s), round(c.height * s)
+        c = c.resize((w, h), Image.LANCZOS)
+        cx = (xs.max() + xs.min()) / 2 + {'left': 10, 'right': -10}.get(d, 0)   # 옆모습: 정수리보다 살짝 뒤
+        out = Image.new('RGBA', (T.W, T.H)); out.alpha_composite(c, (round(cx - w / 2), ys.min() + 3 + oy))
         out.save(WORN / f'hat_{name}_front_{d}.png')
         print(f'hat_{name}_front_{d}.png  배율 {s:.3f}  크기 {c.size}')
 
@@ -66,5 +87,6 @@ if __name__ == '__main__':
     if '--dy' in args: i = args.index('--dy'); dy = tuple(int(v) for v in args[i + 1].split(',')); del args[i:i + 2]
     sheet, kind, name = args[0], args[1], args[2]
     if kind == 'hat': import_hat(sheet, name, width, dy)
-    else: raise SystemExit('지원하는 종류: hat')
+    elif kind == 'headband': import_headband(sheet, name, width if '--width' in sys.argv else 1.0, dy)
+    else: raise SystemExit('지원하는 종류: hat, headband')
     print('목록:', ', '.join(write_index()))
