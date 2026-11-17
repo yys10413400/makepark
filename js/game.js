@@ -15,6 +15,7 @@
     title: $('title'), form: $('titleForm'), nickname: $('nickname'), enterPark: $('enterPark'),
     hint: $('titleHint'), welcome: $('welcomeBack'),
     hud: $('hud'), playerName: $('playerName'), mapToggle: $('mapToggle'),
+    seasonToggle: $('seasonToggle'), seasonLabel: $('seasonLabel'),
     mapBar: $('mapBar'), mapBack: $('mapBack'),
     enter: $('enterFacility'), enterName: $('enterName'),
     toast: $('toast'),
@@ -40,22 +41,35 @@
   var view = { w: 1, h: 1, dpr: 1 };
 
   // ---------- 배경 이미지 (시즌) ----------
-  var mapImg = null, mapRect = { x: 0, y: 0, w: W, h: H };
-  function loadSeasonMap(list, i) {
-    if (i >= list.length) { console.error('지도 이미지를 불러오지 못했습니다'); return; }
+  // 모든 시즌 지도를 미리 불러 두고, 바꿀 때는 부드럽게 겹쳐 전환합니다.
+  var seasonImgs = {};
+  Object.keys(PARK.seasons).forEach(function (id) {
     var img = new Image();
     img.onload = function () {
       // 비율 유지: 지도 좌표계(W×H) 안에 원본 비율 그대로 맞춤
-      var k = Math.min(W / img.naturalWidth, H / img.naturalHeight);
-      mapRect = { w: img.naturalWidth * k, h: img.naturalHeight * k };
-      mapRect.x = (W - mapRect.w) / 2; mapRect.y = (H - mapRect.h) / 2;
-      mapImg = img; state.mapFile = list[i];
+      var k = Math.min(W / img.naturalWidth, H / img.naturalHeight), w = img.naturalWidth * k, h = img.naturalHeight * k;
+      seasonImgs[id] = { img: img, rect: { x: (W - w) / 2, y: (H - h) / 2, w: w, h: h } };
     };
-    img.onerror = function () { loadSeasonMap(list, i + 1); };
-    img.src = list[i];
+    img.onerror = function () { console.error('지도 이미지를 불러오지 못했습니다: ' + PARK.seasons[id].map); };
+    img.src = PARK.seasons[id].map;
+  });
+  var fade = { from: null, t: 1 };
+  function setSeason(id, animate) {
+    if (!PARK.seasons[id]) id = PARK.defaultSeason;
+    if (id === state.season) return;
+    fade.from = animate ? state.season : null; fade.t = animate ? 0 : 1;
+    state.season = id;
+    ui.seasonLabel.textContent = PARK.seasons[id].label;
+    ui.seasonToggle.setAttribute('aria-label', '계절 바꾸기 (지금: ' + PARK.seasons[id].label + ')');
+    // 계절만 저장: 위치·학년·진행 기록은 그대로 둠
+    var data = readSave() || {};
+    data.season = id;
+    try { localStorage.setItem(SAVE_KEY, JSON.stringify(data)); } catch (e) { /* 저장 불가 환경 */ }
   }
-  var season = PARK.seasons[PARK.season] || PARK.seasons.normal;
-  loadSeasonMap(season.maps, 0);
+  function nextSeason() {
+    var ids = Object.keys(PARK.seasons);
+    return ids[(ids.indexOf(state.season) + 1) % ids.length];
+  }
 
   // ---------- 저장 ----------
   function readSave() {
@@ -74,6 +88,8 @@
 
   // ---------- 첫 화면 ----------
   var saved = readSave();
+  setSeason((saved && saved.season) || PARK.defaultSeason, false);
+  ui.seasonToggle.addEventListener('click', function () { setSeason(nextSeason(), true); ui.seasonToggle.blur(); });
   if (saved) {
     if (saved.nickname) ui.nickname.value = saved.nickname;
     if (saved.grade) {
@@ -331,7 +347,13 @@
     ctx.fillStyle = '#9fcf8a'; ctx.fillRect(0, 0, canvas.width, canvas.height);
     ctx.setTransform(d * cam.s, 0, 0, d * cam.s, d * (view.w / 2 - cam.cx * cam.s), d * (view.h / 2 - cam.cy * cam.s));
     ctx.imageSmoothingEnabled = true; ctx.imageSmoothingQuality = 'high';
-    if (mapImg) ctx.drawImage(mapImg, mapRect.x, mapRect.y, mapRect.w, mapRect.h);
+    var cur = seasonImgs[state.season], prev = fade.from && seasonImgs[fade.from];
+    if (prev && fade.t < 1) {
+      ctx.drawImage(prev.img, prev.rect.x, prev.rect.y, prev.rect.w, prev.rect.h);
+      ctx.globalAlpha = fade.t;
+    }
+    if (cur) ctx.drawImage(cur.img, cur.rect.x, cur.rect.y, cur.rect.w, cur.rect.h);
+    ctx.globalAlpha = 1;
     if (state.phase !== 'play') return;
 
     if (state.debug) drawDebugWorld();
@@ -423,7 +445,7 @@
       '마우스 지도좌표: ' + (m ? Math.round(m.x) + ', ' + Math.round(m.y) : '-') + '\n' +
       '캐릭터: ' + Math.round(p.x) + ', ' + Math.round(p.y) + (grid.isWalkable(p.x, p.y) ? '' : ' (막힌 칸!)') + '\n' +
       '배율: ' + cam.s.toFixed(2) + '  화면: ' + Math.round(view.w) + '×' + Math.round(view.h) + ' @' + view.dpr + '\n' +
-      '배경: ' + (state.mapFile || '로딩 중') + '\n' +
+      '배경: ' + PARK.seasons[state.season].map + (seasonImgs[state.season] ? '' : ' (로딩 중)') + '\n' +
       '캐릭터 그림: ' + (character.isPlaceholder ? '임시 캐릭터' : '스프라이트') + '\n' +
       '근처 시설: ' + (state.nearby ? state.nearby.name : '-') + '  fps ' + fps;
   }
@@ -433,6 +455,7 @@
   function frame(now) {
     var dt = Math.min(0.05, (now - last) / 1000); last = now;
     state.time += dt;
+    if (fade.t < 1) fade.t = Math.min(1, fade.t + dt / 0.6);
     if (state.phase === 'play') {
       stepPlayer(dt);
       updateNearby();

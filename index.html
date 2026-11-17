@@ -36,7 +36,10 @@
     <!-- 게임 화면 UI -->
     <div id="hud" hidden>
       <div class="chip" id="playerChip"><span class="dot"></span><span id="playerName"></span></div>
-      <button id="mapToggle" class="btn hud-btn" type="button">전체 지도</button>
+      <div class="hud-right">
+        <button id="seasonToggle" class="btn hud-btn season-btn" type="button"><small>계절</small> <span id="seasonLabel">크리스마스</span></button>
+        <button id="mapToggle" class="btn hud-btn" type="button">전체 지도</button>
+      </div>
     </div>
 
     <div id="mapBar" hidden>

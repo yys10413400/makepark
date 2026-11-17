@@ -25,9 +25,15 @@
       }
     });
     this.raw = raw;
+    // 발밑 영역: 캐릭터 발 위치를 중심으로 한 작은 사각형. 네 모서리가 모두 길이어야 설 수 있음
+    this.foot = park.foot || { halfWidth: 0, halfHeight: 0 };
+    // 설 수 있는 칸(칸 중심에 발을 두었을 때 발밑이 모두 길)
+    var stand = new Uint8Array(n);
+    for (var i = 0; i < n; i++) if (raw[i]) { var cp = this.center(i); stand[i] = this.footClear(cp.x, cp.y) ? 1 : 0; }
+    this.stand = stand;
     // 시작점과 연결된 칸만 이동 가능
     this.walk = new Uint8Array(n);
-    var s = this.nearestRaw(park.start.x, park.start.y);
+    var s = this.nearestStand(park.start.x, park.start.y);
     if (s >= 0) {
       var q = [s]; this.walk[s] = 1;
       while (q.length) {
@@ -37,7 +43,7 @@
           var nc = cc + nb[k][0], nr = rr + nb[k][1];
           if (nc < 0 || nr < 0 || nc >= this.cols || nr >= this.rows) continue;
           var j = nr * this.cols + nc;
-          if (raw[j] && !this.walk[j]) { this.walk[j] = 1; q.push(j); }
+          if (stand[j] && !this.walk[j]) { this.walk[j] = 1; q.push(j); }
         }
       }
     }
@@ -51,12 +57,22 @@
   WalkGrid.prototype.center = function (i) {
     return { x: (i % this.cols + 0.5) * this.cell, y: (((i / this.cols) | 0) + 0.5) * this.cell };
   };
-  WalkGrid.prototype.isWalkable = function (x, y) {
-    var i = this.idx(x, y); return i >= 0 && this.walk[i] === 1;
+  WalkGrid.prototype.rawAt = function (x, y) {
+    var i = this.idx(x, y); return i >= 0 && this.raw[i] === 1;
   };
-  WalkGrid.prototype.nearestRaw = function (x, y) {
+  /* 발 위치 (x,y) 의 발밑 사각형이 모두 길 위인지 */
+  WalkGrid.prototype.footClear = function (x, y) {
+    var hw = this.foot.halfWidth, hh = this.foot.halfHeight;
+    return this.rawAt(x, y) && this.rawAt(x - hw, y - hh) && this.rawAt(x + hw, y - hh) &&
+      this.rawAt(x - hw, y + hh) && this.rawAt(x + hw, y + hh);
+  };
+  /* 캐릭터 발이 (x,y) 에 설 수 있는지: 연결된 이동 칸 + 발밑 영역 검사 */
+  WalkGrid.prototype.isWalkable = function (x, y) {
+    var i = this.idx(x, y); return i >= 0 && this.walk[i] === 1 && this.footClear(x, y);
+  };
+  WalkGrid.prototype.nearestStand = function (x, y) {
     var best = -1, bd = Infinity;
-    for (var i = 0; i < this.raw.length; i++) if (this.raw[i]) {
+    for (var i = 0; i < this.stand.length; i++) if (this.stand[i]) {
       var p = this.center(i), d = (p.x - x) * (p.x - x) + (p.y - y) * (p.y - y);
       if (d < bd) { bd = d; best = i; }
     }
@@ -65,7 +81,7 @@
   /* 가장 가까운 이동 가능 칸. {index, x, y, dist} 또는 null */
   WalkGrid.prototype.nearestWalkable = function (x, y) {
     var i0 = this.idx(x, y);
-    if (i0 >= 0 && this.walk[i0]) return { index: i0, x: x, y: y, dist: 0 };
+    if (this.isWalkable(x, y)) return { index: i0, x: x, y: y, dist: 0 };
     var best = -1, bd = Infinity;
     for (var i = 0; i < this.walk.length; i++) if (this.walk[i]) {
       var p = this.center(i), d = (p.x - x) * (p.x - x) + (p.y - y) * (p.y - y);

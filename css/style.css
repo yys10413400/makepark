@@ -81,6 +81,8 @@ html, body {
 }
 .chip .dot { width: 12px; height: 12px; border-radius: 50%; background: #ff6b6b; border: 2px solid #fff; flex: none; }
 .hud-btn { min-height: 46px; }
+.hud-right { display: flex; gap: 8px; flex: none; }
+.season-btn small { font-size: 14px; color: var(--ink-soft); margin-right: 2px; }
 
 #mapBar {
   position: absolute; left: 50%; bottom: max(14px, env(safe-area-inset-bottom)); transform: translateX(-50%);
