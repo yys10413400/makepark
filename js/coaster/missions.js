@@ -15,6 +15,13 @@ window.MP_COASTER_MISSIONS = (function () {
   var F = { type: 'fwd' }, L = { type: 'left' }, R = { type: 'right' }, W = { type: 'wait' };
   function rep(n, body) { return { type: 'repeat', n: n, body: body }; }
   function ifg(then, els) { return { type: 'if', then: then, else: els }; }
+  // 언덕 코스: 두 줄 안에서 위로 올라갔다 내려오는 모양이 n번 (가로로 길어서 칸이 크게 보임)
+  function hills(n) {
+    var r = [[0, 1, 'h']];
+    for (var k = 0; k < n; k++) { var c = 1 + 2 * k; r.push([c, 1, 'nw'], [c, 0, 'se'], [c + 1, 0, 'sw'], [c + 1, 1, 'ne']); }
+    r.push([2 * n + 1, 1, 'h']); return r;
+  }
+  var HILL = [F, L, F, R, F, R, F, L];
   var COURSES = {
     low: { label: '1~2학년 과정', missions: [
       { id: 'low-1', title: '다섯 칸 달리기', guide: '도착역까지 앞으로 네 칸 가요', goal: '순차 이동 복습',
@@ -34,16 +41,15 @@ window.MP_COASTER_MISSIONS = (function () {
       { id: 'mid-2', title: '반복 블록', guide: '블록 3개 안에! 반복 블록을 써 봐요', goal: '정해진 횟수 반복',
         rails: line(7), from: [0, 0], dir: 'E', to: [6, 0], blocks: ['fwd', 'repeat'], limit: 3, reward: 10,
         answer: [rep(6, [F])] },
-      { id: 'mid-3', title: '계단 코스 완주', guide: '같은 모양이 되풀이돼요. 블록 6개 안에 가요', goal: '반복으로 코스 완주',
-        rails: [[0, 2, 'h'], [1, 2, 'nw'], [1, 1, 'se'], [2, 1, 'nw'], [2, 0, 'se'], [3, 0, 'h']], from: [0, 2], dir: 'E', to: [3, 0],
-        blocks: ['fwd', 'left', 'right', 'repeat'], limit: 6, reward: 10,
-        answer: [rep(2, [F, L, F, R]), F] }
+      { id: 'mid-3', title: '언덕 코스 완주', guide: '같은 언덕이 되풀이돼요. 블록 10개 안에 가요', goal: '반복으로 코스 완주',
+        rails: hills(2), from: [0, 1], dir: 'E', to: [5, 1],
+        blocks: ['fwd', 'left', 'right', 'repeat'], limit: 10, reward: 10,
+        answer: [rep(2, HILL), F] }
     ] },
     high: { label: '5~6학년 과정', missions: [
-      { id: 'high-1', title: '반복 복습', guide: '긴 계단 코스! 블록 6개 안에 가요', goal: '반복 복습',
-        rails: [[0, 3, 'h'], [1, 3, 'nw'], [1, 2, 'se'], [2, 2, 'nw'], [2, 1, 'se'], [3, 1, 'nw'], [3, 0, 'se'], [4, 0, 'h']],
-        from: [0, 3], dir: 'E', to: [4, 0], blocks: ['fwd', 'left', 'right', 'repeat'], limit: 6, reward: 10,
-        answer: [rep(3, [F, L, F, R]), F] },
+      { id: 'high-1', title: '반복 복습', guide: '언덕이 세 번! 블록 10개 안에 가요', goal: '반복 복습',
+        rails: hills(3), from: [0, 1], dir: 'E', to: [7, 1], blocks: ['fwd', 'left', 'right', 'repeat'], limit: 10, reward: 10,
+        answer: [rep(3, HILL), F] },
       { id: 'high-2', title: '신호 보고 가기', guide: '신호가 빨강이면 기다렸다 가요', goal: '만약 / 아니면',
         rails: line(5), from: [0, 0], dir: 'E', to: [4, 0], signals: [[2, 0]], blocks: ['fwd', 'wait', 'if'], reward: 10,
         answer: [F, ifg([F], [W, F]), F, F] },
