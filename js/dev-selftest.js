@@ -62,8 +62,16 @@ window.MP_SELFTEST = async function () {
   var fa = D.park.facilities.filter(function (f) { return f.id === 'arcade'; })[0];
   var fp = D.park.facilities.filter(function (f) { return f.id === 'parade'; })[0];
   tap(fa.entrance.x, fa.entrance.y); await sleep(500); var mid = { x: st.player.x, y: st.player.y };
-  tap(fp.entrance.x, fp.entrance.y); await sleep(400);
-  check(st.dest && st.dest.x === fp.entrance.x && st.player.x < mid.x, '이동 중 목적지 변경 실패');
+  // 화면 안에 보이는 지점(캐릭터에서 화면 폭 1/4만큼 왼쪽)으로 목적지 변경
+  var tgt = null;
+  [[0.25, 0.5], [0.25, 0.35], [0.25, 0.65], [0.35, 0.5], [0.15, 0.5], [0.35, 0.3], [0.35, 0.7]].some(function (f) {
+    var tw = D.screenToWorld(innerWidth * f[0], innerHeight * f[1]), n = D.grid.nearestWalkable(tw.x, tw.y);
+    if (n && n.dist < 20 && Math.hypot(n.x - mid.x, n.y - mid.y) > 60) { tgt = n; return true; }
+    return false;
+  });
+  if (!tgt) tgt = D.grid.nearestWalkable(mid.x - 100, mid.y);
+  tap(tgt.x, tgt.y); await sleep(400);
+  check(st.dest && Math.abs(st.dest.x - tgt.x) < 1 && Math.abs(st.dest.y - tgt.y) < 1, '이동 중 목적지 변경 실패');
 
   // 4) 갈 수 없는 곳
   var before = st.dest; tap(820, 15);

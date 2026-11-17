@@ -4,7 +4,8 @@
   python tools/build_walkmask.py js/data/walkmask.js assets/maps/makepark-christmas.png assets/maps/makepark-normal.png
 
 - 모든 지도에서 길로 판정된 칸만 남긴다(공통 충돌 영역). 시즌을 바꿔도 같은 영역을 쓴다.
-- 길 판정: 연보라빛 회색 포장(파랑이 빨강·초록보다 큼). 흰 눈, 흰 연석, 잔디, 건물은 제외된다.
+- 길 판정: 밝은 분홍빛 베이지 포장(빨강 > 초록 > 파랑, 밝음). 눈, 물, 잔디, 건물은 제외된다.
+  같은 판정을 js/game.js 의 isPavingPixel 에서도 써서 건물 가림 레이어를 만든다(둘을 함께 고칠 것).
 - 결과는 자동 추출본이다. 손으로 고칠 부분은 js/data/park-data.js 의 walkEdits 에서 고친다.
 - 런타임에서 정문 시작점과 연결된 칸만 실제 이동 영역으로 쓴다(떨어진 섬은 자동 제외).
 """
@@ -21,8 +22,7 @@ SMOOTH = 1    # 가장자리의 한 칸짜리 홈을 메워 키보드 이동 때
 def paving(path):
     a = np.asarray(Image.open(path).convert('RGB')).astype(int)
     r, g, b = a[..., 0], a[..., 1], a[..., 2]
-    mx, mn = a.max(-1), a.min(-1)
-    return (b - np.maximum(r, g) >= 8) & (mn > 135) & (mx < 248) & (mx - mn < 70)
+    return (r > 215) & (r - g >= 14) & (r - g <= 48) & (g - b >= -4) & (g - b <= 26) & (b > 160)
 
 
 def dilate(m, r):

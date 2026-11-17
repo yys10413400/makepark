@@ -10,8 +10,8 @@
       var line = mask.data[r];
       for (var c = 0; c < this.cols; c++) raw[r * this.cols + c] = line.charCodeAt(c) === 49 ? 1 : 0;
     }
+    var self = this, cell = this.cell;
     // 손으로 정한 추가/제외 적용
-    var self = this;
     (park.walkEdits || []).forEach(function (e) {
       var v = e.op === 'add' ? 1 : 0;
       for (var r = 0; r < self.rows; r++) for (var c = 0; c < self.cols; c++) {
@@ -24,7 +24,33 @@
         if (hit) raw[r * self.cols + c] = v;
       }
     });
+    // 건물 뒤 공간: 가림 영역 안에서, 위(북쪽)에서 내려오는 '공원 길'이 끝나는 곳부터 walkUnder px 까지를 걸을 수 있게 함.
+    // 이 부분은 건물·나무 그림에 가려져 보이지 않으므로 캐릭터가 건물 뒤로 지나가는 것처럼 보임.
+    // 건물 벽처럼 길과 같은 색이지만 길과 이어지지 않은 칸에서는 늘리지 않음.
     this.raw = raw;
+    var park0 = this.flood(raw, this.nearestOf(raw, park.start.x, park.start.y));
+    (park.occluders || []).forEach(function (o) {
+      if (!o.walkUnder) return;
+      var c0 = Math.max(0, Math.floor(o.x / cell)), c1 = Math.min(self.cols - 1, Math.floor((o.x + o.w) / cell));
+      var r0 = Math.max(0, Math.floor((o.y - o.walkUnder) / cell)), r1 = Math.min(self.rows - 1, Math.floor((o.y + o.h) / cell));
+      var rTop = Math.floor(o.y / cell), depth = Math.round(o.walkUnder / cell);
+      var rMid = Math.floor((rTop + r1) / 2); // 물체 위쪽 절반에서 끝나는 길만(옆·아래 길에서는 늘리지 않음)
+      for (var c = c0; c <= c1; c++) {
+        for (var r = r0; r < rMid; r++) {
+          var i = r * self.cols + c, below = i + self.cols;
+          if (park0[i] && !raw[below]) { // 길이 끝나는 첫 지점
+            for (var k = 1; k <= depth && r + k <= r1; k++) if (r + k >= rTop) raw[below + (k - 1) * self.cols] = 1;
+            break;
+          }
+        }
+      }
+      // 빗살처럼 생긴 1~2칸 틈 메우기(키보드 이동 때 걸리지 않게)
+      for (var r2 = r0; r2 <= r1; r2++) for (var c2 = c0 + 1; c2 < c1; c2++) {
+        var j = r2 * self.cols + c2;
+        if (raw[j]) continue;
+        if (raw[j - 1] && (raw[j + 1] || (c2 + 2 <= c1 && raw[j + 2]))) raw[j] = 1;
+      }
+    });
     // 발밑 영역: 캐릭터 발 위치를 중심으로 한 작은 사각형. 네 모서리가 모두 길이어야 설 수 있음
     this.foot = park.foot || { halfWidth: 0, halfHeight: 0 };
     // 설 수 있는 칸(칸 중심에 발을 두었을 때 발밑이 모두 길)
@@ -32,22 +58,31 @@
     for (var i = 0; i < n; i++) if (raw[i]) { var cp = this.center(i); stand[i] = this.footClear(cp.x, cp.y) ? 1 : 0; }
     this.stand = stand;
     // 시작점과 연결된 칸만 이동 가능
-    this.walk = new Uint8Array(n);
-    var s = this.nearestStand(park.start.x, park.start.y);
-    if (s >= 0) {
-      var q = [s]; this.walk[s] = 1;
-      while (q.length) {
-        var i = q.pop(), cc = i % this.cols, rr = (i / this.cols) | 0;
-        var nb = [[1, 0], [-1, 0], [0, 1], [0, -1]];
-        for (var k = 0; k < 4; k++) {
-          var nc = cc + nb[k][0], nr = rr + nb[k][1];
-          if (nc < 0 || nr < 0 || nc >= this.cols || nr >= this.rows) continue;
-          var j = nr * this.cols + nc;
-          if (stand[j] && !this.walk[j]) { this.walk[j] = 1; q.push(j); }
-        }
-      }
-    }
+    this.walk = this.flood(stand, this.nearestOf(stand, park.start.x, park.start.y));
   }
+
+  /* arr 에서 s 칸과 상하좌우로 이어진 칸들 */
+  WalkGrid.prototype.flood = function (arr, s) {
+    var out = new Uint8Array(arr.length);
+    if (s < 0) return out;
+    var q = [s]; out[s] = 1;
+    while (q.length) {
+      var i = q.pop(), cc = i % this.cols, rr = (i / this.cols) | 0;
+      if (cc > 0 && arr[i - 1] && !out[i - 1]) { out[i - 1] = 1; q.push(i - 1); }
+      if (cc < this.cols - 1 && arr[i + 1] && !out[i + 1]) { out[i + 1] = 1; q.push(i + 1); }
+      if (rr > 0 && arr[i - this.cols] && !out[i - this.cols]) { out[i - this.cols] = 1; q.push(i - this.cols); }
+      if (rr < this.rows - 1 && arr[i + this.cols] && !out[i + this.cols]) { out[i + this.cols] = 1; q.push(i + this.cols); }
+    }
+    return out;
+  };
+  WalkGrid.prototype.nearestOf = function (arr, x, y) {
+    var best = -1, bd = Infinity;
+    for (var i = 0; i < arr.length; i++) if (arr[i]) {
+      var p = this.center(i), d = (p.x - x) * (p.x - x) + (p.y - y) * (p.y - y);
+      if (d < bd) { bd = d; best = i; }
+    }
+    return best;
+  };
 
   WalkGrid.prototype.idx = function (x, y) {
     var c = Math.floor(x / this.cell), r = Math.floor(y / this.cell);

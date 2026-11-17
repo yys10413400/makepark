@@ -48,12 +48,49 @@
     img.onload = function () {
       // 비율 유지: 지도 좌표계(W×H) 안에 원본 비율 그대로 맞춤
       var k = Math.min(W / img.naturalWidth, H / img.naturalHeight), w = img.naturalWidth * k, h = img.naturalHeight * k;
-      seasonImgs[id] = { img: img, rect: { x: (W - w) / 2, y: (H - h) / 2, w: w, h: h } };
+      seasonImgs[id] = { img: img, rect: { x: (W - w) / 2, y: (H - h) / 2, w: w, h: h }, occ: buildOccluders(img) };
     };
     img.onerror = function () { console.error('지도 이미지를 불러오지 못했습니다: ' + PARK.seasons[id].map); };
     img.src = PARK.seasons[id].map;
   });
   var fade = { from: null, t: 1 };
+
+  // ---------- 가림 레이어 (캐릭터가 건물 뒤로 지나갈 때) ----------
+  // tools/build_walkmask.py 의 길 판정과 같은 규칙. 길 픽셀은 투명하게 빼고 건물·나무만 남김.
+  function isPavingPixel(r, g, b) {
+    return r > 215 && r - g >= 14 && r - g <= 48 && g - b >= -4 && g - b <= 26 && b > 160;
+  }
+  function buildOccluders(img) {
+    // 지도 좌표 = 이미지 픽셀 (같은 크기일 때). 크기가 다르면 비율대로 맞춤
+    var kx = img.naturalWidth / W, ky = img.naturalHeight / H;
+    return (PARK.occluders || []).map(function (o) {
+      var c = document.createElement('canvas');
+      c.width = Math.max(1, Math.round(o.w * kx)); c.height = Math.max(1, Math.round(o.h * ky));
+      var g = c.getContext('2d');
+      g.drawImage(img, o.x * kx, o.y * ky, o.w * kx, o.h * ky, 0, 0, c.width, c.height);
+      try {
+        var d = g.getImageData(0, 0, c.width, c.height), px = d.data;
+        for (var i = 0; i < px.length; i += 4) if (isPavingPixel(px[i], px[i + 1], px[i + 2])) px[i + 3] = 0;
+        g.putImageData(d, 0, 0);
+      } catch (e) { return null; } // 픽셀을 읽을 수 없는 환경이면 가림 없이 진행
+      return c;
+    });
+  }
+  // 캐릭터 그림이 차지하는 대략의 영역(발 위치 기준)
+  function spriteBox(p) { return { x0: p.x - 16, x1: p.x + 16, y0: p.y - 64, y1: p.y + 6 }; }
+  /* 캐릭터보다 앞(남쪽)에 있는 물체를 캐릭터 위에 다시 그림. 가렸으면 true */
+  function drawOccluders(p) {
+    var cur = seasonImgs[state.season];
+    if (!cur || !cur.occ) return false;
+    var b = spriteBox(p), hidden = false;
+    (PARK.occluders || []).forEach(function (o, i) {
+      if (p.y >= o.baseY || !cur.occ[i]) return;
+      if (b.x1 < o.x || b.x0 > o.x + o.w || b.y1 < o.y || b.y0 > o.y + o.h) return;
+      ctx.drawImage(cur.occ[i], o.x, o.y, o.w, o.h);
+      hidden = true;
+    });
+    return hidden;
+  }
   function setSeason(id, animate) {
     if (!PARK.seasons[id]) id = PARK.defaultSeason;
     if (id === state.season) return;
@@ -379,6 +416,14 @@
 
     var p = state.player;
     character.draw(ctx, p.x, p.y, p.dir, p.moving, state.time);
+    // 앞쪽 건물·나무가 캐릭터를 가리면, 잃어버리지 않게 흐린 윤곽을 한 번 더 그림
+    state.hidden = drawOccluders(p);
+    if (state.hidden) {
+      ctx.globalAlpha = 0.35;
+      character.draw(ctx, p.x, p.y, p.dir, p.moving, state.time);
+      ctx.globalAlpha = 1;
+    }
+    if (state.debug) drawDebugOccluders();
 
     // 전체 지도: 시설 핀 + 내 위치 (이름 글자는 지도에 이미 그려져 있으므로 표시하지 않음)
     var mapAlpha = Math.min(1, Math.max(0, (playScale() - cam.s) / Math.max(0.001, playScale() - fitScale())));
@@ -407,6 +452,16 @@
     ctx.arc(0, -20, 11, Math.PI, 0); ctx.bezierCurveTo(11, -12, 4, -8, 0, 0); ctx.closePath(); ctx.fill(); ctx.stroke();
     ctx.fillStyle = '#fff'; ctx.beginPath(); ctx.arc(0, -20, 4, 0, Math.PI * 2); ctx.fill();
     ctx.restore();
+  }
+
+  function drawDebugOccluders() {
+    (PARK.occluders || []).forEach(function (o) {
+      var behind = state.player.y < o.baseY;
+      ctx.strokeStyle = behind ? 'rgba(255,0,255,0.9)' : 'rgba(0,255,255,0.7)'; ctx.lineWidth = 1.5;
+      ctx.strokeRect(o.x, o.y, o.w, o.h);
+      ctx.beginPath(); ctx.moveTo(o.x, o.baseY); ctx.lineTo(o.x + o.w, o.baseY); ctx.stroke();
+      ctx.fillStyle = '#000'; ctx.font = '11px monospace'; ctx.fillText(o.id, o.x + 3, o.y + 12);
+    });
   }
 
   function drawDebugWorld() {
