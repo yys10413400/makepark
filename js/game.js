@@ -274,7 +274,7 @@
   function coverScale() { return Math.max(view.w / W, view.h / H); }
   function playScale() {
     var c = PARK.camera;
-    var s = Math.min(view.w / c.playViewWidth, view.h / c.playViewHeight, c.maxScale);
+    var s = Math.min(Math.min(view.w, view.h) / c.playViewShort, c.maxScale);
     return Math.max(s, coverScale()); // 지도 밖이 보이지 않게
   }
   function camTarget() {
