@@ -28,7 +28,7 @@
     modal: $('modal'), modalTitle: $('modalTitle'), modalDesc: $('modalDesc'), modalClose: $('modalClose'),
     debug: $('debugPanel'),
     avatarBtn: $('avatarOpen'), avatarDlg: $('avatarDlg'), avatarForm: $('avatarForm'), avPreview: $('avPreview'),
-    avWalk: $('avWalk'), avGroups: $('avGroups'), avMsg: $('avMsg'), avatarCancel: $('avatarCancel'), avatarSave: $('avatarSave')
+    avWalk: $('avWalk'), avatarTitle: $('avatarTitle'), avGroups: $('avGroups'), avMsg: $('avMsg'), avatarCancel: $('avatarCancel'), avatarSave: $('avatarSave')
   };
 
   // ---------- 상태 ----------
@@ -204,7 +204,7 @@
     ui.enterPark.disabled = !(n.ok && g);
     ui.nickError.textContent = n.msg;
     ui.nickname.setAttribute('aria-invalid', n.msg ? 'true' : 'false');
-    ui.hint.textContent = n.ok && g ? '준비 완료! 공원으로 출발해요.'
+    ui.hint.textContent = n.ok && g ? '준비 완료! 내 캐릭터를 만들어요.'
       : !n.value ? (titleTouched ? '닉네임을 적어 주세요.' : '')
       : !g ? '학년을 골라 주세요.' : '';
   }
@@ -215,7 +215,8 @@
     e.preventDefault();
     var n = checkNick(ui.nickname.value), g = radioGrade('grade');
     if (!n.ok || !g) { titleTouched = true; updateTitle(); return; }
-    enterPark(n.value, g);
+    // 공원에 들어가기 전에 내 캐릭터 만들기 (캐릭터 그림이 없으면 바로 입장)
+    if (window.MPAvatar) openAvatarCreate(n.value, g); else enterPark(n.value, g);
   });
 
   function enterPark(name, grade) {
@@ -278,6 +279,28 @@
   // ---------- 캐릭터 꾸미기 ----------
   // 고르는 동안은 미리보기만 바뀌고, [저장하기]를 눌러야 공원 캐릭터와 저장값(makepark.save.v1 의 avatar)에 반영됩니다.
   var avatarDraft = null, avatarRaf = 0;
+  var avatarMode = 'edit', pendingEntry = null;   // create: 첫 입장 전 '내 캐릭터 만들기' / edit: 공원 안 '꾸미기'
+  function setAvatarMode(mode) {
+    avatarMode = mode;
+    ui.avatarTitle.textContent = mode === 'create' ? '내 캐릭터 만들기' : '내 캐릭터 꾸미기';
+    ui.avatarSave.textContent = mode === 'create' ? '공원으로 출발!' : '저장하기';
+    ui.avatarCancel.textContent = mode === 'create' ? '뒤로' : '취소';
+  }
+  function showAvatarDialog() {
+    buildAvatarOptions();
+    avatarDraft = MPAvatar.normalize(character.appearance);
+    syncAvatarRadios();
+    ui.avMsg.textContent = '';
+    state.avatarOpen = true; ui.avatarDlg.hidden = false;
+    avatarRaf = requestAnimationFrame(drawAvatarPreview);
+    var first = ui.avGroups.querySelector('input:checked'); if (first) first.focus();
+  }
+  function openAvatarCreate(name, grade) {
+    if (state.phase === 'play' || state.avatarOpen) return;
+    pendingEntry = { name: name, grade: grade };
+    setAvatarMode('create');
+    showAvatarDialog();
+  }
   function buildAvatarOptions() {
     if (!window.MPAvatar || ui.avGroups.childElementCount) return;
     var O = MPAvatar.OPTIONS;
@@ -325,18 +348,14 @@
   function openAvatar() {
     if (!window.MPAvatar || state.phase !== 'play' || state.modalFacility || state.profileOpen || state.avatarOpen || state.coasterOpen) return;
     stopMoving(); state.keys = {};
-    buildAvatarOptions();
-    avatarDraft = MPAvatar.normalize(character.appearance);
-    syncAvatarRadios();
-    ui.avMsg.textContent = '';
-    state.avatarOpen = true; ui.avatarDlg.hidden = false; ui.enter.hidden = true; state.nearby = null;
-    avatarRaf = requestAnimationFrame(drawAvatarPreview);
-    var first = ui.avGroups.querySelector('input:checked'); if (first) first.focus();
+    ui.enter.hidden = true; state.nearby = null;
+    setAvatarMode('edit');
+    showAvatarDialog();
   }
-  function closeAvatar() { // 취소: 공원 캐릭터·저장값 그대로
+  function closeAvatar() { // 취소(만들기에서는 '뒤로'): 공원 캐릭터·저장값 그대로
     state.avatarOpen = false; ui.avatarDlg.hidden = true; state.keys = {};
     cancelAnimationFrame(avatarRaf); avatarDraft = null;
-    ui.avatarBtn.focus();
+    if (avatarMode === 'create') { pendingEntry = null; ui.enterPark.focus(); } else ui.avatarBtn.focus();
   }
   if (ui.avatarBtn) {
     if (!window.MPAvatar) ui.avatarBtn.hidden = true;
@@ -346,10 +365,11 @@
     ui.avatarForm.addEventListener('submit', function (e) {
       e.preventDefault();
       if (!avatarDraft) return;
-      var a = MPAvatar.normalize(avatarDraft);
+      var a = MPAvatar.normalize(avatarDraft), entry = avatarMode === 'create' ? pendingEntry : null;
       character.setAppearance(a);
       patchSave({ avatar: a });     // 프로필·티켓·스탬프 등 다른 값은 그대로 두고 합쳐 저장
       closeAvatar();
+      if (entry) { enterPark(entry.name, entry.grade); return; }   // 만들기 → 공원으로 출발
       toast(storageOk ? '캐릭터를 저장했어요' : '바꿨지만 이 기기에는 저장되지 않아요');
     });
   }
@@ -513,7 +533,10 @@
   var KEYMAP = { ArrowUp: 'up', KeyW: 'up', ArrowDown: 'down', KeyS: 'down', ArrowLeft: 'left', KeyA: 'left', ArrowRight: 'right', KeyD: 'right' };
   window.addEventListener('keydown', function (e) {
     if (e.code === 'F2') { e.preventDefault(); state.debug = !state.debug; return; }
-    if (state.phase !== 'play') return;
+    if (state.phase !== 'play') {
+      if (state.avatarOpen && e.code === 'Escape') { e.preventDefault(); closeAvatar(); }
+      return;
+    }
     if (state.profileOpen) { // 프로필 수정 중: 글자 입력이 게임 조작으로 가지 않게
       if (e.code === 'Escape') { e.preventDefault(); closeProfile(); }
       return;

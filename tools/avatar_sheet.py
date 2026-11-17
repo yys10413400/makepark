@@ -12,6 +12,7 @@ FIT = json.loads(fit_src[fit_src.index('{', fit_src.index('MP_AVATAR_FIT')):fit_
 DIRS = M['directions']
 DEFAULT = dict(outfit='1', hair='1', face='1', shoes='1', glasses='none', clip='none', hat='none', bag='none')
 _cache = {}
+HR = 56  # 모자가 머리 위로 나갈 수 있게 칸 위에 둔 여유(js/avatar/avatar.js 의 HEADROOM 과 같게)
 
 
 def img(p):
@@ -20,11 +21,12 @@ def img(p):
     return _cache[p]
 
 
-def put(c, p, box=None, off=(0, 0)):
-    im = img(p)
+def put(c, p, box=None, off=(0, 0), im=None):
+    im = im or img(p)
+    off = (off[0], off[1] + HR)
     if box:
         x, y, w, h = box
-        name = Path(p).stem.rsplit('_', 1)[0]
+        name = Path(p).stem.rsplit('_', 1)[0] if p else ''
         cb = FIT.get('cropBottom', {}).get(name)
         if cb and cb < im.height: h = h * cb / im.height; im = im.crop((0, 0, im.width, cb))
         im = im.resize((max(1, round(w)), max(1, round(h))), Image.LANCZOS)
@@ -42,16 +44,47 @@ def scaled(box, adj):
     return [x + dx - w * (s - 1) / 2, y + dy - h * (s - 1), w * s, h * s]  # 아래(챙) 기준으로 키움
 
 
+def hat_image(name, d):
+    """모자 그림에서 머리가 들어가는 입구(안감)를 지운 그림"""
+    import math
+    import numpy as np
+    k = ('hat', name, d)
+    if k in _cache: return _cache[k]
+    im = img(M['accessories'][name][d])
+    e = FIT.get('hatOpening', {}).get(name, {}).get(d)
+    if e:
+        a = np.array(im).copy(); h, w = a.shape[:2]; yy, xx = np.mgrid[0:h, 0:w]
+        cx, cy, rx, ry, ang = e; t = math.radians(ang); dx = xx - cx; dy = yy - cy
+        u = (dx * math.cos(t) + dy * math.sin(t)) / rx; v = (-dx * math.sin(t) + dy * math.cos(t)) / ry
+        a[(u * u + v * v <= 1) | ((np.abs(u) <= 1) & (v >= 0)), 3] = 0  # 입구 + 그 아래 앞쪽 테두리
+        im = Image.fromarray(a)
+    _cache[k] = im
+    return im
+
+
+def hat_cut_line(ha, rise=2.2):
+    """모자 아래 가장자리 선. 모자 바깥 옆으로는 머리 둥근 모양을 따라 비스듬히 올라감(세로로 뚝 끊기지 않게)"""
+    import numpy as np
+    w = ha.shape[1]; cut = np.full(w, -1.0)
+    cols = [x for x in range(w) if ha[:, x].any()]
+    for x in cols: cut[x] = np.where(ha[:, x])[0].max()
+    if not cols: return cut
+    x0, x1 = cols[0], cols[-1]
+    for x in range(x0): cut[x] = cut[x0] - rise * (x0 - x)
+    for x in range(x1 + 1, w): cut[x] = cut[x1] - rise * (x - x1)
+    return cut
+
+
 def compose(a, d, f, bg=(239, 221, 207, 255)):
     a = {**DEFAULT, **a}
-    c = Image.new('RGBA', (256, 320), bg)
+    c = Image.new('RGBA', (256, 320 + HR), bg)
     o, fitted = a['outfit'], M['fitted']
     bag = FIT['bag'].get(a['bag']) if a['bag'] != 'none' else None
     fbag = bool(bag and bag.get('fitted'))
     hat_hair = a['hair'] == '1' and a['hat'] == 'bucket'
     if d != 'up' and bag:
         if fbag: put(c, fitted['bag_yellow'][d])
-        elif bag.get(d): put(c, M['accessories'][a['bag']][d], bag[d])
+        elif bag.get(d): put(c, M['accessories'][a['bag']][bag.get('sideImage', {}).get(d, d)], bag[d])
     put(c, M['bodies'][o][d][f])
     put(c, M['shoes'][a['shoes']][o][d][f])
     if d != 'up' and bag:
@@ -59,22 +92,46 @@ def compose(a, d, f, bg=(239, 221, 207, 255)):
     if d == 'up' and bag:  # 뒷모습: 머리보다 먼저 그려 긴 머리가 가방 위로 내려오게
         if fbag: put(c, fitted['bag_yellow']['up'])
         else: put(c, M['accessories'][a['bag']][bag.get('upImage', 'up')], bag['up'])
+    # 머리(얼굴·머리카락)는 따로 그린 뒤, 모자를 쓰면 모자 띠 선 위쪽을 지우고 합침
+    body_c = c
+    c = Image.new('RGBA', body_c.size)
     put(c, M['faces'][a['face']][d])
     g = a['glasses']
     def glasses():
         o1 = FIT['glasses'][d]; o2 = FIT['glassesByFace'].get(a['face'], {}).get(d, [0, 0])
-        put(c, fitted[g][d], off=(o1[0] + o2[0], o1[1] + o2[1]))
-    # 옆모습: 안경다리가 귀 쪽 머리카락 밑으로 들어가게 머리보다 먼저 / 앞모습: 머리 위에
-    if d in ('left', 'right') and g != 'none': glasses()
+        im = img(fitted[g][d]); cx = FIT.get('glassesClipX', {}).get(d)
+        if cx:  # 옆모습: 안경다리가 귀에서 끝나게
+            im = im.copy(); px = im.load()
+            for yy in range(im.height):
+                for xx in range(im.width):
+                    if not (cx[0] - o1[0] - o2[0] <= xx < cx[1] - o1[0] - o2[0]): px[xx, yy] = (0, 0, 0, 0)
+        put(c, None, off=(o1[0] + o2[0], o1[1] + o2[1]), im=im)
     put(c, fitted['bucket_hair1'][d] if hat_hair else M['hair'][a['hair']][d])
-    if d == 'down' and g != 'none': glasses()
+    if d != 'up' and g != 'none': glasses()   # 머리카락 위에(앞머리가 렌즈를 가리지 않게)
+    hat_layer = None
+    if a['hat'] != 'none' and not hat_hair:
+        hb = FIT['hatByHair'].get(a['hair'], {})
+        adj = (hb.get(a['hat']) or hb.get('*') or {}).get(d) or [0, 0, 1]
+        hx, hy, hs = FIT['hat'][a['hat']][d]
+        im = hat_image(a['hat'], d); hs *= (adj[2] if len(adj) > 2 else 1)
+        hat_layer = Image.new('RGBA', c.size)
+        put(hat_layer, None, [hx + adj[0], hy + adj[1], im.width * hs, im.height * hs], im=im)
+        # 모자 아래 가장자리보다 위쪽의 머리(얼굴·머리카락)를 지움: 모자 밖으로 삐져나온 머리를 숨김
+        import numpy as np
+        ha = None if a['hat'] in FIT.get('hatNoCut', []) else np.array(hat_layer)[..., 3] > 60
+        arr = np.array(c)
+        if ha is not None:
+            cut = hat_cut_line(ha)
+            yy = np.arange(arr.shape[0])[:, None]
+            # 지울 정도 0~1: 선 위쪽은 지우고, 선 근처 3px은 부드럽게
+            m = np.clip((cut[None, :] - yy) / 3.0 + 0.5, 0, 1)
+            arr[..., 3] = (arr[..., 3] * (1 - m)).astype('uint8')
+        c = Image.fromarray(arr)
+    body_c.alpha_composite(c); c = body_c
     if a['clip'] != 'none' and FIT['clip'].get(d):
         adj = FIT['clipByHair'].get(a['hair'], {}).get(d)
         put(c, M['accessories'][a['clip']][d], scaled(FIT['clip'][d], adj))
-    if a['hat'] != 'none' and not hat_hair:
-        hb = FIT['hatByHair'].get(a['hair'], {})
-        adj = (hb.get(a['hat']) or hb.get('*') or {}).get(d)
-        put(c, M['accessories'][a['hat']][d], scaled(FIT['hat'][a['hat']][d], adj))
+    if hat_layer: c.alpha_composite(hat_layer)
     return c
 
 
@@ -85,7 +142,7 @@ def sheet(combos, crop=(0, 320), frames=False, scale=0.5):
     W = Image.new('RGBA', (len(cols) * cw, len(combos) * rh), (255, 255, 255, 255))
     for i, a in enumerate(combos):
         for j, (d, f) in enumerate(cols):
-            im = compose(a, d, f).crop((0, y0, 256, y1)).resize((cw, rh), Image.LANCZOS)
+            im = compose(a, d, f).crop((0, y0 + HR, 256, y1 + HR)).resize((cw, rh), Image.LANCZOS)
             W.alpha_composite(im, (j * cw, i * rh))
     return W
 
