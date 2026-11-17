@@ -57,7 +57,7 @@
     var hatFront = a.hat !== 'none' ? worn('hat_' + a.hat + '_front_' + d) : null;
     var hatBack = hatFront ? worn('hat_' + a.hat + '_back_' + d) : null;
     var hatHairW = hatFront && a.hat !== 'headband' ? worn('hathair_' + a.hair + '_' + d) : null;
-    var hatHair = !hatFront && a.hair === '1' && a.hat === 'bucket';   // 머리1+버킷햇: 맞춤 그림 한 장(머리·모자 중복 없음)
+    var hatHair = !hatFront && a.hair === '1' && a.hat === 'bucket';   // (버킷햇 착용 그림이 있으면 쓰지 않음)   // 머리1+버킷햇: 맞춤 그림 한 장(머리·모자 중복 없음)
     var bagBody = bag ? worn(a.bag + '_body_' + d) : null, bagStraps = bag && d !== 'up' ? worn(a.bag + '_straps_' + d) : null;
     function add(p, box, off, extra) { if (p) ops.push([p, box || null, off || null, group, extra || null]); }
     // 1) 등 뒤 가방 (앞·옆에서는 몸 뒤)
@@ -90,8 +90,11 @@
       var g1 = FIT.glasses[d] || [0, 0], g2 = (FIT.glassesByFace[a.face] || {})[d] || [0, 0];
       gOff = [g1[0] + g2[0], g1[1] + g2[1]];
     }
+    var hairW = worn('hair_' + a.hair + '_' + d);   // 다시 그린 머리(착용 칸 기준)
     if (hatHairW) add(hatHairW, null, null, RAW);   // 모자 쓴 머리
-    else add(hatHair ? fitted.bucket_hair1[d] : M.hair[a.hair][d]);
+    else if (hatHair && !hairW) add(fitted.bucket_hair1[d]);
+    else if (hairW) add(hairW, null, null, RAW);
+    else add(M.hair[a.hair][d]);
     // 안경은 머리카락 위에(앞머리가 렌즈를 가리지 않게). 옆모습은 안경다리가 귀에서 끝나게 잘라 그림
     if (gOff) add(fitted[a.glasses][d], null, gOff, { clipX: (FIT.glassesClipX || {})[d] || null });
     // 6) 머리핀 → 모자 (모자는 그림 비율 그대로 [x, y, 배율])

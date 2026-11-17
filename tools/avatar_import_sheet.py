@@ -80,6 +80,26 @@ def import_headband(sheet, name='headband', width=1.0, dy=(0, 0, 0, 0)):
         print(f'hat_{name}_front_{d}.png  배율 {s:.3f}  크기 {c.size}')
 
 
+def import_hair(sheet, num, width=1.04, dy=(0, 0, 0, 0)):
+    """머리: 원래 머리 그림의 위치(꼭대기·가운데)와 너비에 맞춤. 네 방향 같은 배율."""
+    parts = components(Image.open(sheet).convert('RGBA'))
+    def bbox(d):
+        a = np.array(T.img(T.M['hair'][num][d]))[..., 3] > 60; ys, xs = np.where(a)
+        return xs.min(), ys.min() + T.HR, xs.max(), ys.max() + T.HR
+    x0, y0, x1, y1 = bbox('down')
+    s = (x1 - x0) * width / parts[0].width
+    for d, c, oy in zip(T.DIRS, parts, dy):
+        x0, y0, x1, y1 = bbox(d)
+        w, h = round(c.width * s), round(c.height * s)
+        c = c.resize((w, h), Image.LANCZOS)
+        top = y0 + oy
+        if d == 'up':   # 뒷모습: 원래 머리보다 짧으면 목 위 옷 테두리가 보여서, 원래 아래 끝보다 조금 더 내림(최대 18px)
+            top += max(0, min(18, y1 - (top + h) + 4))
+        out = Image.new('RGBA', (T.W, T.H)); out.alpha_composite(c, (round((x0 + x1) / 2 - w / 2), top))
+        out.save(WORN / f'hair_{num}_{d}.png')
+        print(f'hair_{num}_{d}.png  배율 {s:.3f}  크기 {c.size}')
+
+
 if __name__ == '__main__':
     args = sys.argv[1:]
     width, dy = 1.12, (0, 0, 0, 0)
@@ -87,6 +107,7 @@ if __name__ == '__main__':
     if '--dy' in args: i = args.index('--dy'); dy = tuple(int(v) for v in args[i + 1].split(',')); del args[i:i + 2]
     sheet, kind, name = args[0], args[1], args[2]
     if kind == 'hat': import_hat(sheet, name, width, dy)
+    elif kind == 'hair': import_hair(sheet, name, width if '--width' in sys.argv else 1.04, dy)
     elif kind == 'headband': import_headband(sheet, name, width if '--width' in sys.argv else 1.0, dy)
-    else: raise SystemExit('지원하는 종류: hat, headband')
+    else: raise SystemExit('지원하는 종류: hat, headband, hair')
     print('목록:', ', '.join(write_index()))
