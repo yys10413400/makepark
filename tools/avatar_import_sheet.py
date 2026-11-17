@@ -80,34 +80,68 @@ def import_headband(sheet, name='headband', width=1.0, dy=(0, 0, 0, 0)):
         print(f'hat_{name}_front_{d}.png  배율 {s:.3f}  크기 {c.size}')
 
 
-def import_hair(sheet, num, width=1.04, dy=(0, 0, 0, 0)):
-    """머리: 원래 머리 그림의 위치(꼭대기·가운데)와 너비에 맞춤. 네 방향 같은 배율."""
-    parts = components(Image.open(sheet).convert('RGBA'))
-    def bbox(d):
-        a = np.array(T.img(T.M['hair'][num][d]))[..., 3] > 60; ys, xs = np.where(a)
-        return xs.min(), ys.min() + T.HR, xs.max(), ys.max() + T.HR
-    x0, y0, x1, y1 = bbox('down')
-    s = (x1 - x0) * width / parts[0].width
-    for d, c, oy in zip(T.DIRS, parts, dy):
-        x0, y0, x1, y1 = bbox(d)
-        w, h = round(c.width * s), round(c.height * s)
-        c = c.resize((w, h), Image.LANCZOS)
-        top = y0 + oy
-        if d == 'up':   # 뒷모습: 원래 머리보다 짧으면 목 위 옷 테두리가 보여서, 원래 아래 끝보다 조금 더 내림(최대 18px)
-            top += max(0, min(18, y1 - (top + h) + 4))
-        out = Image.new('RGBA', (T.W, T.H)); out.alpha_composite(c, (round((x0 + x1) / 2 - w / 2), top))
+def import_hair(sheet, num, width=1.04, dy=(0, 0, 0, 0), dirs=None):
+    """머리: 원래 머리가 덮던 영역(두피·뒤통수·목 위)을 최대한 덮고, 보이던 얼굴(눈·코·입)은 가리지 않도록
+    방향마다 크기·위치를 조금씩 바꿔 가장 잘 맞는 자리를 찾음."""
+    dirs = dirs or T.DIRS
+    parts = components(Image.open(sheet).convert('RGBA'), len(dirs))
+    # 그림에 귀(피부색)까지 그려 온 경우 지움: 귀는 얼굴 그림의 귀를 씀
+    def no_skin(im):
+        a = np.array(im).astype(int); r, g, b = a[..., 0], a[..., 1], a[..., 2]
+        skin = (r > 215) & (g > 160) & (b > 130) & (r - g < 70) & (a[..., 3] > 0)
+        a[skin, 3] = 0
+        return Image.fromarray(a.astype('uint8'))
+    parts = [no_skin(c) for c in parts]
+    def mask(im, th=100): return np.array(im)[..., 3] > th
+    def tile(p):
+        c = Image.new('RGBA', (T.W, T.H)); c.alpha_composite(T.img(p), (0, T.HR)); return c
+    x0, y0, x1, y1 = None, None, None, None
+    for d, c, oy in zip(dirs, parts, dy):
+        hair0 = mask(tile(T.M['hair'][num][d]))
+        face = np.zeros_like(hair0)
+        for f in T.M['faces']: face |= mask(tile(T.M['faces'][f][d]))
+        scalp = face & hair0                 # 원래 머리가 덮던 두피: 꼭 덮어야 함
+        front = np.zeros_like(face)          # 얼굴 앞부분(눈·코·입): 가리면 안 됨
+        if d == 'down': front[T.HR + 100:T.HR + 175, 70:186] = True
+        elif d == 'left': front[T.HR + 100:T.HR + 175, :112] = True
+        elif d == 'right': front[T.HR + 100:T.HR + 175, 144:] = True
+        forbid = face & ~hair0 & front
+        ys, xs = np.where(hair0); bw = xs.max() - xs.min()
+        base = bw * width / c.width
+        best = None
+        for m in np.arange(0.92, 1.30 if d in ('down', 'up') else 1.13, 0.04):   # 옆모습은 지나치게 커지지 않게
+            s = base * m; w, h = round(c.width * s), round(c.height * s)
+            if w > T.W or h > T.H: continue
+            a = mask(c.resize((w, h), Image.LANCZOS), 120)
+            # 앞·뒤: 가운데 기준 / 옆: 앞머리 쪽 끝을 원래 머리 앞 끝에 맞춤(얼굴을 덮지 않게)
+            if d == 'left': cx0 = xs.min()
+            elif d == 'right': cx0 = xs.max() - w
+            else: cx0 = round((xs.max() + xs.min()) / 2 - w / 2)
+            cy0 = ys.min(); rx = 18 if d in ('down', 'up') else 9
+            for ddx in range(-rx, rx + 1, 3):
+                for ddy in range(-10, 11, 2):
+                    X, Y = cx0 + ddx, cy0 + ddy + oy
+                    if X < 0 or Y < 0 or X + w > T.W or Y + h > T.H: continue
+                    cov = np.zeros_like(hair0); cov[Y:Y + h, X:X + w] = a
+                    score = 4 * (cov & scalp).sum() + (cov & hair0).sum() - 5 * (cov & forbid).sum() - 0.05 * (cov & ~hair0 & ~face).sum()
+                    if best is None or score > best[0]: best = (score, s, X, Y, w, h)
+        _, s, X, Y, w, h = best
+        out = Image.new('RGBA', (T.W, T.H)); out.alpha_composite(c.resize((w, h), Image.LANCZOS), (X, Y))
         out.save(WORN / f'hair_{num}_{d}.png')
-        print(f'hair_{num}_{d}.png  배율 {s:.3f}  크기 {c.size}')
+        miss = (scalp & ~mask(out, 120)).sum()
+        print(f'hair_{num}_{d}.png  배율 {s:.3f}  위치 ({X},{Y})  드러난 두피 {miss}px')
 
 
 if __name__ == '__main__':
     args = sys.argv[1:]
     width, dy = 1.12, (0, 0, 0, 0)
     if '--width' in args: i = args.index('--width'); width = float(args[i + 1]); del args[i:i + 2]
+    dirs = None
+    if '--dirs' in args: i = args.index('--dirs'); dirs = args[i + 1].split(','); del args[i:i + 2]
     if '--dy' in args: i = args.index('--dy'); dy = tuple(int(v) for v in args[i + 1].split(',')); del args[i:i + 2]
     sheet, kind, name = args[0], args[1], args[2]
     if kind == 'hat': import_hat(sheet, name, width, dy)
-    elif kind == 'hair': import_hair(sheet, name, width if '--width' in sys.argv else 1.04, dy)
+    elif kind == 'hair': import_hair(sheet, name, width if '--width' in sys.argv else 1.04, dy, dirs)
     elif kind == 'headband': import_headband(sheet, name, width if '--width' in sys.argv else 1.0, dy)
     else: raise SystemExit('지원하는 종류: hat, headband, hair')
     print('목록:', ', '.join(write_index()))
