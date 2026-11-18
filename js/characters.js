@@ -15,7 +15,7 @@
   'use strict';
   var SPR = window.MP_CHAR_SPRITES || {};
   var BODY_H = 300;        // 그림의 몸 키(px) — tools/build_characters.py 의 BODY_H
-  var DRAW_H = 50;         // 지도 위 몸 키(px)
+  var DRAW_H = 60;         // 지도 위 몸 키(px)
 
   var ROSTER = [
     { id: 'F1', kind: 'free', gender: 'boy', name: '기본 남자아이' },
@@ -120,7 +120,7 @@
     var sh = moving ? 1 - ((opt.bob || 0) / 1.6) * 0.12 : 1;
     ctx.save();
     ctx.fillStyle = 'rgba(30,40,60,0.25)';
-    ctx.beginPath(); ctx.ellipse(x, y - 1, 14 * sh, 4.5 * sh, 0, 0, Math.PI * 2); ctx.fill();
+    ctx.beginPath(); ctx.ellipse(x, y - 1, 16 * sh, 5.2 * sh, 0, 0, Math.PI * 2); ctx.fill();
     ctx.restore();
     drawSprite(ctx, this.sid, x, y, dir, DRAW_H, opt);
   };
