@@ -124,6 +124,7 @@
     <div id="hud" hidden>
       <button class="chip" id="playerChip" type="button" aria-label="내 정보 바꾸기"><span class="dot"></span><span id="playerName"></span><span class="chip-grade" id="playerGrade"></span><span class="chip-edit" aria-hidden="true">✎</span></button>
       <div class="hud-right">
+        <button id="charOpen" class="btn hud-btn" type="button">캐릭터</button>
         <button id="seasonToggle" class="btn hud-btn season-btn" type="button"><small>계절</small> <span id="seasonLabel">크리스마스</span></button>
         <button id="mapToggle" class="btn hud-btn" type="button">전체 지도</button>
       </div>
@@ -140,6 +141,19 @@
     </button>
 
     <div id="toast" class="toast" hidden></div>
+
+    <!-- 캐릭터 고르기 (처음 입장 / 공원 위쪽 '캐릭터' 버튼) -->
+    <section id="charDlg" class="overlay dim" hidden>
+      <div class="entry-panel char-panel" role="dialog" aria-modal="true" aria-labelledby="charTitle">
+        <h2 id="charTitle" class="profile-title">내 캐릭터</h2>
+        <p id="charTickets" class="char-tickets"></p>
+        <div id="charList" class="char-list"></div>
+        <p id="charMsg" class="entry-hint" aria-live="polite"></p>
+        <div class="profile-actions">
+          <button id="charClose" type="button" class="profile-cancel">닫기</button>
+        </div>
+      </div>
+    </section>
 
     <!-- 시설 안내창 -->
     <section id="modal" class="overlay dim" hidden>
@@ -159,6 +173,8 @@
   <script src="js/data/walkmask.js"></script>
   <script src="js/walkgrid.js"></script>
   <script src="js/character.js"></script>
+  <script src="js/data/character-sprites.js"></script>
+  <script src="js/characters.js"></script>
   <script src="js/game.js"></script>
   <script src="js/coaster/missions.js"></script>
   <script src="js/coaster/logic.js"></script>

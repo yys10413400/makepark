@@ -22,7 +22,9 @@
 | `js/data/walkmask.js` | 두 시즌 지도에서 **모두** 길인 칸만 남긴 공통 이동 격자(4px 칸). 아래 명령으로 다시 만듭니다. |
 | `js/walkgrid.js` | 이동 격자와 A* 경로 탐색 |
 | `js/character.js` | 임시 캐릭터(도형). 새 캐릭터 그림을 게임에 넣기 전까지 씁니다. |
-| `assets/characters-src/` | 새 캐릭터 원본 그림(제미나이). 기본 남녀 F1·F2와 건물 보상 캐릭터. 목록·요청서는 `docs/character-art/gemini-prompts.md` |
+| `js/characters.js` | 캐릭터 목록(무료·건물 보상·티켓 가게), 그리기, 아장아장 걷기 |
+| `assets/characters/`, `js/data/character-sprites.js` | 게임용 캐릭터 그림(앞·뒤·옆 3칸)과 칸 위치·발 기준점. `python tools/build_characters.py`로 만듦 |
+| `assets/characters-src/` | 캐릭터 원본 그림(제미나이 3칸 시트). 목록·요청서는 `docs/character-art/gemini-prompts.md` |
 | `js/game.js` | 화면, 카메라, 입력, 시설 안내, 저장, 놀이기구 연결 창구(`MP_API`) |
 | `js/coaster/missions.js` | 코스터 익스프레스 미션 데이터(레일 배치·공개 블록·제한·정답 예시). 설계표는 `docs/coaster-missions.md` |
 | `js/coaster/logic.js` | 코스터 명령 해석기(앞으로·돌기·기다리기·반복·만약). 화면과 분리된 순수 로직 |
@@ -31,6 +33,14 @@
 | `tools/verify_coaster.js` | 코스터 미션 자동 검증 (`node tools/verify_coaster.js`) |
 | `assets/maps/makepark-christmas.webp`, `makepark-normal.webp` | 시즌 지도 2배 해상도(2896×2172, WebP). 게임 좌표는 1배(1448×1086) 기준이고 그림만 2배로 그립니다. |
 | `assets/legacy/` | 이전 지도들(첫 기본 지도, maps-v2)과 개별 장식 12종. 보관만 하고 화면에는 쓰지 않습니다. |
+
+## 캐릭터
+처음 들어올 때 기본 남자아이(F1)·여자아이(F2) 중 하나를 고르고, 공원 위쪽 **캐릭터** 버튼에서 언제든 바꿉니다.
+- **건물 보상**(R1~R7): 건물(스테이지)을 통과하면 받습니다. 지금은 코스터 익스프레스만 미션이 있어, 코스터 학년 과정 스탬프를 받으면 꼬마 기관사가 열립니다. 남자아이·여자아이 그림이 따로 있고, 마지막으로 고른 기본 캐릭터의 성별 쪽을 씁니다.
+- **티켓 가게**(S1~S10): 티켓 20·30·40장으로 삽니다. 한 번 누르면 확인, 한 번 더 누르면 삽니다.
+- 저장: `makepark.save.v1`의 `character = { id, gender, owned }`, 티켓은 `tickets`.
+- 그림: 원본(`assets/characters-src/*.png`)에서 `python tools/build_characters.py`가 배경을 지우고 앞·뒤·옆 3칸으로 잘라 몸 키를 맞춥니다(모자 높이 보정 `HAT`, 왼쪽을 보는 옆모습은 `SIDE_FACES_LEFT`로 뒤집음). 왼쪽으로 걸을 때는 게임에서 옆모습을 뒤집어 그립니다.
+- 걷기: 걷기 칸 그림 없이 한 장을 통통 튀기고 기우뚱하게 움직여 '아장아장' 걷습니다(`js/characters.js`의 `Walker.draw`). 지도 위 몸 키는 `DRAW_H`(50px).
 
 ## 좌표계
 모든 좌표는 시즌 지도 원본 픽셀(1448×1086, 왼쪽 위 0,0) 기준입니다. 배경, 캐릭터, 충돌 영역, 입구가 같은 변환 하나로 그려지므로 화면 크기가 바뀌어도 어긋나지 않습니다.

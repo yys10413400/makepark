@@ -6,8 +6,9 @@
   var SAVE_KEY = 'makepark.save.v1';
 
   var grid = new WalkGrid(window.MP_WALKMASK, PARK);
-  // 캐릭터: 새 캐릭터 그림을 넣기 전까지 임시 캐릭터(도형)로 그림
-  var character = createCharacter(window.MP_CHARACTER);
+  // 캐릭터: 고른 완성형 캐릭터(js/characters.js)로 그리고, 그림을 불러오기 전에는 임시 캐릭터로 그림
+  var placeholder = createCharacter(window.MP_CHARACTER);
+  var character = window.MPChars ? new MPChars.Walker(Object.assign({ fallback: placeholder }, charSave(readSave()))) : placeholder;
 
   // ---------- DOM ----------
   var $ = function (id) { return document.getElementById(id); };
@@ -23,7 +24,9 @@
     enter: $('enterFacility'), enterName: $('enterName'),
     toast: $('toast'),
     modal: $('modal'), modalTitle: $('modalTitle'), modalDesc: $('modalDesc'), modalClose: $('modalClose'),
-    debug: $('debugPanel')
+    debug: $('debugPanel'),
+    charBtn: $('charOpen'), charDlg: $('charDlg'), charTitle: $('charTitle'), charTickets: $('charTickets'),
+    charList: $('charList'), charMsg: $('charMsg'), charClose: $('charClose')
   };
 
   // ---------- 상태 ----------
@@ -199,7 +202,7 @@
     ui.enterPark.disabled = !(n.ok && g);
     ui.nickError.textContent = n.msg;
     ui.nickname.setAttribute('aria-invalid', n.msg ? 'true' : 'false');
-    ui.hint.textContent = n.ok && g ? '준비 완료! 내 캐릭터를 만들어요.'
+    ui.hint.textContent = n.ok && g ? '준비 완료! 공원으로 출발해요.'
       : !n.value ? (titleTouched ? '닉네임을 적어 주세요.' : '')
       : !g ? '학년을 골라 주세요.' : '';
   }
@@ -210,7 +213,9 @@
     e.preventDefault();
     var n = checkNick(ui.nickname.value), g = radioGrade('grade');
     if (!n.ok || !g) { titleTouched = true; updateTitle(); return; }
-    enterPark(n.value, g);
+    // 처음 오면 공원에 들어가기 전에 내 캐릭터 고르기
+    if (window.MPChars && !(readSave() || {}).character) openChars('create', { name: n.value, grade: g });
+    else enterPark(n.value, g);
   });
 
   function enterPark(name, grade) {
@@ -240,7 +245,7 @@
   // ---------- 공원 안 프로필 수정 ----------
   guardIme(ui.profileNick);
   function openProfile() {
-    if (state.phase !== 'play' || state.modalFacility || state.profileOpen || state.coasterOpen) return;
+    if (state.phase !== 'play' || state.modalFacility || state.profileOpen || state.charOpen || state.coasterOpen) return;
     stopMoving(); state.keys = {};
     state.profileOpen = true;
     ui.profileNick.value = state.nickname;
@@ -269,6 +274,144 @@
     saveProfile(n.value, g); showPlayer(); closeProfile();
     toast(storageOk ? '내 정보를 바꿨어요' : '바꿨지만 이 기기에는 저장되지 않아요');
   });
+
+  // ---------- 캐릭터 고르기 ----------
+  // 저장: makepark.save.v1 의 character = { id, gender, owned: [산 캐릭터 id] }, tickets(코스터 미션이 줌)
+  // 무료(F1·F2)는 언제나, 건물 보상(R)은 그 건물을 통과하면, 가게(S)는 티켓으로 사면 고를 수 있습니다.
+  // 보상 캐릭터는 마지막으로 고른 기본 캐릭터의 성별(gender)에 맞는 그림(남 b / 여 g)을 씁니다.
+  function charSave(s) {
+    var c = (s && s.character) || {}, M = window.MPChars;
+    return {
+      id: M && M.byId(c.id) ? c.id : 'F1',
+      gender: c.gender === 'girl' ? 'girl' : 'boy',
+      owned: Array.isArray(c.owned) ? c.owned.filter(function (x) { return M && M.byId(x); }) : []
+    };
+  }
+  // 건물(스테이지) 통과: 지금은 코스터만 미션이 있어, 학년 과정 스탬프를 하나라도 받으면 통과
+  function facilityCleared(fid) {
+    var s = readSave() || {};
+    if (fid === 'coaster') { var st = (s.coaster && s.coaster.stamps) || {}; return Object.keys(st).some(function (k) { return st[k]; }); }
+    return false;
+  }
+  // 받침에 따라 조사 고르기: josa('탐험가', '을', '를') → '탐험가를'
+  function josa(w, a, b) {
+    var c = w.charCodeAt(w.length - 1) - 0xAC00, has = c >= 0 && c <= 11171 && c % 28 !== 0;
+    if (a === '으로') return w + (has && c % 28 !== 8 ? '으로' : '로');
+    return w + (has ? a : b);
+  }
+  function facilityName(fid) { var f = PARK.facilities.filter(function (x) { return x.id === fid; })[0]; return f ? f.name : fid; }
+  function charUnlocked(d, cs) {
+    return d.kind === 'free' || (d.kind === 'reward' && facilityCleared(d.facility)) || (d.kind === 'shop' && cs.owned.indexOf(d.id) >= 0);
+  }
+  var charMode = 'edit', charEntry = null, pendingBuy = null;
+  var CHAR_SECTIONS = [['free', '기본 캐릭터', '처음부터 고를 수 있어요'], ['reward', '건물 보상 캐릭터', '건물을 통과하면 받아요'], ['shop', '티켓 가게', '티켓으로 사요']];
+  function renderChars() {
+    var s = readSave() || {}, cs = charSave(s), tickets = s.tickets || 0;
+    ui.charTickets.textContent = charMode === 'create' ? '건물 보상·티켓 가게 캐릭터는 공원에서 모을 수 있어요.' : '내 티켓 ' + tickets + '장';
+    ui.charList.textContent = '';
+    CHAR_SECTIONS.forEach(function (sec) {
+      if (charMode === 'create' && sec[0] !== 'free') return;
+      var h = document.createElement('h3'); h.className = 'char-sec';
+      h.textContent = sec[1] + ' ';
+      var sm = document.createElement('small'); sm.textContent = sec[2]; h.appendChild(sm);
+      var grid = document.createElement('div'); grid.className = 'char-grid';
+      MPChars.ROSTER.filter(function (d) { return d.kind === sec[0]; }).forEach(function (d) {
+        var open = charUnlocked(d, cs), cur = charMode !== 'create' && cs.id === d.id;
+        var b = document.createElement('button'); b.type = 'button';
+        b.className = 'char-card' + (cur ? ' current' : '') + (open ? '' : ' locked') + (pendingBuy === d.id ? ' confirm' : '');
+        b.dataset.id = d.id;
+        var cv = document.createElement('canvas'); cv.width = 96; cv.height = 112;
+        drawCard(cv, MPChars.spriteId(d.id, d.kind === 'free' ? d.gender : cs.gender), !open);
+        var nm = document.createElement('span'); nm.className = 'char-name'; nm.textContent = d.name;
+        var st = document.createElement('span'); st.className = 'char-state';
+        st.textContent = cur ? '지금 캐릭터' : open ? '고르기'
+          : d.kind === 'reward' ? '🔒 ' + facilityName(d.facility)
+          : pendingBuy === d.id ? '한 번 더 누르면 사요' : '🎟 ' + d.price + '장';
+        b.setAttribute('aria-label', d.name + ', ' + st.textContent);
+        b.appendChild(cv); b.appendChild(nm); b.appendChild(st); grid.appendChild(b);
+      });
+      ui.charList.appendChild(h); ui.charList.appendChild(grid);
+    });
+  }
+  function drawCard(cv, sid, locked) {
+    var g = cv.getContext('2d');
+    function paint() {
+      g.clearRect(0, 0, cv.width, cv.height);
+      if (locked) g.filter = 'grayscale(1) opacity(0.5)';
+      var ok = MPChars.drawSprite(g, sid, cv.width / 2, cv.height - 6, 'down', 84);
+      g.filter = 'none';
+      return ok;
+    }
+    if (paint()) return;
+    var e = MPChars.load(sid), tries = 0;
+    (function wait() { if (e.done || tries++ > 100) paint(); else setTimeout(wait, 60); })();
+  }
+  function selectChar(d, cs) {
+    var gender = d.kind === 'free' ? d.gender : cs.gender;
+    patchSave({ character: { id: d.id, gender: gender, owned: cs.owned } });
+    character.set(d.id, gender);
+    if (charMode === 'create') { var en = charEntry; closeChars(); if (en) enterPark(en.name, en.grade); return; }
+    renderChars();
+    ui.charMsg.textContent = josa(d.name, '으로') + ' 바꿨어요!';
+  }
+  function onCharClick(e) {
+    var b = e.target.closest && e.target.closest('.char-card');
+    if (!b) return;
+    var d = MPChars.byId(b.dataset.id), s = readSave() || {}, cs = charSave(s);
+    if (charUnlocked(d, cs)) { pendingBuy = null; selectChar(d, cs); return; }
+    if (d.kind === 'reward') {
+      pendingBuy = null; renderChars();
+      ui.charMsg.textContent = d.facility === 'coaster'
+        ? facilityName(d.facility) + '에서 학년 과정을 끝내면 받을 수 있어요.'
+        : josa(facilityName(d.facility), '이', '가') + ' 문을 열면 받을 수 있어요.';
+      return;
+    }
+    var t = s.tickets || 0;
+    if (t < d.price) {
+      pendingBuy = null; renderChars();
+      ui.charMsg.textContent = '티켓이 ' + (d.price - t) + '장 모자라요. 놀이기구 미션을 하면 티켓을 받아요.';
+      return;
+    }
+    if (pendingBuy !== d.id) {
+      pendingBuy = d.id; renderChars();
+      ui.charMsg.textContent = '티켓 ' + d.price + '장으로 ' + josa(d.name, '을', '를') + ' 살까요? 한 번 더 누르면 사요.';
+      var again = ui.charList.querySelector('.char-card.confirm'); if (again) again.focus();
+      return;
+    }
+    pendingBuy = null;
+    cs.owned.push(d.id);
+    patchSave({ tickets: t - d.price, character: { id: cs.id, gender: cs.gender, owned: cs.owned } });
+    selectChar(d, cs);
+    ui.charMsg.textContent = josa(d.name, '을', '를') + ' 샀어요! 남은 티켓 ' + (t - d.price) + '장';
+    if (!storageOk) toast('샀지만 이 기기에는 저장되지 않아요');
+  }
+  function openChars(mode, entry) {
+    if (!window.MPChars || state.charOpen) return;
+    if (mode === 'edit' && (state.phase !== 'play' || state.modalFacility || state.profileOpen || state.coasterOpen)) return;
+    if (mode === 'edit') { stopMoving(); ui.enter.hidden = true; state.nearby = null; }
+    state.keys = {};
+    charMode = mode; charEntry = entry || null; pendingBuy = null;
+    ui.charTitle.textContent = mode === 'create' ? '내 캐릭터 고르기' : '내 캐릭터';
+    ui.charClose.textContent = mode === 'create' ? '뒤로' : '닫기';
+    ui.charMsg.textContent = '';
+    renderChars();
+    state.charOpen = true; ui.charDlg.hidden = false;
+    var f = ui.charList.querySelector('.char-card.current') || ui.charList.querySelector('.char-card');
+    if (f) f.focus();
+  }
+  function closeChars() {
+    state.charOpen = false; ui.charDlg.hidden = true; state.keys = {}; pendingBuy = null;
+    if (charMode === 'create') ui.enterPark.focus(); else if (ui.charBtn) ui.charBtn.focus();
+  }
+  if (ui.charBtn) {
+    if (!window.MPChars) ui.charBtn.hidden = true;
+    ui.charBtn.addEventListener('click', function () { openChars('edit'); });
+    ui.charClose.addEventListener('click', closeChars);
+    ui.charList.addEventListener('click', onCharClick);
+    ui.charDlg.addEventListener('pointerdown', function (e) { if (e.target === ui.charDlg) closeChars(); });
+    ui.charDlg.addEventListener('keydown', function (e) { if (e.code === 'Escape') { e.preventDefault(); closeChars(); } });
+  }
+
 
   // ---------- 카메라 ----------
   function fitScale() { return Math.min(view.w / W, view.h / H); }
@@ -332,7 +475,7 @@
     var p = state.player, speed = PARK.player.speed, k = state.keys;
     var ix = (k.right ? 1 : 0) - (k.left ? 1 : 0), iy = (k.down ? 1 : 0) - (k.up ? 1 : 0);
     p.moving = false;
-    if (state.modalFacility || state.profileOpen || state.coasterOpen) return;
+    if (state.modalFacility || state.profileOpen || state.charOpen || state.coasterOpen) return;
     if (ix || iy) {
       stopMoving();
       var len = Math.hypot(ix, iy), dx = ix / len * speed * dt, dy = iy / len * speed * dt;
@@ -386,7 +529,7 @@
     return best;
   }
   function updateNearby() {
-    var f = state.phase === 'play' && state.view === 'play' && !state.modalFacility && !state.profileOpen && !state.coasterOpen ? findNearby() : null;
+    var f = state.phase === 'play' && state.view === 'play' && !state.modalFacility && !state.profileOpen && !state.charOpen && !state.coasterOpen ? findNearby() : null;
     if (f !== state.nearby) {
       state.nearby = f;
       ui.enter.hidden = !f;
@@ -430,6 +573,7 @@
   window.addEventListener('keydown', function (e) {
     if (e.code === 'F2') { e.preventDefault(); state.debug = !state.debug; return; }
     if (state.phase !== 'play') return;
+    if (state.charOpen) return; // 캐릭터 고르기 창: 창 안에서 따로 처리
     if (state.profileOpen) { // 프로필 수정 중: 글자 입력이 게임 조작으로 가지 않게
       if (e.code === 'Escape') { e.preventDefault(); closeProfile(); }
       return;
@@ -459,7 +603,7 @@
     return { x: e.clientX - r.left, y: e.clientY - r.top };
   }
   canvas.addEventListener('pointerdown', function (e) {
-    if (state.phase !== 'play' || state.modalFacility || state.profileOpen || state.coasterOpen) return;
+    if (state.phase !== 'play' || state.modalFacility || state.profileOpen || state.charOpen || state.coasterOpen) return;
     e.preventDefault();
     var sp = eventPoint(e), w = screenToWorld(sp.x, sp.y);
     if (state.view === 'map') {
@@ -682,6 +826,7 @@
   window.MP_API = {
     readSave: readSave,
     patchSave: patchSave,
+    openChars: function () { openChars('edit'); },
     storageOk: function () { return storageOk; },
     profile: function () { return { nickname: state.nickname, grade: state.grade, band: state.gradeBand }; },
     exitCoaster: exitCoaster
