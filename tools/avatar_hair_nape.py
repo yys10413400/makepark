@@ -18,6 +18,11 @@ TOP = 120                    # 이 높이(칸 좌표)부터 아래만 늘림: �
 MARGIN = 2                   # 두상 아래 끝보다 이만큼 위까지 덮음
 MAX_STRETCH = 2.2            # 한 열을 최대 몇 배까지 늘릴지(너무 늘어나 보이지 않게)
 EXCEPT = {}                  # (번호, 방향): 건너뛸 것
+# 짧은 머리: 뒷머리를 더 길게. 귀 앞쪽(START)부터 서서히 늘려 귀도 덮고, 두상 아래 끝보다 EXTRA px 더 내려 목·후드 위까지
+SHORT = {'1': dict(START=112, RAMP=34, EXTRA=8, MAX=3.0, ENV=25),
+         '2': dict(START=112, RAMP=34, EXTRA=8, MAX=3.0, ENV=25),
+         '3': dict(START=112, RAMP=34, EXTRA=8, MAX=3.0, ENV=25),
+         '8': dict(START=112, RAMP=34, EXTRA=8, MAX=3.0, ENV=25)}
 
 
 def face_bottom():
@@ -29,8 +34,17 @@ def face_bottom():
     return fb
 
 
-def stretch(im, fb):
+def stretch(im, fb, START=EAR_BACK, RAMP=RAMP, EXTRA=-MARGIN, MAX=MAX_STRETCH, SMOOTH=7, OPEN=0, ENV=1):
     """왼쪽 보기 그림(오른쪽 보기는 좌우를 뒤집어 넣음)의 귀 뒤 열을 세로로 늘림"""
+    if OPEN:   # 가는 머리 가닥 끝은 늘리면 길쭉한 선이 되므로 먼저 지움(귀 근처 아래쪽만)
+        from PIL import ImageFilter
+        al0 = im.getchannel('A')
+        opened = al0.filter(ImageFilter.MinFilter(OPEN)).filter(ImageFilter.MaxFilter(OPEN))
+        a0 = np.array(im.convert('RGBA'))
+        keep = np.array(opened).astype(np.float32)
+        zone = np.zeros(a0.shape[:2], bool); zone[TOP + 30:, START:] = True
+        a0[..., 3] = np.where(zone, np.minimum(a0[..., 3], keep), a0[..., 3]).astype(np.uint8)
+        im = Image.fromarray(a0)
     a = np.array(im.convert('RGBA')).astype(np.float32)
     H, W = a.shape[:2]
     al = a[..., 3] > 100
@@ -39,17 +53,22 @@ def stretch(im, fb):
     yy = np.arange(H, dtype=np.float32)
     # 열마다 늘릴 비율 계산 후 가로로 부드럽게
     ratio = np.ones(W)
-    for x in range(EAR_BACK, W):
-        if fb[x] < 0: continue
-        ys = np.where(al[:, x])[0]
-        if not len(ys) or ys.max() <= TOP: continue
-        b, t = ys.max(), fb[x] - MARGIN
+    # 열마다 머리 아래 끝. ENV>1 이면 이웃 열 중 가장 긴 끝을 씀: 긴 머리 가닥 옆 짧은 가닥만 길쭉하게 늘어나지 않게
+    bot = np.array([np.where(al[:, x])[0].max() if al[:, x].any() else -1 for x in range(W)])
+    if ENV > 1:
+        bot = np.array([bot[max(0, x - ENV // 2):x + ENV // 2 + 1].max() if bot[x] >= 0 else -1 for x in range(W)])
+    last = -1
+    for x in range(START, W):
+        if fb[x] >= 0: last = fb[x]
+        if last < 0: continue
+        if bot[x] <= TOP: continue
+        b, t = bot[x], last + EXTRA
         if t <= b: continue
-        r = min(MAX_STRETCH, (t - TOP) / (b - TOP))
-        ramp = min(1, (x - EAR_BACK) / RAMP)
+        r = min(MAX, (t - TOP) / (b - TOP))
+        ramp = min(1, (x - START) / RAMP)
         ratio[x] = 1 + (r - 1) * ramp
-    k = np.ones(7) / 7
-    ratio = np.convolve(np.pad(ratio, 3, mode='edge'), k, mode='valid')
+    k = np.ones(SMOOTH) / SMOOTH
+    ratio = np.convolve(np.pad(ratio, SMOOTH // 2, mode='edge'), k, mode='valid')
     for x in range(W):
         if ratio[x] <= 1.001: continue
         src = np.where(yy > TOP, TOP + (yy - TOP) / ratio[x], yy)
@@ -70,7 +89,8 @@ if __name__ == '__main__':
             if not b.exists(): shutil.copy2(WORN / name, b)
             im = Image.open(b).convert('RGBA')
             if (n, d) in EXCEPT: im.save(WORN / name); continue
-            if d == 'right': im = stretch(im.transpose(Image.FLIP_LEFT_RIGHT), fb).transpose(Image.FLIP_LEFT_RIGHT)
-            else: im = stretch(im, fb)
+            kw = dict(SHORT.get(n, {}), SMOOTH=15) if n in SHORT else {}
+            if d == 'right': im = stretch(im.transpose(Image.FLIP_LEFT_RIGHT), fb, **kw).transpose(Image.FLIP_LEFT_RIGHT)
+            else: im = stretch(im, fb, **kw)
             im.save(WORN / name)
             print(name)
