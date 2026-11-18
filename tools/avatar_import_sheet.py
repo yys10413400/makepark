@@ -132,6 +132,52 @@ def import_hair(sheet, num, width=1.04, dy=(0, 0, 0, 0), dirs=None):
         print(f'hair_{num}_{d}.png  배율 {s:.3f}  위치 ({X},{Y})  드러난 두피 {miss}px')
 
 
+def import_clip(sheet, name, width=42, dy=(0, 0, 0, 0)):
+    """머리핀: 앞·왼쪽 두 장만 씀(오른쪽 보기·뒷모습에서는 안 보임). 그림에 세 장이 있으면 앞의 두 장.
+    캐릭터 왼쪽 머리(관자놀이 위) 자리에 같은 크기로 놓음."""
+    dirs = ['down', 'left']
+    im = Image.open(sheet).convert('RGBA')
+    try: parts = components(im, 3)[:2]
+    except SystemExit: parts = components(im, 2)
+    anchor = {'down': (179, 132), 'left': (158, 132), 'up': (77, 132)}   # 착용 칸 좌표(핀 가운데)
+    s = width / parts[0].width
+    for d, c, oy in zip(dirs, parts, dy):
+        w, h = round(c.width * s), round(c.height * s)
+        c = c.resize((w, h), Image.LANCZOS)
+        ax, ay = anchor[d]
+        out = Image.new('RGBA', (T.W, T.H)); out.alpha_composite(c, (round(ax - w / 2), round(ay - h / 2) + oy))
+        out.save(WORN / f'{name}_{d}.png')
+        print(f'{name}_{d}.png  배율 {s:.3f}  크기 {c.size}')
+
+
+def import_bag(sheet, name, part, swap=False):
+    """가방: part='body'는 왼쪽·오른쪽·뒤 세 장(템플릿 보라 상자에 맞춤),
+    part='straps'는 앞·왼쪽·오른쪽 세 장(노랑 배낭 맞춤 끈과 같은 자리·크기)."""
+    parts = components(Image.open(sheet).convert('RGBA'), 3)
+    if swap: parts[0], parts[1] = parts[1], parts[0]   # 옆모습 두 장이 반대로 그려진 경우
+    if part == 'body':
+        dirs = ['left', 'right', 'up']
+        boxes = {d: T.GUIDE[d]['bag'] for d in dirs}
+    else:
+        dirs = ['down', 'left', 'right']
+        boxes = {}
+        for d in dirs:
+            a = np.array(T.img(T.M['fitted']['bag_straps'][d]))[..., 3] > 40; ys, xs = np.where(a)
+            boxes[d] = (xs.min(), ys.min() + T.HR, xs.max(), ys.max() + T.HR)
+    for d, c in zip(dirs, parts):
+        x0, y0, x1, y1 = boxes[d]
+        s = min((x1 - x0) / c.width, (y1 - y0) / c.height) if part == 'body' else (y1 - y0) / c.height
+        w, h = round(c.width * s), round(c.height * s)
+        c = c.resize((w, h), Image.LANCZOS)
+        if part == 'body' and d == 'left': X = x1 - w          # 등 쪽(화면 오른쪽)에 붙임
+        elif part == 'body' and d == 'right': X = x0
+        else: X = round((x0 + x1) / 2 - w / 2)
+        Y = y0 if part == 'straps' else y1 - h
+        out = Image.new('RGBA', (T.W, T.H)); out.alpha_composite(c, (X, Y))
+        out.save(WORN / f'{name}_{part}_{d}.png')
+        print(f'{name}_{part}_{d}.png  배율 {s:.3f}  크기 {c.size}')
+
+
 if __name__ == '__main__':
     args = sys.argv[1:]
     width, dy = 1.12, (0, 0, 0, 0)
@@ -142,6 +188,8 @@ if __name__ == '__main__':
     sheet, kind, name = args[0], args[1], args[2]
     if kind == 'hat': import_hat(sheet, name, width, dy)
     elif kind == 'hair': import_hair(sheet, name, width if '--width' in sys.argv else 1.04, dy, dirs)
+    elif kind == 'clip': import_clip(sheet, name, int(width) if '--width' in sys.argv else 42, dy)
+    elif kind in ('bag_body', 'bag_straps'): import_bag(sheet, name, kind.split('_')[1], '--swap' in sys.argv)
     elif kind == 'headband': import_headband(sheet, name, width if '--width' in sys.argv else 1.0, dy)
-    else: raise SystemExit('지원하는 종류: hat, headband, hair')
+    else: raise SystemExit('지원하는 종류: hat, headband, hair, clip, bag_body, bag_straps')
     print('목록:', ', '.join(write_index()))

@@ -1,5 +1,17 @@
 // 착용 그림 목록 (tools/avatar_import_sheet.py 가 자동으로 만듦)
 window.MP_AVATAR_WORN = [
+  "bag_coral_body_left",
+  "bag_coral_body_right",
+  "bag_coral_body_up",
+  "bag_coral_straps_down",
+  "bag_coral_straps_left",
+  "bag_coral_straps_right",
+  "clip_bow_down",
+  "clip_bow_left",
+  "clip_flower_down",
+  "clip_flower_left",
+  "clip_star_down",
+  "clip_star_left",
   "hair_1_down",
   "hair_1_left",
   "hair_1_right",

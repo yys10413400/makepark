@@ -13,7 +13,7 @@
  *   hatNoCut 에 적은 머리띠는 머리카락 위에 얹는 것이라 지우지 않습니다.
  * cropBottom: 그림 시트를 자를 때 아래에 딸려 온 다른 그림 조각이 있어, 위에서부터 이 높이까지만 그립니다(파일은 그대로).
  * 가방 sideImage: 코랄·네이비 가방의 옆모습 그림은 좌우가 반대로 그려져 있어(가방 몸통이 등에 가려지고 끈 고리만 보임) 반대쪽 그림을 씁니다.
- * 머리핀은 캐릭터 왼쪽 머리에 꽂혀 있어서 오른쪽을 볼 때(right)는 반대편이라 그리지 않고(null), 뒷모습(up)에서는 화면 왼쪽에 보입니다.
+ * 머리핀은 캐릭터 왼쪽 머리에 꽂혀 있어서 오른쪽을 볼 때(right)와 뒷모습(up)에서는 그리지 않습니다(null).
  * 옆모습 안경은 머리카락 위에 그리고, 안경다리는 귀(x 120~153) 위에서 끝나게 glassesClipX 범위만 그립니다.
  * 안경 위치는 얼굴마다 눈 위치(눈동자 중심)를 재서 얼굴1 기준으로 얼마나 옮길지 적었습니다.
  * 방향: down(앞) left right up(뒤).  값을 바꾼 뒤 tools/avatar_sheet.py 로 전체 조합 그림을 다시 만들어 확인하세요.
@@ -34,7 +34,7 @@ window.MP_AVATAR_FIT =
   "hatNoCut": ["headband"],
   "hatByHair": {},
   "cropBottom": { "bag_coral": 76, "clip_bow": 74, "clip_flower": 78 },
-  "clip": { "down": [164, 64, 31, 29], "left": [145, 64, 31, 29], "right": null, "up": [61, 64, 31, 29] },
+  "clip": { "down": [164, 64, 31, 29], "left": [145, 64, 31, 29], "right": null, "up": null },
   "clipByHair": {},
   "glasses": { "down": [0, 0], "left": [0, 3], "right": [0, 3] },
   "glassesClipX": { "left": [0, 150], "right": [106, 256] },
