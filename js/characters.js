@@ -4,7 +4,7 @@
  * 그림: assets/characters/<id>.webp (tools/build_characters.py 가 제미나이 원본에서 만듦)
  *       칸 위치·발 기준점: js/data/character-sprites.js (window.MP_CHAR_SPRITES)
  * 방향: down(앞) up(뒤) right(옆) 세 칸. 왼쪽은 옆모습을 좌우로 뒤집어 그립니다.
- * 걷기: 걷기 칸 그림 없이, 몸을 통통 튀기고 좌우로 기우뚱하게 움직여 '아장아장' 걷습니다.
+ * 걷기: 걷기 칸 그림 없이, 걸음마다 살짝 위아래로 움직이고 옆모습은 가는 쪽으로 조금 숙여 걷습니다.
  *
  * 캐릭터 종류
  *  free   : 처음부터 고를 수 있음 (기본 남자아이 F1, 기본 여자아이 F2)
@@ -92,14 +92,17 @@
     if (!e.ok) { if (this.fallback) this.fallback.draw(ctx, x, y, dir, moving, t); return; }
     var opt;
     if (moving) {
-      // 아장아장: 한 걸음마다 통 튀고(bob), 발을 디딜 때 살짝 납작(sy), 좌우로 기우뚱(tilt)
-      var ph = t * 11, k = Math.abs(Math.sin(ph));
+      // 걷기: 한 걸음마다 아주 살짝 위로(bob) 올라갔다 내려오고, 발을 디딜 때 조금 납작(sy).
+      // 앞·뒤 모습은 몸이 아주 조금만 좌우로 흔들리고, 옆모습은 기울이지 않고 가는 쪽으로 살짝 숙임.
+      var ph = t * 12, k = Math.abs(Math.sin(ph));
       var side = dir === 'left' || dir === 'right';
-      opt = { bob: k * 3.2, tilt: Math.sin(ph) * (side ? 0.05 : 0.09), sy: 0.95 + k * 0.05, sx: 1.03 - k * 0.03 };
+      opt = side
+        ? { bob: k * 1.6, tilt: (dir === 'left' ? -1 : 1) * (0.035 + k * 0.015), sy: 0.985 + k * 0.015 }
+        : { bob: k * 1.6, tilt: Math.sin(ph) * 0.018, sy: 0.985 + k * 0.015 };
     } else {
-      opt = { sy: 1 + Math.sin(t * 2.4) * 0.012 };   // 가만히 있을 때 숨쉬기
+      opt = { sy: 1 + Math.sin(t * 2.4) * 0.01 };   // 가만히 있을 때 숨쉬기
     }
-    var sh = moving ? 1 - (opt.bob / 3.2) * 0.25 : 1;
+    var sh = moving ? 1 - (opt.bob / 1.6) * 0.12 : 1;
     ctx.save();
     ctx.fillStyle = 'rgba(30,40,60,0.25)';
     ctx.beginPath(); ctx.ellipse(x, y - 1, 14 * sh, 4.5 * sh, 0, 0, Math.PI * 2); ctx.fill();
