@@ -323,7 +323,7 @@ button.chip:focus-visible { outline: 3px solid var(--mint); outline-offset: 2px;
   .entry-main .entry-go {
     position: absolute; left: 13.85%; top: 80.05%; width: 71.95%; height: 12.75%; min-height: 0;
     margin: 0; padding: 0; border: 0; border-radius: 999px; box-shadow: none;
-    /* 그림 속 버튼 글자('공원으로 출발!') 위에 같은 모양 버튼을 덮어 '내 캐릭터 만들기'로 씀 */
+    /* 그림 속 버튼 글자('공원으로 출발!') 위에 같은 모양 버튼을 덮어 씀 */
     background: linear-gradient(180deg, #1a8f84, #0f6d64); color: #fff4c9; font-size: 3.6cqw;
     box-shadow: inset 0 0 0 0.45cqw var(--e-gold), inset 0 0.5cqw 0 rgba(255, 255, 255, 0.18);
     text-shadow: 0 0.25cqw 0 rgba(0, 50, 45, 0.5);
@@ -338,27 +338,6 @@ button.chip:focus-visible { outline: 3px solid var(--mint); outline-offset: 2px;
 
 @media (prefers-reduced-motion: reduce) { .grade-opt span, .entry-go { transition: none; } }
 
-/* 캐릭터 꾸미기 */
-#avatarDlg { overflow-y: auto; }
-.avatar-panel { width: min(780px, 100%); padding: 18px clamp(14px, 3vw, 28px) 18px; }
-.av-preview { margin: 10px 0 6px; background: #f3e6d2; border: 3px solid #e7dcc5; border-radius: 18px; padding: 6px; }
-.av-preview canvas { display: block; width: 100%; height: auto; }
-.av-walk { display: inline-flex; align-items: center; gap: 6px; font-size: 15px; color: var(--e-brown-soft); margin: 4px 0 2px; cursor: pointer; }
-.av-walk input { width: 18px; height: 18px; accent-color: var(--e-teal); }
-.av-groups { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 8px 14px; text-align: left; }
-.av-group { border: 0; margin: 0; padding: 0; min-width: 0; }
-.av-group legend { font-size: 16px; color: var(--e-brown); padding: 0; margin-bottom: 4px; }
-.av-opts { display: flex; flex-wrap: wrap; gap: 6px; }
-.av-opt { position: relative; }
-.av-opt input { position: absolute; opacity: 0; inset: 0; margin: 0; cursor: pointer; }
-.av-opt span {
-  display: inline-block; padding: 6px 11px; border-radius: 999px; font-size: 14px; line-height: 1.2;
-  background: #fffdf5; border: 2px solid #e7dcc5; color: var(--e-navy);
-}
-.av-swatch { display: inline-block; width: 14px; height: 14px; border-radius: 50%; margin-right: 5px; vertical-align: -2px; border: 2px solid rgba(255,255,255,0.85); box-shadow: 0 0 0 1px rgba(110,75,47,0.4); }
-.av-opt input:checked + span { background: var(--e-teal); border-color: var(--e-teal-dark); color: #fff; }
-.av-opt input:focus-visible + span { outline: 3px solid var(--e-purple); outline-offset: 2px; }
-@media (max-width: 480px) { .av-groups { grid-template-columns: 1fr; } }
 /* 좁은 화면: 위쪽 버튼이 4개라 닉네임이 보이도록 버튼을 줄임 */
 @media (max-width: 520px) {
   #hud { gap: 6px; left: 8px; right: 8px; }
@@ -368,9 +347,3 @@ button.chip:focus-visible { outline: 3px solid var(--mint); outline-offset: 2px;
   .chip { padding: 8px 10px; font-size: 15px; gap: 5px; min-width: 0; flex: 1 1 auto; }
   .chip-edit { display: none; }
 }
-/* 꾸미기·만들기 창: 버튼은 늘 보이게 아래에 붙이고, 낮은 화면에서는 미리보기를 줄임 */
-.avatar-panel .profile-actions {
-  position: sticky; bottom: -18px; z-index: 2; margin: 10px -8px -18px; padding: 10px 8px 14px;
-  background: linear-gradient(180deg, rgba(255, 248, 232, 0), #fff8e8 30%);
-}
-.av-preview canvas { max-height: 30vh; width: auto; max-width: 100%; margin: 0 auto; }

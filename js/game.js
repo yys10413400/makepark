@@ -6,11 +6,8 @@
   var SAVE_KEY = 'makepark.save.v1';
 
   var grid = new WalkGrid(window.MP_WALKMASK, PARK);
-  // 캐릭터: 받은 캐릭터 통합본(js/avatar)으로 그리고, 그림을 불러오기 전에는 임시 캐릭터로 그림
-  var placeholder = createCharacter(window.MP_CHARACTER);
-  var character = window.MPAvatar
-    ? new MPAvatar.Character({ appearance: (readSave() || {}).avatar, fallback: placeholder })
-    : placeholder;
+  // 캐릭터: 새 캐릭터 그림을 넣기 전까지 임시 캐릭터(도형)로 그림
+  var character = createCharacter(window.MP_CHARACTER);
 
   // ---------- DOM ----------
   var $ = function (id) { return document.getElementById(id); };
@@ -26,9 +23,7 @@
     enter: $('enterFacility'), enterName: $('enterName'),
     toast: $('toast'),
     modal: $('modal'), modalTitle: $('modalTitle'), modalDesc: $('modalDesc'), modalClose: $('modalClose'),
-    debug: $('debugPanel'),
-    avatarBtn: $('avatarOpen'), avatarDlg: $('avatarDlg'), avatarForm: $('avatarForm'), avPreview: $('avPreview'),
-    avWalk: $('avWalk'), avatarTitle: $('avatarTitle'), avGroups: $('avGroups'), avMsg: $('avMsg'), avatarCancel: $('avatarCancel'), avatarSave: $('avatarSave')
+    debug: $('debugPanel')
   };
 
   // ---------- 상태 ----------
@@ -215,8 +210,7 @@
     e.preventDefault();
     var n = checkNick(ui.nickname.value), g = radioGrade('grade');
     if (!n.ok || !g) { titleTouched = true; updateTitle(); return; }
-    // 공원에 들어가기 전에 내 캐릭터 만들기 (캐릭터 그림이 없으면 바로 입장)
-    if (window.MPAvatar) openAvatarCreate(n.value, g); else enterPark(n.value, g);
+    enterPark(n.value, g);
   });
 
   function enterPark(name, grade) {
@@ -246,7 +240,7 @@
   // ---------- 공원 안 프로필 수정 ----------
   guardIme(ui.profileNick);
   function openProfile() {
-    if (state.phase !== 'play' || state.modalFacility || state.profileOpen || state.avatarOpen || state.coasterOpen) return;
+    if (state.phase !== 'play' || state.modalFacility || state.profileOpen || state.coasterOpen) return;
     stopMoving(); state.keys = {};
     state.profileOpen = true;
     ui.profileNick.value = state.nickname;
@@ -275,110 +269,6 @@
     saveProfile(n.value, g); showPlayer(); closeProfile();
     toast(storageOk ? '내 정보를 바꿨어요' : '바꿨지만 이 기기에는 저장되지 않아요');
   });
-
-  // ---------- 캐릭터 꾸미기 ----------
-  // 고르는 동안은 미리보기만 바뀌고, [저장하기]를 눌러야 공원 캐릭터와 저장값(makepark.save.v1 의 avatar)에 반영됩니다.
-  var avatarDraft = null, avatarRaf = 0;
-  var avatarMode = 'edit', pendingEntry = null;   // create: 첫 입장 전 '내 캐릭터 만들기' / edit: 공원 안 '꾸미기'
-  function setAvatarMode(mode) {
-    avatarMode = mode;
-    ui.avatarTitle.textContent = mode === 'create' ? '내 캐릭터 만들기' : '내 캐릭터 꾸미기';
-    ui.avatarSave.textContent = mode === 'create' ? '공원으로 출발!' : '저장하기';
-    ui.avatarCancel.textContent = mode === 'create' ? '뒤로' : '취소';
-  }
-  function showAvatarDialog() {
-    buildAvatarOptions();
-    avatarDraft = MPAvatar.normalize(character.appearance);
-    syncAvatarRadios();
-    ui.avMsg.textContent = '';
-    state.avatarOpen = true; ui.avatarDlg.hidden = false;
-    avatarRaf = requestAnimationFrame(drawAvatarPreview);
-    var first = ui.avGroups.querySelector('input:checked'); if (first) first.focus();
-  }
-  function openAvatarCreate(name, grade) {
-    if (state.phase === 'play' || state.avatarOpen) return;
-    pendingEntry = { name: name, grade: grade };
-    setAvatarMode('create');
-    showAvatarDialog();
-  }
-  function buildAvatarOptions() {
-    if (!window.MPAvatar || ui.avGroups.childElementCount) return;
-    var O = MPAvatar.OPTIONS;
-    Object.keys(O).forEach(function (k) {
-      var fs = document.createElement('fieldset'); fs.className = 'av-group';
-      var lg = document.createElement('legend'); lg.textContent = O[k].label; fs.appendChild(lg);
-      var box = document.createElement('div'); box.className = 'av-opts';
-      O[k].items.forEach(function (it) {
-        var lb = document.createElement('label'); lb.className = 'av-opt';
-        var r = document.createElement('input'); r.type = 'radio'; r.name = 'av-' + k; r.value = it[0];
-        var sp = document.createElement('span'); sp.textContent = it[1];
-        if (it[2]) { var dot = document.createElement('i'); dot.className = 'av-swatch'; dot.style.background = it[2]; sp.insertBefore(dot, sp.firstChild); }
-        lb.appendChild(r); lb.appendChild(sp); box.appendChild(lb);
-      });
-      fs.appendChild(box); ui.avGroups.appendChild(fs);
-    });
-    ui.avGroups.addEventListener('change', function (e) {
-      var k = e.target.name && e.target.name.slice(3);
-      if (!avatarDraft || !k) return;
-      avatarDraft[k] = e.target.value;
-      if (k === 'gender') {   // 성별을 고르면 어울리는 머리·옷으로 먼저 바꿈(나머지는 그대로, 언제든 다시 고를 수 있음)
-        var pre = MPAvatar.GENDER_PRESET[e.target.value] || {};
-        Object.keys(pre).forEach(function (pk) { avatarDraft[pk] = pre[pk]; });
-        syncAvatarRadios();
-      }
-      ui.avMsg.textContent = '';
-      MPAvatar.preload(avatarDraft).then(function (r) {
-        if (r.missing.length) ui.avMsg.textContent = '그림 ' + r.missing.length + '개를 불러오지 못했어요.';
-      });
-    });
-  }
-  function syncAvatarRadios() {
-    Object.keys(avatarDraft).forEach(function (k) {
-      document.querySelectorAll('input[name=av-' + k + ']').forEach(function (r) { r.checked = r.value === avatarDraft[k]; });
-    });
-  }
-  function drawAvatarPreview(now) {
-    if (!state.avatarOpen) return;
-    var c = ui.avPreview, g = c.getContext('2d'), t = now / 1000, walk = ui.avWalk.checked;
-    g.clearRect(0, 0, c.width, c.height);
-    var names = { down: '앞', left: '왼쪽', right: '오른쪽', up: '뒤' };
-    MPAvatar.directions.forEach(function (d, i) {
-      var cx = c.width * (i + 0.5) / 4, fy = c.height - 34;
-      g.fillStyle = 'rgba(110,75,47,0.18)'; g.beginPath(); g.ellipse(cx, fy - 2, 34, 9, 0, 0, Math.PI * 2); g.fill();
-      var ok = MPAvatar.drawPreview(g, avatarDraft, d, walk ? Math.floor(t * 8) % 4 : 1, cx, fy, 214);
-      if (!ok) { g.fillStyle = '#6e4b2f'; g.font = '18px Jua, sans-serif'; g.textAlign = 'center'; g.fillText('그림 준비 중…', cx, fy - 100); }
-      g.fillStyle = '#6e4b2f'; g.font = '24px Jua, sans-serif'; g.textAlign = 'center'; g.fillText(names[d], cx, c.height - 4);
-    });
-    avatarRaf = requestAnimationFrame(drawAvatarPreview);
-  }
-  function openAvatar() {
-    if (!window.MPAvatar || state.phase !== 'play' || state.modalFacility || state.profileOpen || state.avatarOpen || state.coasterOpen) return;
-    stopMoving(); state.keys = {};
-    ui.enter.hidden = true; state.nearby = null;
-    setAvatarMode('edit');
-    showAvatarDialog();
-  }
-  function closeAvatar() { // 취소(만들기에서는 '뒤로'): 공원 캐릭터·저장값 그대로
-    state.avatarOpen = false; ui.avatarDlg.hidden = true; state.keys = {};
-    cancelAnimationFrame(avatarRaf); avatarDraft = null;
-    if (avatarMode === 'create') { pendingEntry = null; ui.enterPark.focus(); } else ui.avatarBtn.focus();
-  }
-  if (ui.avatarBtn) {
-    if (!window.MPAvatar) ui.avatarBtn.hidden = true;
-    ui.avatarBtn.addEventListener('click', openAvatar);
-    ui.avatarCancel.addEventListener('click', closeAvatar);
-    ui.avatarDlg.addEventListener('pointerdown', function (e) { if (e.target === ui.avatarDlg) closeAvatar(); });
-    ui.avatarForm.addEventListener('submit', function (e) {
-      e.preventDefault();
-      if (!avatarDraft) return;
-      var a = MPAvatar.normalize(avatarDraft), entry = avatarMode === 'create' ? pendingEntry : null;
-      character.setAppearance(a);
-      patchSave({ avatar: a });     // 프로필·티켓·스탬프 등 다른 값은 그대로 두고 합쳐 저장
-      closeAvatar();
-      if (entry) { enterPark(entry.name, entry.grade); return; }   // 만들기 → 공원으로 출발
-      toast(storageOk ? '캐릭터를 저장했어요' : '바꿨지만 이 기기에는 저장되지 않아요');
-    });
-  }
 
   // ---------- 카메라 ----------
   function fitScale() { return Math.min(view.w / W, view.h / H); }
@@ -442,7 +332,7 @@
     var p = state.player, speed = PARK.player.speed, k = state.keys;
     var ix = (k.right ? 1 : 0) - (k.left ? 1 : 0), iy = (k.down ? 1 : 0) - (k.up ? 1 : 0);
     p.moving = false;
-    if (state.modalFacility || state.profileOpen || state.avatarOpen || state.coasterOpen) return;
+    if (state.modalFacility || state.profileOpen || state.coasterOpen) return;
     if (ix || iy) {
       stopMoving();
       var len = Math.hypot(ix, iy), dx = ix / len * speed * dt, dy = iy / len * speed * dt;
@@ -496,7 +386,7 @@
     return best;
   }
   function updateNearby() {
-    var f = state.phase === 'play' && state.view === 'play' && !state.modalFacility && !state.profileOpen && !state.avatarOpen && !state.coasterOpen ? findNearby() : null;
+    var f = state.phase === 'play' && state.view === 'play' && !state.modalFacility && !state.profileOpen && !state.coasterOpen ? findNearby() : null;
     if (f !== state.nearby) {
       state.nearby = f;
       ui.enter.hidden = !f;
@@ -504,7 +394,7 @@
     }
   }
   function openFacility(f) {
-    if (!f || state.modalFacility || state.coasterOpen || state.avatarOpen) return;
+    if (!f || state.modalFacility || state.coasterOpen) return;
     stopMoving(); state.keys = {};
     if (f.id === 'coaster' && window.MPCoaster) { // 코딩 놀이기구: 코스터 익스프레스
       state.coasterOpen = true; state.nearby = null; ui.enter.hidden = true;
@@ -539,16 +429,9 @@
   var KEYMAP = { ArrowUp: 'up', KeyW: 'up', ArrowDown: 'down', KeyS: 'down', ArrowLeft: 'left', KeyA: 'left', ArrowRight: 'right', KeyD: 'right' };
   window.addEventListener('keydown', function (e) {
     if (e.code === 'F2') { e.preventDefault(); state.debug = !state.debug; return; }
-    if (state.phase !== 'play') {
-      if (state.avatarOpen && e.code === 'Escape') { e.preventDefault(); closeAvatar(); }
-      return;
-    }
+    if (state.phase !== 'play') return;
     if (state.profileOpen) { // 프로필 수정 중: 글자 입력이 게임 조작으로 가지 않게
       if (e.code === 'Escape') { e.preventDefault(); closeProfile(); }
-      return;
-    }
-    if (state.avatarOpen) { // 꾸미기 중: 방향키는 선택지 이동에 쓰고 게임 조작으로 보내지 않음
-      if (e.code === 'Escape') { e.preventDefault(); closeAvatar(); }
       return;
     }
     if (state.coasterOpen) return; // 코스터 화면이 열려 있는 동안 공원 조작 멈춤
@@ -576,7 +459,7 @@
     return { x: e.clientX - r.left, y: e.clientY - r.top };
   }
   canvas.addEventListener('pointerdown', function (e) {
-    if (state.phase !== 'play' || state.modalFacility || state.profileOpen || state.avatarOpen || state.coasterOpen) return;
+    if (state.phase !== 'play' || state.modalFacility || state.profileOpen || state.coasterOpen) return;
     e.preventDefault();
     var sp = eventPoint(e), w = screenToWorld(sp.x, sp.y);
     if (state.view === 'map') {

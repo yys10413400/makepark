@@ -23,7 +23,7 @@
           <svg class="sparkle crest-star" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 0C13 8 16 11 24 12 16 13 13 16 12 24 11 16 8 13 0 12 8 11 11 8 12 0Z"/></svg>
         </div>
         <h1 class="entry-title"><svg class="sparkle" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 0C13 8 16 11 24 12 16 13 13 16 12 24 11 16 8 13 0 12 8 11 11 8 12 0Z"/></svg><span>메이크파크에 오신 걸 환영해요!</span><svg class="sparkle" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 0C13 8 16 11 24 12 16 13 13 16 12 24 11 16 8 13 0 12 8 11 11 8 12 0Z"/></svg></h1>
-        <p class="entry-sub line-deco" id="entrySub"><span>닉네임과 학년을 고르고 내 캐릭터를 만들어요</span></p>
+        <p class="entry-sub line-deco" id="entrySub"><span>닉네임과 학년을 골라요</span></p>
         <p id="welcomeBack" class="entry-welcome" hidden></p>
 
         <div class="nick-row">
@@ -46,7 +46,7 @@
         </fieldset>
 
         <p class="entry-note line-deco"><span>학년에 맞는 미션을 준비해 드려요</span></p>
-        <button id="enterPark" type="submit" class="entry-go" disabled>내 캐릭터 만들기</button>
+        <button id="enterPark" type="submit" class="entry-go" disabled>공원으로 출발!</button>
         <p id="titleHint" class="entry-hint" aria-live="polite"></p>
         <p id="storageNote" class="entry-storage" hidden>이 기기에는 저장할 수 없어요. 이번에만 기억하고, 다음에 다시 입력해야 해요.</p>
         <svg class="sparkle bottom-star" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 0C13 8 16 11 24 12 16 13 13 16 12 24 11 16 8 13 0 12 8 11 11 8 12 0Z"/></svg>
@@ -81,22 +81,6 @@
       </form>
     </section>
 
-    <!-- 캐릭터 꾸미기 (공원 위쪽 '꾸미기' 버튼) -->
-    <section id="avatarDlg" class="overlay dim" hidden>
-      <form id="avatarForm" class="entry-panel avatar-panel" role="dialog" aria-modal="true" aria-labelledby="avatarTitle" novalidate>
-        <h2 id="avatarTitle" class="profile-title">내 캐릭터 꾸미기</h2>
-        <div class="av-preview">
-          <canvas id="avPreview" width="720" height="250" role="img" aria-label="앞·왼쪽·오른쪽·뒤 네 방향 캐릭터 미리보기"></canvas>
-          <label class="av-walk"><input type="checkbox" id="avWalk" checked> 걷는 모습 보기</label>
-        </div>
-        <div id="avGroups" class="av-groups"></div>
-        <p id="avMsg" class="entry-hint" aria-live="polite"></p>
-        <div class="profile-actions">
-          <button id="avatarCancel" type="button" class="profile-cancel">취소</button>
-          <button id="avatarSave" type="submit" class="entry-go">저장하기</button>
-        </div>
-      </form>
-    </section>
 
     <!-- 코스터 익스프레스 (코딩 놀이기구) -->
     <section id="coaster" class="coaster-overlay" hidden aria-label="코스터 익스프레스">
@@ -140,7 +124,6 @@
     <div id="hud" hidden>
       <button class="chip" id="playerChip" type="button" aria-label="내 정보 바꾸기"><span class="dot"></span><span id="playerName"></span><span class="chip-grade" id="playerGrade"></span><span class="chip-edit" aria-hidden="true">✎</span></button>
       <div class="hud-right">
-        <button id="avatarOpen" class="btn hud-btn" type="button">꾸미기</button>
         <button id="seasonToggle" class="btn hud-btn season-btn" type="button"><small>계절</small> <span id="seasonLabel">크리스마스</span></button>
         <button id="mapToggle" class="btn hud-btn" type="button">전체 지도</button>
       </div>
@@ -176,10 +159,6 @@
   <script src="js/data/walkmask.js"></script>
   <script src="js/walkgrid.js"></script>
   <script src="js/character.js"></script>
-  <script src="js/avatar/manifest.js"></script>
-  <script src="js/avatar/avatar-fit.js"></script>
-  <script src="js/avatar/worn-index.js"></script>
-  <script src="js/avatar/avatar.js"></script>
   <script src="js/game.js"></script>
   <script src="js/coaster/missions.js"></script>
   <script src="js/coaster/logic.js"></script>
