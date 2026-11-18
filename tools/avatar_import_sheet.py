@@ -13,6 +13,8 @@ import avatar_template as T
 
 ROOT = Path(__file__).resolve().parent.parent
 WORN = ROOT / 'assets' / 'avatar' / 'worn'
+HAIR_DROP = 8   # 머리: 가장 잘 맞는 자리보다 이만큼 내려 놓음(정수리가 솟아 보이지 않게)
+HAIR_DROP_EXCEPT = {('6', 'down'): 0}   # 포니테일 앞모습은 내리면 앞머리가 눈을 가림
 
 
 def components(im, n=4):
@@ -126,6 +128,7 @@ def import_hair(sheet, num, width=1.04, dy=(0, 0, 0, 0), dirs=None):
                     score = 4 * (cov & scalp).sum() + (cov & hair0).sum() - 5 * (cov & forbid).sum() - 0.05 * (cov & ~hair0 & ~face).sum()
                     if best is None or score > best[0]: best = (score, s, X, Y, w, h)
         _, s, X, Y, w, h = best
+        Y += HAIR_DROP_EXCEPT.get((num, d), HAIR_DROP)
         out = Image.new('RGBA', (T.W, T.H)); out.alpha_composite(c.resize((w, h), Image.LANCZOS), (X, Y))
         out.save(WORN / f'hair_{num}_{d}.png')
         miss = (scalp & ~mask(out, 120)).sum()

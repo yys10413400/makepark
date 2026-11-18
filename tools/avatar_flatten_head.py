@@ -28,9 +28,38 @@ def flatten(im, d, k):
     return Image.fromarray(np.clip(out + 0.5, 0, 255).astype(np.uint8))
 
 
+def back_of_head(front, row0=64, edge=5):
+    """뒷모습 두상: 원래 뒷모습 얼굴 그림이 비어 있어 머리카락 틈(양갈래 목덜미 등)으로 배경이 보였음.
+    앞모습 얼굴의 윤곽·이마 피부를 그대로 쓰고, 눈썹 아래(이목구비)는 이마 색에서 아래로 살짝 어두워지는 피부로 채움."""
+    from PIL import ImageFilter
+    a = np.array(front.convert('RGBA')).astype(np.float32)
+    m = Image.fromarray(((a[..., 3] > 40) * 255).astype(np.uint8))
+    inner = np.array(m.filter(ImageFilter.MinFilter(edge * 2 + 1))) > 0
+    ys = np.where(inner.any(1))[0]; y1 = ys.max()
+    shade = np.array([238, 182, 160], np.float32)
+    for y in range(row0, y1 + 1):
+        t = (y - row0) / max(1, y1 - row0) * 0.6
+        xs = np.where(inner[y])[0]
+        for x in xs:
+            base = a[row0, x, :3] if inner[row0, x] else a[row0, 128, :3]
+            a[y, x, :3] = base * (1 - t) + shade * t
+    out = Image.fromarray(np.clip(a + 0.5, 0, 255).astype(np.uint8))
+    # 채운 경계가 도드라지지 않게 안쪽만 살짝 흐리게
+    blur = np.array(out.filter(ImageFilter.GaussianBlur(2))); o = np.array(out)
+    o[inner & (np.arange(o.shape[0])[:, None] >= row0 - 4)] = blur[inner & (np.arange(o.shape[0])[:, None] >= row0 - 4)]
+    return Image.fromarray(o)
+
+
 if __name__ == '__main__':
     k = float(sys.argv[1]) if len(sys.argv) > 1 else 0.6
     ORIG.mkdir(exist_ok=True)
+    for p in sorted(FACES.glob('*_up.png')):
+        face = p.stem.split('_')[0]
+        o = ORIG / p.name
+        if not o.exists(): shutil.copy2(p, o)
+        src = ORIG / f'{face}_down.png' if (ORIG / f'{face}_down.png').exists() else FACES / f'{face}_down.png'
+        back_of_head(Image.open(src)).save(p)
+        print(p.name, '뒷모습 두상')
     for p in sorted(FACES.glob('*_left.png')) + sorted(FACES.glob('*_right.png')):
         o = ORIG / p.name
         if not o.exists(): shutil.copy2(p, o)
