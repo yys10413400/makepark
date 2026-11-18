@@ -54,18 +54,23 @@
     e = images[sid] = { img: new Image(), ok: false, done: false };
     e.img.onload = function () { e.ok = e.done = true; };
     e.img.onerror = function () { e.done = true; console.error('캐릭터 그림을 불러오지 못했어요: ' + sid); };
-    if (SPR[sid]) e.img.src = SPR[sid].src; else e.done = true;
+    var walk = /-walk$/.test(sid), base = SPR[sid.replace(/-walk$/, '')];
+    var src = base && (walk ? base.walk && base.walk.src : base.src);
+    if (src) e.img.src = src; else e.done = true;
     return e;
   }
+  function hasWalk(sid) { return !!(SPR[sid] && SPR[sid].walk); }
 
   // (x, y) = 발 위치. h = 몸 키(px). 왼쪽은 옆모습을 뒤집음.
+  // opt.walk: 걷는 자세 그림(<id>-walk.webp)을 씀, opt.mirror: 좌우를 한 번 더 뒤집음(앞·뒤 모습의 반대 발)
   function drawSprite(ctx, sid, x, y, dir, h, opt) {
-    var e = load(sid), m = SPR[sid];
+    opt = opt || {};
+    var useWalk = opt.walk && hasWalk(sid);
+    var e = load(useWalk ? sid + '-walk' : sid), m = SPR[sid] && (useWalk ? SPR[sid].walk : SPR[sid]);
     if (!e.ok || !m) return false;
     var view = dir === 'up' ? 'up' : dir === 'down' ? 'down' : 'right';
     var r = m.views[view], s = h / BODY_H;
-    var flip = dir === 'left';
-    opt = opt || {};
+    var flip = (dir === 'left') !== !!opt.mirror;
     ctx.save();
     ctx.translate(x, y - (opt.bob || 0));
     if (opt.tilt) ctx.rotate(opt.tilt);
@@ -91,7 +96,17 @@
     var e = load(this.sid);
     if (!e.ok) { if (this.fallback) this.fallback.draw(ctx, x, y, dir, moving, t); return; }
     var opt;
-    if (moving) {
+    if (moving && hasWalk(this.sid)) {
+      // 걷는 자세 그림이 있으면: [걷는 자세, 서 있기, 반대 발 걷는 자세, 서 있기] 를 돌려 걷기.
+      // 앞·뒤 모습의 반대 발은 걷는 자세를 좌우로 뒤집어 씀(옆모습은 두 다리가 같아 보여 그대로).
+      // 서 있는 칸에서 몸이 살짝 올라가 걸음마다 통통 튀는 느낌을 줌.
+      var f = Math.floor(t * 7) % 4, side2 = dir === 'left' || dir === 'right';
+      load(this.sid + '-walk');
+      opt = f % 2 === 0
+        ? { walk: true, mirror: f === 2 && !side2 }
+        : { bob: 1.2 };
+      if (opt.walk && !load(this.sid + '-walk').ok) opt = { bob: 1.2 };
+    } else if (moving) {
       // 걷기: 한 걸음마다 아주 살짝 위로(bob) 올라갔다 내려오고, 발을 디딜 때 조금 납작(sy).
       // 앞·뒤 모습은 몸이 아주 조금만 좌우로 흔들리고, 옆모습은 기울이지 않고 가는 쪽으로 살짝 숙임.
       var ph = t * 12, k = Math.abs(Math.sin(ph));
@@ -102,7 +117,7 @@
     } else {
       opt = { sy: 1 + Math.sin(t * 2.4) * 0.01 };   // 가만히 있을 때 숨쉬기
     }
-    var sh = moving ? 1 - (opt.bob / 1.6) * 0.12 : 1;
+    var sh = moving ? 1 - ((opt.bob || 0) / 1.6) * 0.12 : 1;
     ctx.save();
     ctx.fillStyle = 'rgba(30,40,60,0.25)';
     ctx.beginPath(); ctx.ellipse(x, y - 1, 14 * sh, 4.5 * sh, 0, 0, Math.PI * 2); ctx.fill();

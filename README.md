@@ -41,6 +41,7 @@
 - 저장: `makepark.save.v1`의 `character = { id, gender, owned }`, 티켓은 `tickets`.
 - 그림: 원본(`assets/characters-src/*.png`)에서 `python tools/build_characters.py`가 배경을 지우고 앞·뒤·옆 3칸으로 잘라 몸 키를 맞춥니다(모자 높이 보정 `HAT`, 왼쪽을 보는 옆모습은 `SIDE_FACES_LEFT`로 뒤집음). 왼쪽으로 걸을 때는 게임에서 옆모습을 뒤집어 그립니다.
 - 걷기: 걷기 칸 그림 없이 걸음마다 살짝 위아래로 움직이고, 옆모습은 가는 쪽으로 조금 숙여 걷습니다(`js/characters.js`의 `Walker.draw`). 지도 위 몸 키는 `DRAW_H`(50px).
+- 걷는 자세 그림: 기본 남녀(F1·F2)는 걷는 자세가 있어 [걷는 자세, 서 있기, 반대 발, 서 있기]로 걷습니다. 원본(`assets/characters-src/walk/<id>_<down|up|side>.png`)은 서 있는 그림을 제미나이에 올려 '다리·팔만 걷는 자세로' 고쳐 받은 것이고, `python tools/build_walk.py`로 `assets/characters/<id>-walk.webp`를 만듭니다. 앞·뒤 반대 발은 좌우로 뒤집어 씁니다.
 
 ## 좌표계
 모든 좌표는 시즌 지도 원본 픽셀(1448×1086, 왼쪽 위 0,0) 기준입니다. 배경, 캐릭터, 충돌 영역, 입구가 같은 변환 하나로 그려지므로 화면 크기가 바뀌어도 어긋나지 않습니다.
