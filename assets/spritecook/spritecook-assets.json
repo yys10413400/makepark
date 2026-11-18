@@ -1,0 +1,6 @@
+{
+  "note": "SpriteCook에서 만든 그림. asset_id로 SpriteCook에서 이어서 걷기 애니메이션 등을 만들 수 있습니다. 게임에는 아직 연결하지 않았습니다.",
+  "assets": [
+    { "asset_id": "1182247d-1096-4c85-84f3-c593b1d2494e", "sha12": "5509629279c1", "label": "kid_base_front", "file": "kid_base_front.png", "perspective": "topdown", "size": [82, 82] }
+  ]
+}
