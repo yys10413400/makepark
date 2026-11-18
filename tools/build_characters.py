@@ -8,7 +8,7 @@
  2. 작은 조각(제미나이 별 표시, 글자, 반짝이)을 지웁니다.
  3. 앞·뒤·옆 3칸으로 나눕니다. (왼쪽부터 앞, 뒤, 옆모습. 왼쪽을 보는 옆모습은 SIDE_FACES_LEFT 로 뒤집어 오른쪽을 보게)
  4. 세 칸을 같은 배율로 키를 맞춥니다: 앞모습 키(모자 제외 보정값 HAT) 가 BODY_H 가 되게.
- 5. 한 캐릭터의 세 칸을 한 장(assets/characters/<id>.webp)에 나란히 붙이고,
+ 5. 색을 지도에 맞게 조금 진하게(enhance) 하고, 한 캐릭터의 세 칸을 한 장(assets/characters/<id>.webp)에 나란히 붙이고,
     칸마다 위치와 발 기준점을 js/data/character-sprites.js 에 적습니다.
 
 왼쪽을 볼 때는 게임에서 옆모습(right)을 좌우로 뒤집어 그립니다.
@@ -32,6 +32,17 @@ HAT = {
     'S1': 1.08, 'S2': 1.20, 'S5': 1.06, 'S6': 1.22, 'S7': 1.03, 'S9': 1.02, 'S10': 1.03,
 }
 VIEWS = ['down', 'up', 'right']
+# 지도 그림이 진하고 화사해서 캐릭터 색을 조금 더 진하게(채도·대비) 맞춤
+COLOR, CONTRAST, BRIGHT = 1.35, 1.10, 1.02
+
+
+def enhance(im):
+    from PIL import ImageEnhance
+    a = im.getchannel('A')
+    rgb = ImageEnhance.Color(im.convert('RGB')).enhance(COLOR)
+    rgb = ImageEnhance.Brightness(ImageEnhance.Contrast(rgb).enhance(CONTRAST)).enhance(BRIGHT)
+    out = rgb.convert('RGBA'); out.putalpha(a)
+    return out
 # 제미나이가 옆모습을 왼쪽을 보게 그린 캐릭터: 옆모습 칸을 좌우로 뒤집어 모두 오른쪽을 보게 맞춤
 SIDE_FACES_LEFT = {'F1', 'F2', 'R1b', 'R1g', 'R4b', 'R4g', 'R5b', 'R5g', 'R6b', 'R6g', 'R7b', 'S2', 'S4', 'S7'}
 
@@ -131,6 +142,7 @@ def main():
         sheet = Image.new('RGBA', (x, max(i.height for i in ims) + PAD * 2), (0, 0, 0, 0))
         for im, v in zip(ims, VIEWS):
             sheet.paste(im, (rects[v][0], rects[v][1]))
+        sheet = enhance(sheet)
         sheet.save(os.path.join(OUT, cid + '.webp'), 'WEBP', quality=90, method=6)
         meta[cid] = {'src': 'assets/characters/' + cid + '.webp', 'views': rects}
         print(cid, sheet.size, {v: rects[v][2:4] for v in VIEWS})

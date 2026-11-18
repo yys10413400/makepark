@@ -14,7 +14,7 @@ import json, os, sys
 import numpy as np
 from PIL import Image
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-from build_characters import remove_bg, ROOT, OUT, JS, PAD
+from build_characters import remove_bg, enhance, ROOT, OUT, JS, PAD
 
 SRC = os.path.join(ROOT, 'assets', 'characters-src', 'walk')
 VIEWS = [('down', 'down'), ('up', 'up'), ('side', 'right')]
@@ -89,6 +89,7 @@ def main():
                 rgba = rgba[:, ::-1]
             s = head_width(stand) / head_width(rgba)
             im = Image.fromarray(rgba).resize((round(rgba.shape[1] * s), round(rgba.shape[0] * s)), Image.LANCZOS)
+            im = enhance(im)   # 앞·뒤는 이미 진하게 만든 서 있는 그림에서 오므로 옆모습만
             arr = np.array(im)   # (서 있는 그림을 고쳐 받은 자세라 색이 같음. 다르면 match_color(arr, stand))
             im = Image.fromarray(arr)
             a = arr[..., 3] > 100
