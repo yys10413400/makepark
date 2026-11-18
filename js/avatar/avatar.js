@@ -19,7 +19,11 @@
 
   // 고를 수 있는 부품 (이름은 받은 미리보기와 같게)
   var OPTIONS = {
+    gender: { label: '성별', items: [['boy', '남자아이'], ['girl', '여자아이']] },
     hair: { label: '머리', items: [['1', '버섯컷'], ['2', '가르마 숏컷'], ['3', '웨이브 숏컷'], ['4', '단발'], ['5', '긴 머리'], ['6', '포니테일'], ['7', '양갈래'], ['8', '곱슬머리']] },
+    // 머리 색: 세 번째 값은 가운데 톤(이 색을 기준으로 머리 그림의 밝고 어두운 결을 그대로 살려 다시 칠함). base = 그린 색 그대로
+    hairColor: { label: '머리 색', items: [['base', '적갈색', '#9a4a30'], ['black', '검정', '#3a3036'], ['brown', '갈색', '#6e4128'],
+      ['blonde', '금발', '#d9a743'], ['pink', '분홍', '#e7799e'], ['blue', '파랑', '#4c6fc4'], ['purple', '보라', '#8d63c4'], ['mint', '민트', '#3fae9c']] },
     face: { label: '얼굴', items: [['1', '기본 미소'], ['2', '동그란 눈'], ['3', '씩씩한 미소'], ['4', '나른한 눈'], ['5', '웃는 눈'], ['6', '진한 눈썹']] },
     outfit: { label: '옷', items: [['1', '별 후드'], ['2', '청록 멜빵바지'], ['3', '코랄 야구점퍼'], ['4', '체리 티·청치마'], ['5', '라벤더 맨투맨'], ['6', '코랄 리본 원피스']] },
     shoes: { label: '신발', items: [['1', '청록'], ['2', '코랄'], ['3', '라벤더']] },
@@ -28,7 +32,7 @@
     clip: { label: '머리핀', items: [['none', '없음'], ['clip_star', '코랄 별'], ['clip_bow', '노랑 리본'], ['clip_flower', '보라 꽃']] },
     bag: { label: '가방', items: [['none', '없음'], ['bag_yellow', '노랑 배낭'], ['bag_coral', '코랄 배낭'], ['bag_navy', '네이비 가방']] }
   };
-  var DEFAULT = { hair: '1', face: '1', outfit: '1', shoes: '1', hat: 'none', glasses: 'none', clip: 'none', bag: 'none' };
+  var DEFAULT = { gender: 'boy', hair: '1', hairColor: 'base', face: '1', outfit: '1', shoes: '1', hat: 'none', glasses: 'none', clip: 'none', bag: 'none' };
 
   // 저장값이 깨졌거나 모르는 값이면 기본값으로
   function normalize(a) {
@@ -39,7 +43,11 @@
     });
     return out;
   }
-  function key(a) { return Object.keys(DEFAULT).map(function (k) { return a[k]; }).join('|'); }
+  // 성별을 바꾸면 어울리는 머리·옷으로 먼저 바꿔 줍니다(다른 것도 모두 그대로 고를 수 있음)
+  var GENDER_PRESET = { boy: { hair: '2', outfit: '3' }, girl: { hair: '5', outfit: '6' } };
+  var HAIR_TINT = {};
+  OPTIONS.hairColor.items.forEach(function (it) { if (it[0] !== 'base') HAIR_TINT[it[0]] = it[2]; });
+  function key(a) { return Object.keys(DEFAULT).filter(function (k) { return k !== 'gender'; }).map(function (k) { return a[k]; }).join('|'); }
   function src(p) { return p.replace(/^assets\//, BASE); }
 
   // ---------- 그리기 순서(레이어) ----------
@@ -91,10 +99,11 @@
       gOff = [g1[0] + g2[0], g1[1] + g2[1]];
     }
     var hairW = worn('hair_' + a.hair + '_' + d);   // 다시 그린 머리(착용 칸 기준)
-    if (hatHairW) add(hatHairW, null, null, RAW);   // 모자 쓴 머리
-    else if (hatHair && !hairW) add(fitted.bucket_hair1[d]);
-    else if (hairW) add(hairW, null, null, RAW);
-    else add(M.hair[a.hair][d]);
+    var tint = HAIR_TINT[a.hairColor] || null, RAWT = { raw: true, tint: tint }, T = tint ? { tint: tint } : null;
+    if (hatHairW) add(hatHairW, null, null, RAWT);   // 모자 쓴 머리
+    else if (hatHair && !hairW) add(fitted.bucket_hair1[d]);   // (머리·모자 한 장 그림이라 색을 바꾸지 않음)
+    else if (hairW) add(hairW, null, null, RAWT);
+    else add(M.hair[a.hair][d], null, null, T);
     // 안경은 머리카락 위에(앞머리가 렌즈를 가리지 않게). 옆모습은 안경다리가 귀에서 끝나게 잘라 그림
     if (gOff) add(fitted[a.glasses][d], null, gOff, { clipX: (FIT.glassesClipX || {})[d] || null });
     // 6) 머리핀 → 모자 (모자는 그림 비율 그대로 [x, y, 배율])
@@ -197,8 +206,33 @@
     c.naturalWidth = w; c.naturalHeight = h;
     return (hatCache[k] = c);
   }
+  // 머리 색 바꾸기: 픽셀 밝기를 그 그림의 가운데 밝기와 비교해, 고른 색의 어두운 결~밝은 결로 다시 칠합니다.
+  // 외곽선·그늘·윤기 모양은 그대로 남고 색만 바뀝니다. (경로, 색)마다 한 번만 만들어 둡니다.
+  var tintCache = {};
+  function tinted(p, hex) {
+    var k = p + '|' + hex;
+    if (tintCache[k]) return tintCache[k];
+    var img = images[p].img, w = img.naturalWidth, h = img.naturalHeight, c = canvas(w, h), g = c.getContext('2d');
+    g.drawImage(img, 0, 0);
+    var data = g.getImageData(0, 0, w, h), px = data.data, i, lum = [];
+    for (i = 0; i < px.length; i += 4) if (px[i + 3] > 200) lum.push(0.299 * px[i] + 0.587 * px[i + 1] + 0.114 * px[i + 2]);
+    lum.sort(function (x, y) { return x - y; });
+    var ref = lum.length ? lum[lum.length >> 1] : 100;
+    var C = [parseInt(hex.slice(1, 3), 16), parseInt(hex.slice(3, 5), 16), parseInt(hex.slice(5, 7), 16)];
+    for (i = 0; i < px.length; i += 4) {
+      if (!px[i + 3]) continue;
+      var t = (0.299 * px[i] + 0.587 * px[i + 1] + 0.114 * px[i + 2]) / ref;
+      for (var j = 0; j < 3; j++) {
+        // 어두운 쪽은 고른 색을 그만큼 어둡게, 밝은 쪽(윤기)은 흰색 쪽으로 조금씩
+        px[i + j] = t <= 1 ? Math.round(C[j] * Math.pow(t, 1.15)) : Math.round(C[j] + (255 - C[j]) * Math.min(1, (t - 1) * 0.7));
+      }
+    }
+    g.putImageData(data, 0, 0);
+    c.naturalWidth = w; c.naturalHeight = h;
+    return (tintCache[k] = c);
+  }
   function drawOp(g, op) {
-    var img = images[op[0]].img, box = op[1], off = op[2];
+    var img = op[4] && op[4].tint ? tinted(op[0], op[4].tint) : images[op[0]].img, box = op[1], off = op[2];
     if (box) {
       var name = op[0].split('/').pop().replace(/_(down|left|right|up)\.png$/, '');
       var sh = cropBottom[name] && cropBottom[name] < img.naturalHeight ? cropBottom[name] : img.naturalHeight;
@@ -303,7 +337,7 @@
   }
 
   window.MPAvatar = {
-    OPTIONS: OPTIONS, DEFAULT: DEFAULT, normalize: normalize, layers: layers,
+    OPTIONS: OPTIONS, DEFAULT: DEFAULT, GENDER_PRESET: GENDER_PRESET, normalize: normalize, layers: layers,
     preload: preload, missingOf: missingOf, Character: Character, drawPreview: drawPreview,
     directions: M.directions
   };

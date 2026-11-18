@@ -312,6 +312,7 @@
         var lb = document.createElement('label'); lb.className = 'av-opt';
         var r = document.createElement('input'); r.type = 'radio'; r.name = 'av-' + k; r.value = it[0];
         var sp = document.createElement('span'); sp.textContent = it[1];
+        if (it[2]) { var dot = document.createElement('i'); dot.className = 'av-swatch'; dot.style.background = it[2]; sp.insertBefore(dot, sp.firstChild); }
         lb.appendChild(r); lb.appendChild(sp); box.appendChild(lb);
       });
       fs.appendChild(box); ui.avGroups.appendChild(fs);
@@ -320,6 +321,11 @@
       var k = e.target.name && e.target.name.slice(3);
       if (!avatarDraft || !k) return;
       avatarDraft[k] = e.target.value;
+      if (k === 'gender') {   // 성별을 고르면 어울리는 머리·옷으로 먼저 바꿈(나머지는 그대로, 언제든 다시 고를 수 있음)
+        var pre = MPAvatar.GENDER_PRESET[e.target.value] || {};
+        Object.keys(pre).forEach(function (pk) { avatarDraft[pk] = pre[pk]; });
+        syncAvatarRadios();
+      }
       ui.avMsg.textContent = '';
       MPAvatar.preload(avatarDraft).then(function (r) {
         if (r.missing.length) ui.avMsg.textContent = '그림 ' + r.missing.length + '개를 불러오지 못했어요.';

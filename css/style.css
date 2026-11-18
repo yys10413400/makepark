@@ -355,6 +355,7 @@ button.chip:focus-visible { outline: 3px solid var(--mint); outline-offset: 2px;
   display: inline-block; padding: 6px 11px; border-radius: 999px; font-size: 14px; line-height: 1.2;
   background: #fffdf5; border: 2px solid #e7dcc5; color: var(--e-navy);
 }
+.av-swatch { display: inline-block; width: 14px; height: 14px; border-radius: 50%; margin-right: 5px; vertical-align: -2px; border: 2px solid rgba(255,255,255,0.85); box-shadow: 0 0 0 1px rgba(110,75,47,0.4); }
 .av-opt input:checked + span { background: var(--e-teal); border-color: var(--e-teal-dark); color: #fff; }
 .av-opt input:focus-visible + span { outline: 3px solid var(--e-purple); outline-offset: 2px; }
 @media (max-width: 480px) { .av-groups { grid-template-columns: 1fr; } }
