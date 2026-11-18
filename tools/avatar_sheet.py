@@ -75,23 +75,47 @@ def hat_cut_line(ha, rise=2.2):
     return cut
 
 
+WORN_DIR = ROOT / 'assets/avatar/worn'
+
+
+def worn(n):
+    """착용 그림(캐릭터 칸 256×376에 맞춰 그린 그림)이 있으면 경로, 없으면 None (avatar.js 의 worn 과 같음)"""
+    return f'assets/worn/{n}.png' if (WORN_DIR / f'{n}.png').exists() else None
+
+
+def raw(c, p):
+    """착용 그림: 이미 칸(위 여유 포함)에 맞춰져 있어 그대로 겹침"""
+    layer = Image.new('RGBA', c.size); layer.alpha_composite(img(p)); c.alpha_composite(layer)
+
+
 def compose(a, d, f, bg=(239, 221, 207, 255)):
+    """js/avatar/avatar.js 의 layers()·composite() 와 같은 순서로 합성"""
+    import numpy as np
     a = {**DEFAULT, **a}
     c = Image.new('RGBA', (256, 320 + HR), bg)
     o, fitted = a['outfit'], M['fitted']
     bag = FIT['bag'].get(a['bag']) if a['bag'] != 'none' else None
     fbag = bool(bag and bag.get('fitted'))
-    hat_hair = a['hair'] == '1' and a['hat'] == 'bucket'
-    if d != 'up' and bag:
-        if fbag: put(c, fitted['bag_yellow'][d])
+    hat_front = worn(f"hat_{a['hat']}_front_{d}") if a['hat'] != 'none' else None
+    hat_back = worn(f"hat_{a['hat']}_back_{d}") if hat_front else None
+    hat_hair_w = worn(f"hathair_{a['hair']}_{d}") if hat_front and a['hat'] != 'headband' else None
+    hat_hair = not hat_front and a['hair'] == '1' and a['hat'] == 'bucket'
+    bag_body = worn(f"{a['bag']}_body_{d}") if bag else None
+    bag_straps = worn(f"{a['bag']}_straps_{d}") if bag and d != 'up' else None
+    if d != 'up' and bag:   # 등 뒤 가방
+        if bag_body: raw(c, bag_body)
+        elif fbag: put(c, fitted['bag_yellow'][d])
         elif bag.get(d): put(c, M['accessories'][a['bag']][bag.get('sideImage', {}).get(d, d)], bag[d])
     put(c, M['bodies'][o][d][f])
     put(c, M['shoes'][a['shoes']][o][d][f])
-    if d != 'up' and bag:
-        put(c, fitted['bag_straps'][d] if fbag else f"assets/fitted/{bag['straps']}_{d}.png")
-    if d == 'up' and bag:  # 뒷모습: 머리보다 먼저 그려 긴 머리가 가방 위로 내려오게
-        if fbag: put(c, fitted['bag_yellow']['up'])
+    if d != 'up' and bag:   # 어깨끈
+        if bag_straps: raw(c, bag_straps)
+        elif not bag_body: put(c, fitted['bag_straps'][d] if fbag else f"assets/fitted/{bag['straps']}_{d}.png")
+    if d == 'up' and bag:   # 뒷모습: 머리보다 먼저 그려 긴 머리가 가방 위로 내려오게
+        if bag_body: raw(c, bag_body)
+        elif fbag: put(c, fitted['bag_yellow']['up'])
         else: put(c, M['accessories'][a['bag']][bag.get('upImage', 'up')], bag['up'])
+    if hat_back: raw(c, hat_back)
     # 머리(얼굴·머리카락)는 따로 그린 뒤, 모자를 쓰면 모자 띠 선 위쪽을 지우고 합침
     body_c = c
     c = Image.new('RGBA', body_c.size)
@@ -106,29 +130,36 @@ def compose(a, d, f, bg=(239, 221, 207, 255)):
                 for xx in range(im.width):
                     if not (cx[0] - o1[0] - o2[0] <= xx < cx[1] - o1[0] - o2[0]): px[xx, yy] = (0, 0, 0, 0)
         put(c, None, off=(o1[0] + o2[0], o1[1] + o2[1]), im=im)
-    put(c, fitted['bucket_hair1'][d] if hat_hair else M['hair'][a['hair']][d])
+    hair_w = worn(f"hair_{a['hair']}_{d}")
+    if hat_hair_w: raw(c, hat_hair_w)
+    elif hat_hair and not hair_w: put(c, fitted['bucket_hair1'][d])
+    elif hair_w: raw(c, hair_w)
+    else: put(c, M['hair'][a['hair']][d])
     if d != 'up' and g != 'none': glasses()   # 머리카락 위에(앞머리가 렌즈를 가리지 않게)
-    hat_layer = None
-    if a['hat'] != 'none' and not hat_hair:
+    hat_layer, cut_on = None, False
+    if hat_front:
+        hat_layer = Image.new('RGBA', c.size); raw(hat_layer, hat_front)
+        cut_on = not hat_hair_w and a['hat'] not in FIT.get('hatNoCut', [])
+    elif a['hat'] != 'none' and not hat_hair:
         hb = FIT['hatByHair'].get(a['hair'], {})
         adj = (hb.get(a['hat']) or hb.get('*') or {}).get(d) or [0, 0, 1]
         hx, hy, hs = FIT['hat'][a['hat']][d]
         im = hat_image(a['hat'], d); hs *= (adj[2] if len(adj) > 2 else 1)
         hat_layer = Image.new('RGBA', c.size)
         put(hat_layer, None, [hx + adj[0], hy + adj[1], im.width * hs, im.height * hs], im=im)
+        cut_on = a['hat'] not in FIT.get('hatNoCut', [])
+    if hat_layer and cut_on:
         # 모자 아래 가장자리보다 위쪽의 머리(얼굴·머리카락)를 지움: 모자 밖으로 삐져나온 머리를 숨김
-        import numpy as np
-        ha = None if a['hat'] in FIT.get('hatNoCut', []) else np.array(hat_layer)[..., 3] > 60
         arr = np.array(c)
-        if ha is not None:
-            cut = hat_cut_line(ha)
-            yy = np.arange(arr.shape[0])[:, None]
-            # 지울 정도 0~1: 선 위쪽은 지우고, 선 근처 3px은 부드럽게
-            m = np.clip((cut[None, :] - yy) / 3.0 + 0.5, 0, 1)
-            arr[..., 3] = (arr[..., 3] * (1 - m)).astype('uint8')
+        cut = hat_cut_line(np.array(hat_layer)[..., 3] > 60)
+        yy = np.arange(arr.shape[0])[:, None]
+        m = np.clip((cut[None, :] - yy) / 3.0 + 0.5, 0, 1)   # 선 위쪽은 지우고, 선 근처 3px은 부드럽게
+        arr[..., 3] = (arr[..., 3] * (1 - m)).astype('uint8')
         c = Image.fromarray(arr)
     body_c.alpha_composite(c); c = body_c
-    if a['clip'] != 'none' and FIT['clip'].get(d):
+    clip_w = worn(f"{a['clip']}_{d}") if a['clip'] != 'none' else None
+    if clip_w: raw(c, clip_w)
+    elif a['clip'] != 'none' and FIT['clip'].get(d) and not worn(f"{a['clip']}_down"):
         adj = FIT['clipByHair'].get(a['hair'], {}).get(d)
         put(c, M['accessories'][a['clip']][d], scaled(FIT['clip'][d], adj))
     if hat_layer: c.alpha_composite(hat_layer)
