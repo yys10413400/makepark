@@ -27,3 +27,12 @@
 /* 위쪽: 우리 반 공원 · 친구 수 */
 .room-chip { font-size: 16px; color: var(--e-purple); margin-right: auto; margin-left: 8px; max-width: 34vw; }
 @media (max-width: 720px) { .room-chip { font-size: 13px; max-width: 40vw; } }
+
+/* 앱으로 설치 버튼 */
+.install-app {
+  position: fixed; right: max(12px, env(safe-area-inset-right)); bottom: max(12px, env(safe-area-inset-bottom)); z-index: 25;
+  padding: 8px 16px; border-radius: 99px; font: inherit; font-size: 15px; cursor: pointer;
+  background: #fff8e8; color: var(--e-purple); border: 2px solid var(--e-gold); box-shadow: 0 3px 0 rgba(150, 105, 30, 0.35);
+}
+.install-app.in-teacher { position: static; }
+body:not(:has(#title:not([hidden]))) .install-app:not(.in-teacher) { display: none; }   /* 학생 앱: 첫 화면에서만 */

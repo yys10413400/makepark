@@ -1,0 +1,18 @@
+{
+  "id": "./?app=student",
+  "name": "메이크파크",
+  "short_name": "메이크파크",
+  "description": "초등학생용 놀이공원 메타버스. 반 코드로 친구들과 함께 놀아요.",
+  "lang": "ko",
+  "start_url": "./?app=student",
+  "scope": "./",
+  "display": "fullscreen",
+  "orientation": "landscape",
+  "background_color": "#9fcf8a",
+  "theme_color": "#6a3d9a",
+  "icons": [
+    { "src": "assets/icons/student-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "assets/icons/student-512.png", "sizes": "512x512", "type": "image/png" },
+    { "src": "assets/icons/student-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}

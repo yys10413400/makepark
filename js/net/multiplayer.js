@@ -37,8 +37,7 @@
     p.appendChild(box);
     p.appendChild(el('p', 'join-or', '또는'));
     ui.solo = el('button', 'profile-cancel join-solo', '혼자 둘러보기'); ui.solo.type = 'button'; p.appendChild(ui.solo);
-    var t = el('a', 'join-teacher', '선생님이세요? 우리 반 공원 만들기 →'); t.href = 'teacher.html'; t.target = '_blank'; t.rel = 'noopener';
-    p.appendChild(t);
+    // 선생님 화면은 따로 설치하는 '메이크파크 선생님' 앱(teacher.html) — 학생 앱에는 링크를 두지 않음
     if (NET.mode === 'local') p.appendChild(el('p', 'join-mode', '지금은 시험 모드예요: 이 컴퓨터의 다른 탭끼리만 함께 보여요.'));
     ui.back = el('button', 'join-back', '← 뒤로'); ui.back.type = 'button'; p.appendChild(ui.back);
     wrap.appendChild(p);

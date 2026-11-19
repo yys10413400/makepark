@@ -4,16 +4,25 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>메이크파크 선생님 화면</title>
+  <link rel="manifest" href="teacher.webmanifest">
+  <meta name="theme-color" content="#4a2370">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-title" content="메이크파크 선생님">
+  <link rel="apple-touch-icon" href="assets/icons/teacher-apple-180.png">
+  <link rel="icon" type="image/png" href="assets/icons/teacher-192.png">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Jua&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="css/style.css">
   <link rel="stylesheet" href="css/teacher.css">
+  <link rel="stylesheet" href="css/net.css">
 </head>
 <body class="teacher">
   <main class="t-wrap">
     <header class="t-head">
       <h1>메이크파크 <span>선생님 화면</span></h1>
+      <button id="installApp" class="install-app in-teacher" type="button" hidden>📲 선생님 앱으로 설치</button>
       <div id="tWho" class="t-who" hidden>
         <span id="tWhoName"></span>
         <button id="tLogout" class="t-link" type="button">로그아웃</button>
@@ -113,6 +122,7 @@
     </section>
   </main>
 
+  <script src="js/pwa.js"></script>
   <script src="js/data/park-data.js"></script>
   <script>window.MP_NET_ROLE = 'teacher';   // 선생님 화면: 구글 로그인(어느 컴퓨터에서든 같은 선생님)</script>
   <script src="js/net/firebase-config.js"></script>

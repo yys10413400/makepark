@@ -1,0 +1,17 @@
+{
+  "id": "./teacher.html?app=teacher",
+  "name": "메이크파크 선생님",
+  "short_name": "메이크파크 선생님",
+  "description": "메이크파크 반 공원 만들기와 관리(학생 위치·모두 모으기·학생 기록).",
+  "lang": "ko",
+  "start_url": "./teacher.html?app=teacher",
+  "scope": "./teacher.html",
+  "display": "standalone",
+  "background_color": "#f3e9ff",
+  "theme_color": "#4a2370",
+  "icons": [
+    { "src": "assets/icons/teacher-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "assets/icons/teacher-512.png", "sizes": "512x512", "type": "image/png" },
+    { "src": "assets/icons/teacher-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}
