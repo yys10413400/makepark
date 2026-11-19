@@ -15,8 +15,17 @@
     right: { label: '오른쪽으로 돌기', icon: '↻' },
     wait: { label: '기다리기', icon: '⏸' },
     repeat: { label: '반복하기', icon: '⟳' },
-    'if': { label: '만약 신호가 초록이면', icon: '◆' }
+    'if': { label: '만약 신호가 초록이면', icon: '◆' },
+    fast: { label: '빠르게', icon: '⏩' },
+    slow: { label: '천천히', icon: '🐢' },
+    pick: { label: '손님 태우기', icon: '🙋' }
   };
+  // 만약 블록은 미션마다 보는 것이 다름(신호 / 손님)
+  function label(t) {
+    if (t === 'if' && S.mission && S.mission.ifCond === 'guest') return '만약 손님이 있으면';
+    return BLOCK[t].label;
+  }
+  function elseLabel() { return S.mission && S.mission.ifCond === 'guest' ? '아니면 (손님이 없으면)' : '아니면 (빨강이면)'; }
   var CART = { E: 'cart-right', W: 'cart-left', N: 'cart-up', S: 'cart-down' };
   var DIR_KO = { E: '오른쪽', W: '왼쪽', N: '위쪽', S: '아래쪽' };
   // 게임 영역(빈 화면 그림의 잔디 안쪽, 안내 띠 아래) — 그림 좌표
@@ -35,7 +44,7 @@
   }
   function patchCoaster(fn) {
     var c = coasterData();
-    ['done', 'rewarded', 'programs', 'stamps'].forEach(function (k) { if (!c[k] || typeof c[k] !== 'object') c[k] = {}; });
+    ['done', 'rewarded', 'programs', 'stamps', 'best', 'paid'].forEach(function (k) { if (!c[k] || typeof c[k] !== 'object') c[k] = {}; });
     var extra = fn(c) || {};
     var patch = { coaster: c };
     for (var k in extra) patch[k] = extra[k];
@@ -47,6 +56,8 @@
   // ---------- 미션 목록·잠금 ----------
   function sequence() { return M.common.concat(M.courses[S.course].missions); }
   function isDone(id) { return !!(coasterData().done || {})[id]; }
+  function bestStars(id) { return ((coasterData().best || {})[id]) || (isDone(id) ? 1 : 0); }
+  function starText(n) { return '★★★'.slice(0, n) + '☆☆☆'.slice(0, 3 - n); }
   function unlocked(i) {
     var seq = sequence();
     for (var k = 0; k < i; k++) if (!isDone(seq[k].id)) return false;
@@ -85,12 +96,13 @@
     S.target = 'main';
     ui.course.textContent = S.mission.id.indexOf('common') === 0 ? '공통 튜토리얼' : M.courses[S.course].label;
     ui.mission.textContent = S.mission.title;
-    ui.missionNo.textContent = (S.idx + 1) + ' / ' + S.list.length;
+    ui.missionNo.textContent = (S.idx + 1) + ' / ' + S.list.length + '  ' + starText(bestStars(S.mission.id));
     ui.guide.textContent = S.mission.guide;
     ui.prev.disabled = S.idx === 0;
     ui.next.disabled = S.idx >= S.list.length - 1 || !unlocked(S.idx + 1);
     ui.success.hidden = true;
     buildBoard();
+    renderGoals();
     renderCommands();
     resetTrain(S.mission.start ? '명령 하나가 틀렸어요. 실행해 보고 고쳐 봐요!' : '명령 버튼을 눌러 내 명령을 만들어요.');
     renderList();
@@ -164,7 +176,21 @@
       st.setAttribute('aria-label', p[0] === 'start' ? '출발역' : '도착역');
     });
     m.rails.forEach(function (t) {
-      add('cs-rail', ox + (t[0] - 0.125) * s, oy + (t[1] - 0.125) * s, 1.25 * s, 1.25 * s, '<img alt="" src="assets/coaster/rail-' + t[2] + '.png">');
+      // 갈림길('h+nw')은 레일 조각 그림을 겹쳐 그림
+      add('cs-rail', ox + (t[0] - 0.125) * s, oy + (t[1] - 0.125) * s, 1.25 * s, 1.25 * s,
+        LG.parts(t[2]).map(function (pc) { return '<img alt="" src="assets/coaster/rail-' + pc + '.png">'; }).join(''));
+    });
+    (m.climbs || []).forEach(function (c) {
+      add('cs-climb', ox + (c[0] + 0.12) * s, oy + (c[1] - 0.05) * s, 0.76 * s, 0.34 * s, '<span>⛰ 오르막</span>');
+    });
+    S.starEls = {};
+    (m.stars || []).forEach(function (c) {
+      S.starEls[c[0] + ',' + c[1]] = add('cs-star', ox + (c[0] + 0.22) * s, oy + (c[1] + 0.05) * s, 0.56 * s, 0.56 * s,
+        '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 1.8l3.1 6.4 7 1-5.1 4.9 1.2 7-6.2-3.3-6.2 3.3 1.2-7L1.9 9.2l7-1z" fill="#ffd23f" stroke="#c98a12" stroke-width="1.4" stroke-linejoin="round"/></svg>');
+    });
+    S.guestEls = {};
+    (m.guests || m.guestCells || []).forEach(function (c) {
+      S.guestEls[c[0] + ',' + c[1]] = add('cs-guest', ox + (c[0] + 0.18) * s, oy + (c[1] - 0.42) * s, 0.64 * s, 0.52 * s, '<span>🙋</span>');
     });
     S.markers = {};
     m.rails.forEach(function (t) {
@@ -177,7 +203,7 @@
       var w = 0.34 * s, h = 0.62 * s, x = ox + cell[0] * s - w * 0.15, y = oy + cell[1] * s - h + 0.12 * s;
       S.signalEls[cell[0] + ',' + cell[1]] = add('cs-signal', x, y, w, h);
     });
-    S.cartEl = add('cs-cart', 0, 0, 0, 0, '<img alt="열차">');
+    S.cartEl = add('cs-cart', 0, 0, 0, 0, '<img alt="열차"><span class="cs-speed" aria-hidden="true">💨 빠르게</span>');
   }
   function placeCart(c, r, dir) {
     var s = S.layout.s, ox = S.layout.ox, oy = S.layout.oy;
@@ -187,9 +213,11 @@
     var e = S.cartEl;
     e.style.left = ((cx - w / 2) / BOARD.w * 100) + '%'; e.style.top = ((bottom - h) / BOARD.h * 100) + '%';
     e.style.width = (w / BOARD.w * 100) + '%'; e.style.height = (h / BOARD.h * 100) + '%';
+    e.classList.toggle('fast', S.cart.speed === 'fast');
+    e.classList.toggle('to-left', dir === 'W');
     var img = e.firstChild, src = 'assets/coaster/' + CART[dir] + '.png';
     if (img.getAttribute('src') !== src) img.setAttribute('src', src);
-    e.setAttribute('aria-label', '열차: ' + (c + 1) + '번째 칸, ' + DIR_KO[dir] + ' 방향');
+    e.setAttribute('aria-label', '열차: ' + (c + 1) + '번째 칸, ' + DIR_KO[dir] + ' 방향' + (S.mission.speedRules ? ', ' + (S.cart.speed === 'fast' ? '빠르게' : '천천히') : ''));
   }
   function markCurrent(c, r) {
     for (var k in S.markers) S.markers[k].classList.toggle('is-here', k === c + ',' + r);
@@ -207,6 +235,20 @@
     }
   }
 
+  // ---------- 별 목표 ----------
+  function renderGoals(result) {
+    var m = S.mission, best = bestStars(m.id), gs = LG.goals(m), keys = ['arrive', 'par', 'bonus'];
+    ui.goals.innerHTML = '';
+    gs.forEach(function (g, i) {
+      var got = result ? result[keys[i]] : best > i;
+      var e = document.createElement('span'); e.className = 'cs-goal' + (got ? ' got' : '');
+      e.innerHTML = '<b aria-hidden="true">' + (got ? '★' : '☆') + '</b>';
+      e.appendChild(document.createTextNode(g.label));
+      ui.goals.appendChild(e);
+    });
+    ui.goals.setAttribute('aria-label', '별 목표: ' + gs.map(function (g) { return g.label; }).join(', '));
+  }
+
   // ---------- 명령 버튼·목록 ----------
   function renderCommands() {
     ui.cmds.innerHTML = '';
@@ -214,8 +256,8 @@
     S.mission.blocks.forEach(function (t) {
       var bt = document.createElement('button');
       bt.type = 'button'; bt.className = 'cs-cmd'; bt.dataset.type = t;
-      bt.innerHTML = '<span class="cs-cmd-icon" aria-hidden="true">' + BLOCK[t].icon + '</span>' + BLOCK[t].label;
-      bt.setAttribute('aria-label', BLOCK[t].label + ' 명령 넣기');
+      bt.innerHTML = '<span class="cs-cmd-icon" aria-hidden="true">' + BLOCK[t].icon + '</span>' + label(t);
+      bt.setAttribute('aria-label', label(t) + ' 명령 넣기');
       bt.addEventListener('click', function () { addBlock(t); });
       ui.cmds.appendChild(bt);
     });
@@ -311,17 +353,17 @@
           '<span class="cs-count" aria-live="polite">' + b.n + '번</span>' +
           '<button type="button" class="cs-mini cs-plus" aria-label="반복 횟수 늘리기">+</button>';
       } else {
-        row.innerHTML = name + '<span class="cs-label">' + BLOCK[b.type].label + '</span>';
+        row.innerHTML = name + '<span class="cs-label">' + label(b.type) + '</span>';
       }
       row.insertAdjacentHTML('beforeend', '<span class="cs-state"></span><span class="cs-ctrls">' +
-        '<button type="button" class="cs-mini cs-up" aria-label="' + (i + 1) + '번째 ' + BLOCK[b.type].label + ' 위로 옮기기"' + (i === 0 ? ' disabled' : '') + '>▲</button>' +
-        '<button type="button" class="cs-mini cs-down" aria-label="' + (i + 1) + '번째 ' + BLOCK[b.type].label + ' 아래로 옮기기"' + (i === list.length - 1 ? ' disabled' : '') + '>▼</button>' +
-        '<button type="button" class="cs-mini cs-del" aria-label="' + (i + 1) + '번째 ' + BLOCK[b.type].label + ' 지우기">✕</button></span>');
+        '<button type="button" class="cs-mini cs-up" aria-label="' + (i + 1) + '번째 ' + label(b.type) + ' 위로 옮기기"' + (i === 0 ? ' disabled' : '') + '>▲</button>' +
+        '<button type="button" class="cs-mini cs-down" aria-label="' + (i + 1) + '번째 ' + label(b.type) + ' 아래로 옮기기"' + (i === list.length - 1 ? ' disabled' : '') + '>▼</button>' +
+        '<button type="button" class="cs-mini cs-del" aria-label="' + (i + 1) + '번째 ' + label(b.type) + ' 지우기">✕</button></span>');
       li.appendChild(row);
       if (b.type === 'repeat') li.appendChild(renderContainer(b.body, b.id + '.body', depth + 1));
       if (b.type === 'if') {
         li.appendChild(renderContainer(b.then, b.id + '.then', depth + 1));
-        var els = document.createElement('div'); els.className = 'cs-else'; els.textContent = '아니면 (빨강이면)';
+        var els = document.createElement('div'); els.className = 'cs-else'; els.textContent = elseLabel();
         li.appendChild(els);
         li.appendChild(renderContainer(b.else, b.id + '.else', depth + 1));
       }
@@ -385,8 +427,11 @@
   function resetTrain(msg) {
     cancelRun();
     var m = S.mission;
-    S.signals = LG.randomSignals(m);
-    S.cart = { c: m.from[0], r: m.from[1], dir: m.dir };
+    S.world = LG.randomWorld(m);
+    S.signals = S.world.signals;
+    S.cart = { c: m.from[0], r: m.from[1], dir: m.dir, speed: m.speed || 'slow' };
+    for (var k in S.starEls) S.starEls[k].classList.remove('got');
+    for (var g in S.guestEls) { S.guestEls[g].hidden = !S.world.guests[g]; S.guestEls[g].classList.remove('picked'); }
     placeCart(S.cart.c, S.cart.r, S.cart.dir); markCurrent(S.cart.c, S.cart.r); drawSignals();
     clearBlockStates();
     S.mode = 'idle';
@@ -408,14 +453,14 @@
   function ensureRun() {
     if (!S.run || S.mode === 'done') {
       resetTrain();
-      S.run = LG.makeRun(S.mission, S.program, S.signals);
+      S.run = LG.makeRun(S.mission, S.program, S.world);
     }
   }
   function runAll() {
     if (S.mode === 'running' || S.animating) return;      // 연타 방지
     if (!S.program.length) { setStatus('warn', '아직 명령이 없어요. 아래 명령 버튼을 눌러 명령을 넣어 보세요!'); return; }
     resetTrain();                                           // 출발 상태에서 처음부터
-    S.run = LG.makeRun(S.mission, S.program, S.signals);
+    S.run = LG.makeRun(S.mission, S.program, S.world);
     S.mode = 'running'; lockUI(true);
     setStatus('run', '실행 중이에요…');
     var tk = S.token;
@@ -451,6 +496,8 @@
     if (ev.type === 'move') return '앞으로 한 칸 갔어요.';
     if (ev.type === 'turn') return DIR_KO[ev.dir] + '을 보도록 돌았어요.';
     if (ev.type === 'wait') return '기다렸더니 신호가 초록으로 바뀌었어요.';
+    if (ev.type === 'speed') return ev.value === 'fast' ? '빠르게 달려요!' : '천천히 달려요.';
+    if (ev.type === 'pick') return '손님을 태웠어요!';
     return '';
   }
   function play(ev, tk) {
@@ -464,11 +511,23 @@
         S.cart.dir = ev.dir; placeCart(S.cart.c, S.cart.r, ev.dir);
         S.cartEl.classList.remove('turning'); void S.cartEl.offsetWidth; S.cartEl.classList.add('turning');
         S.timer = setTimeout(function () { resolve(false); }, 420);
+      } else if (t === 'star') {
+        var se = S.starEls[ev.cell]; if (se) se.classList.add('got');
+        S.timer = setTimeout(function () { resolve(false); }, 260);
+      } else if (t === 'speed') {
+        S.cart.speed = ev.value; placeCart(S.cart.c, S.cart.r, S.cart.dir);
+        setBlockState(ev.block, 'running', ev.value === 'fast' ? '💨 빠르게' : '🐢 천천히');
+        S.timer = setTimeout(function () { resolve(false); }, 380);
+      } else if (t === 'pick') {
+        var ge = S.guestEls[ev.cell]; if (ge) ge.classList.add('picked');
+        setBlockState(ev.block, 'running', '🙋 탔어요');
+        S.timer = setTimeout(function () { if (ge) ge.hidden = true; resolve(false); }, 520);
       } else if (t === 'wait') {
         setStatus('run', '빨간 신호에서 기다리는 중…');
         S.timer = setTimeout(function () { if (tk !== S.token) return; S.signals[ev.cell] = 'green'; drawSignals(); resolve(false); }, 700);
       } else if (t === 'check') {
-        setBlockState(ev.block, 'running', ev.value ? '신호 초록 → 위쪽' : '신호 빨강 → 아니면');
+        setBlockState(ev.block, 'running', S.mission.ifCond === 'guest' ? (ev.value ? '손님 있음 → 위쪽' : '손님 없음 → 아니면')
+          : (ev.value ? '신호 초록 → 위쪽' : '신호 빨강 → 아니면'));
         S.timer = setTimeout(function () { resolve(false); }, 450);
       } else if (t === 'repeat') {
         setBlockState(ev.block, 'running', ev.round + ' / ' + ev.total + '번째');
@@ -505,6 +564,12 @@
       setStatus('warn', DIR_KO[S.cart.dir] + '으로는 레일이 없어서 멈췄어요. 모퉁이에서는 돌기 명령으로 방향을 바꿔요. 명령은 그대로 있으니 고쳐서 다시 해 봐요!');
     } else if (ev.type === 'blocked' && ev.reason === 'red') {
       setStatus('warn', '빨간 신호라서 멈췄어요. 빨강일 때는 기다리기를 한 다음 가요!');
+    } else if (ev.type === 'blocked' && ev.reason === 'slow') {
+      setStatus('warn', '너무 느려서 오르막을 못 올라가요! 오르막 앞에서 [빠르게]를 써 봐요.');
+    } else if (ev.type === 'blocked' && ev.reason === 'fast') {
+      setStatus('warn', '빠른 채로 커브에 들어가면 손님이 무서워해요! 커브 앞에서 [천천히]를 써 봐요.');
+    } else if (ev.type === 'blocked' && ev.reason === 'noguest') {
+      setStatus('warn', '여기는 기다리는 손님이 없어요. 손님(🙋)이 있는 칸에서 태워요!');
     } else if (ev.type === 'blocked' && ev.reason === 'nowait') {
       setStatus('warn', '지금은 초록 신호라 기다리지 않아도 돼요. 신호 색에 따라 다르게 해 볼까요?');
     } else {
@@ -513,33 +578,48 @@
     }
   }
   function succeed() {
-    var m = S.mission, first = false, stamp = false, seq = S.list;
+    var m = S.mission, stamp = false, seq = S.list, st = S.run.state;
+    var sc = LG.score(m, S.program, 'success', st), gain = 0, prevBest = bestStars(m.id);
     var saved = patchCoaster(function (c) {
       c.done[m.id] = true;
       var extra = {};
-      if (!c.rewarded[m.id]) { c.rewarded[m.id] = true; first = true; extra.tickets = (save().tickets || 0) + (m.reward || 0); }
+      if (sc.stars > (c.best[m.id] || 0)) c.best[m.id] = sc.stars;
+      // 별 하나에 티켓 starTickets장. 예전 방식으로 이미 받은 티켓(10장)은 빼고 줌
+      var paid = c.paid[m.id] != null ? c.paid[m.id] : (c.rewarded[m.id] ? 10 : 0);
+      var due = c.best[m.id] * M.starTickets;
+      if (due > paid) { gain = due - paid; c.paid[m.id] = due; extra.tickets = (save().tickets || 0) + gain; }
+      else c.paid[m.id] = paid;
+      c.rewarded[m.id] = true;
       var courseIds = M.courses[S.course].missions.map(function (x) { return x.id; });
       if (courseIds.length >= M.stampAfter && courseIds.every(function (id) { return c.done[id]; }) && !c.stamps[S.course]) { c.stamps[S.course] = true; stamp = true; }
       return extra;
     });
     updateTickets();
-    setStatus('ok', '도착했어요!');
+    renderGoals(sc);
+    ui.missionNo.textContent = (S.idx + 1) + ' / ' + S.list.length + '  ' + starText(bestStars(m.id));
+    setStatus('ok', '도착했어요! 별 ' + sc.stars + '개');
     var nextIdx = S.idx + 1, hasNext = nextIdx < seq.length;
-    ui.successMsg.textContent = first ? '티켓 ' + m.reward + '장을 받았어요!' : '다시 성공했어요! (보상은 처음 한 번만 받아요)';
+    var tips = [];
+    if (!sc.par) tips.push('블록을 ' + m.par + '개 이하로 줄여 봐요 (지금 ' + LG.countBlocks(S.program) + '개)');
+    if (sc.par && !sc.bonus && m.bonus) tips.push(LG.goals(m)[2].label + '에 도전해 봐요');
+    ui.successStars.textContent = starText(sc.stars);
+    ui.successStars.setAttribute('aria-label', '별 3개 중 ' + sc.stars + '개');
+    ui.successMsg.textContent = (gain ? '티켓 ' + gain + '장을 받았어요! ' : sc.stars <= prevBest ? '' : '') +
+      (tips.length ? tips.join(' · ') : sc.stars === 3 ? '별 3개! 최고예요!' : '');
     ui.successStamp.hidden = !stamp;
     ui.successSave.hidden = saved;
     ui.successNext.hidden = !hasNext;
     if (hasNext) ui.successNext.textContent = m.id.indexOf('common') === 0 ? M.courses[S.course].label + '으로 가요' : '다음 미션';
     ui.success.hidden = false;
     ui.next.disabled = !hasNext;
-    (hasNext ? ui.successNext : ui.successAgain).focus();
+    (sc.stars < 3 ? ui.successAgain : hasNext ? ui.successNext : ui.successAgain).focus();
   }
 
   // ---------- 시작 ----------
   function init() {
     ui.root = $('coaster'); if (!ui.root) return;
-    ['course', 'tickets', 'mission', 'missionNo', 'prev', 'next', 'exit', 'guide', 'board', 'status', 'cmds', 'list', 'clear', 'step', 'reset', 'run',
-      'success', 'successMsg', 'successStamp', 'successSave', 'successNext', 'successAgain', 'successPark'].forEach(function (k) {
+    ['course', 'tickets', 'mission', 'missionNo', 'prev', 'next', 'exit', 'guide', 'goals', 'board', 'status', 'cmds', 'list', 'clear', 'step', 'reset', 'run',
+      'success', 'successStars', 'successMsg', 'successStamp', 'successSave', 'successNext', 'successAgain', 'successPark'].forEach(function (k) {
       ui[k] = $('cs' + k.charAt(0).toUpperCase() + k.slice(1));
     });
     ui.exit.addEventListener('click', close);
@@ -553,7 +633,7 @@
     ui.prev.addEventListener('click', function () { if (S.idx > 0) loadMission(S.idx - 1); });
     ui.next.addEventListener('click', function () { if (unlocked(S.idx + 1)) loadMission(S.idx + 1); });
     ui.successNext.addEventListener('click', function () { loadMission(S.idx + 1); });
-    ui.successAgain.addEventListener('click', function () { ui.success.hidden = true; resetTrain('다시 도전! 명령은 그대로 있어요.'); });
+    ui.successAgain.addEventListener('click', function () { ui.success.hidden = true; renderGoals(); resetTrain('다시 도전! 명령은 그대로 있어요. 별 3개에 도전해 봐요.'); });
     ui.successPark.addEventListener('click', close);
   }
   window.MPCoaster = { open: open, close: close, init: init, _state: S };

@@ -141,3 +141,29 @@ body.coaster-open #hud, body.coaster-open #enterFacility { display: none !import
 .cs-cmds.many { gap: 0.5cqw 0.5cqw; }
 .cs-cmds.many .cs-cmd { font-size: 1.02cqw; padding: 0.4cqw 0.75cqw; gap: 0.35cqw; }
 .cs-cmds.many .cs-limit { font-size: 0.95cqw; }
+
+/* 별 목표 · 별 · 손님 · 오르막 · 속도 */
+.cs-goals { left: 2.6%; top: 28.6%; z-index: 7; display: flex; gap: 0.5cqw; flex-wrap: wrap; max-width: 62%; }
+.cs-goal { display: inline-flex; align-items: center; gap: 0.3cqw; padding: 0.2cqw 0.7cqw; border-radius: 99px; font-size: 0.95cqw;
+  background: rgba(255, 250, 238, 0.92); border: 0.1cqw solid #e2b357; color: #6e4b2f; }
+.cs-goal b { color: #c9b28a; font-weight: 400; }
+.cs-goal.got b { color: #f2b81f; }
+.cs-goal.got { background: #fff6cf; }
+.cs-star { z-index: 4; transition: transform .25s, opacity .25s; filter: drop-shadow(0 0.15cqw 0.15cqw rgba(0,0,0,.25)); }
+.cs-star svg { width: 100%; height: 100%; animation: cs-twinkle 1.6s ease-in-out infinite; }
+.cs-star.got { transform: translateY(-40%) scale(1.4); opacity: 0; }
+@keyframes cs-twinkle { 50% { transform: scale(1.12) rotate(8deg); } }
+.cs-guest { z-index: 4; display: grid; place-items: center; transition: transform .45s, opacity .45s; }
+.cs-guest span { font-size: 2.1cqw; line-height: 1; background: rgba(255, 250, 238, 0.9); border-radius: 50%; padding: 0.15cqw; box-shadow: 0 0.1cqw 0.3cqw rgba(0,0,0,.2); }
+.cs-guest.picked { transform: translateY(70%) scale(0.5); opacity: 0; }
+.cs-climb { z-index: 3; display: grid; place-items: center; pointer-events: none; }
+.cs-climb span { font-size: 0.85cqw; white-space: nowrap; padding: 0 0.4cqw; border-radius: 99px; background: rgba(120, 82, 40, 0.85); color: #fff3d6; }
+.cs-speed { position: absolute; top: 25%; right: 96%; white-space: nowrap; font-size: 0.95cqw; line-height: 1.4;
+  padding: 0 0.5cqw; border-radius: 99px; background: #ff7a3d; color: #fff; border: 0.1cqw solid #fff; opacity: 0; transition: opacity .2s; }
+.cs-cart.fast .cs-speed { opacity: 1; animation: cs-puff .45s ease-in-out infinite alternate; }
+@keyframes cs-puff { to { transform: translateX(-12%); } }
+.cs-cart.to-left .cs-speed { right: auto; left: 96%; }
+.cs-success-stars { font-size: 3cqw; color: #f2b81f; letter-spacing: 0.4cqw; margin: 0 !important; }
+@media (prefers-reduced-motion: reduce) { .cs-star svg, .cs-cart.fast .cs-speed { animation: none; } }
+
+.cs-rail img { position: absolute; inset: 0; }
