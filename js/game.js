@@ -11,6 +11,7 @@
   // 캐릭터: 고른 완성형 캐릭터(js/characters.js)로 그리고, 그림을 불러오기 전에는 임시 캐릭터로 그림
   var placeholder = createCharacter(window.MP_CHARACTER);
   var character = window.MPChars ? new MPChars.Walker(Object.assign({ fallback: placeholder }, charSave(readSave()))) : placeholder;
+  var teacherAvatar = null;   // 선생님 모드일 때 동물 선생님 id (js/teacher-chars.js)
 
   // ---------- DOM ----------
   var $ = function (id) { return document.getElementById(id); };
@@ -417,6 +418,7 @@
     if (!storageOk) toast('샀지만 이 기기에는 저장되지 않아요');
   }
   function openChars(mode, entry) {
+    if (teacherAvatar) return;   // 선생님 모드: 동물 선생님 캐릭터를 그대로 씀
     if (!window.MPChars || state.charOpen) return;
     if (mode === 'edit' && (state.phase !== 'play' || state.modalFacility || state.profileOpen || state.rideOpen)) return;
     if (mode === 'edit') { stopMoving(); ui.enter.hidden = true; state.nearby = null; }
@@ -875,7 +877,8 @@
     player: function () {
       var p = state.player, cs = charSave(readSave());
       return { x: p.x, y: p.y, dir: p.dir, moving: !!p.moving, ride: state.rideOpen || null,
-        nickname: state.nickname, grade: state.grade, charId: cs.id, gender: cs.gender };
+        nickname: state.nickname, grade: state.grade,
+        charId: teacherAvatar || cs.id, gender: cs.gender, teacher: !!teacherAvatar };
     },
     teleport: function (x, y) {
       var t = grid.nearestWalkable(x, y);
@@ -898,7 +901,19 @@
       saveHook = null;
       if (slot && data) { try { localStorage.setItem(saveKey, JSON.stringify(data)); } catch (e) { /* 저장 불가 */ } }
       var cs = charSave(readSave());
-      if (character.set) character.set(cs.id, cs.gender);
+      if (character.set && !teacherAvatar) character.set(cs.id, cs.gender);
+    },
+    // 선생님 모드(선생님 화면의 '공원에 들어가기'): 동물 선생님 캐릭터로 바로 공원에 들어감
+    //  - 저장은 학생 기록과 섞이지 않게 'teacher' 칸에, 캐릭터 고르기·내 정보 바꾸기는 숨김
+    enterAsTeacher: function (name, avatarId) {
+      if (!window.MPTeacherChars) return;
+      teacherAvatar = avatarId;
+      character = new MPTeacherChars.Walker(avatarId);
+      saveKey = 'makepark.class.teacher'; saveHook = null;
+      if (ui.charBtn) ui.charBtn.hidden = true;
+      ui.playerChip.disabled = true; ui.playerChip.classList.add('teacher-chip');
+      enterPark(String(name || '선생님').slice(0, 12), 6);
+      ui.playerGrade.textContent = '선생님';
     },
     onSave: function (fn) { saveHook = fn; },
     toast: toast,

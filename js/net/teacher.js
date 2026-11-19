@@ -44,7 +44,10 @@
     if (!user) { show('login'); msg('tLoginMsg', ''); return; }
     $('tWhoName').textContent = '👩‍🏫 ' + (user.name || user.email || '선생님');
     if (!$('tName').value) $('tName').value = user.name || '';
-    openHome();
+    // 공원에서 '← 선생님 화면'으로 돌아오면(teacher.html#room=반코드) 그 반 관리 화면을 바로 엶
+    var back = /#room=(\d{5})/.exec(location.hash);
+    if (back) { history.replaceState(null, '', location.pathname + location.search); openRoom(back[1]); }
+    else openHome();
   });
 
   // ---------- 2. 내 반 목록 ----------
@@ -159,14 +162,14 @@
   }
   function render() {
     var ids = Object.keys(S.players).sort(function (a, b) { return (S.players[a].n || '').localeCompare(S.players[b].n || '', 'ko'); });
-    $('tCount').textContent = ids.length + '명';
+    $('tCount').textContent = ids.filter(function (pid) { return !S.players[pid].tc; }).length + '명';
     $('tEmpty').hidden = ids.length > 0;
     var tb = $('tList'); tb.textContent = '';
     ids.forEach(function (pid) {
       var d = S.players[pid], tr = document.createElement('tr');
-      [d.n || '?', (d.g || '?') + '학년', WHERE[d.w] || d.w || '공원'].forEach(function (t) { var td = document.createElement('td'); td.textContent = t; tr.appendChild(td); });
+      [(d.tc ? '★ ' : '') + (d.n || '?'), d.tc ? '선생님' : (d.g || '?') + '학년', WHERE[d.w] || d.w || '공원'].forEach(function (t) { var td = document.createElement('td'); td.textContent = t; tr.appendChild(td); });
       var td = document.createElement('td');
-      if (S.owner) {
+      if (S.owner && !d.tc) {
         var b = document.createElement('button');
         b.type = 'button'; b.className = 't-kick'; b.textContent = '내보내기';
         b.addEventListener('click', function () {
@@ -187,6 +190,7 @@
       dot.style.top = (pos.y / PARK.world.height * 100) + '%';
       dot.textContent = d.n || '?';
       dot.classList.toggle('in-ride', !!(d.w && d.w !== 'park'));
+      dot.classList.toggle('is-teacher', !!d.tc);
     });
   }
 
@@ -218,6 +222,47 @@
     }, function (err) { msg('tMsg', '학생 기록을 불러오지 못했어요: ' + err.message); });
   }
   $('tRecRefresh').addEventListener('click', loadRecords);
+  // ---------- 공원에 들어가기: 동물 선생님 고르기 → index.html?teacher=반코드&avatar=동물 ----------
+  var AKEY = 'makepark.teacher.avatar', avatar = null;
+  function pickAvatar(id) {
+    avatar = id;
+    try { localStorage.setItem(AKEY, id); } catch (e) { /* 저장 안 됨 */ }
+    document.querySelectorAll('#tAvatars .t-avatar').forEach(function (b) { b.setAttribute('aria-checked', String(b.dataset.id === id)); });
+  }
+  function openWalk() {
+    var T = window.MPTeacherChars, box = $('tAvatars');
+    if (!T || !T.LIST.length) { msg('tMsg', '동물 선생님 그림을 불러오지 못했어요.'); return; }
+    if (!box.childElementCount) {
+      T.LIST.forEach(function (c) {
+        var b = document.createElement('button'); b.type = 'button'; b.className = 't-avatar'; b.dataset.id = c.id;
+        b.setAttribute('role', 'radio');
+        var cv = document.createElement('canvas'); cv.width = 132; cv.height = 150;
+        var nm = document.createElement('span'); nm.textContent = c.name;
+        b.appendChild(cv); b.appendChild(nm);
+        b.addEventListener('click', function () { pickAvatar(c.id); });
+        b.addEventListener('dblclick', goWalk);
+        box.appendChild(b);
+        T.drawThumb(cv, c.id);
+      });
+    }
+    var saved = null; try { saved = localStorage.getItem(AKEY); } catch (e) { /* 없음 */ }
+    pickAvatar(T.valid(saved) ? saved : T.first());
+    $('tWalkModal').hidden = false;
+    $('tWalkGo').focus();
+  }
+  function closeWalk() { $('tWalkModal').hidden = true; $('tWalkOpen').focus(); }
+  function goWalk() {
+    if (!S.code || !avatar) return;
+    if (S.meta && !S.meta.open) { msg('tMsg', '공원이 닫혀 있어요. 먼저 공원을 다시 열어 주세요.'); closeWalk(); return; }
+    if (S.handle) S.handle.leave();
+    location.href = 'index.html?teacher=' + S.code + '&avatar=' + avatar;
+  }
+  $('tWalkOpen').addEventListener('click', openWalk);
+  $('tWalkClose').addEventListener('click', closeWalk);
+  $('tWalkGo').addEventListener('click', goWalk);
+  $('tWalkModal').addEventListener('click', function (e) { if (e.target === $('tWalkModal')) closeWalk(); });
+  document.addEventListener('keydown', function (e) { if (e.key === 'Escape' && !$('tWalkModal').hidden) closeWalk(); });
+
   // 학생 기록 창 열기·닫기 (바깥 어두운 곳을 누르거나 Esc 로도 닫힘)
   function openRecords() { msg('tRecMsg', ''); $('tRecModal').hidden = false; loadRecords(); $('tRecClose').focus(); }
   function closeRecords() { $('tRecModal').hidden = true; $('tRecOpen').focus(); }

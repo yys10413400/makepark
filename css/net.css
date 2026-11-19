@@ -59,3 +59,11 @@
 }
 .install-app.in-teacher { position: static; }
 body:not(:has(#title:not([hidden]))) .install-app:not(.in-teacher) { display: none; }   /* 학생 앱: 첫 화면에서만 */
+
+/* 선생님 모드(index.html?teacher=반코드): 첫 입장 화면 없이 바로 공원 */
+html.teacher-mode #title { display: none; }
+html.teacher-mode .install-app { display: none; }
+.teacher-chip { cursor: default; }
+.teacher-chip .chip-edit { display: none; }
+.teacher-chip .chip-grade { color: #b46d08; }
+.teacher-back { background: #fff3d6; }

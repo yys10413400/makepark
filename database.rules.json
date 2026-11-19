@@ -56,6 +56,7 @@
             "m": { ".validate": "newData.val() === 0 || newData.val() === 1" },
             "w": { ".validate": "newData.isString() && newData.val().length <= 12" },
             "t": { ".validate": "newData.isNumber()" },
+            "tc": { ".validate": "newData.val() === 1 && root.child('rooms').child($code).child('meta/owner').val() === auth.uid" },
             "$other": { ".validate": false }
           }
         },

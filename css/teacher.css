@@ -200,3 +200,19 @@ body.teacher [hidden] { display: none !important; }
   .t-table th, .t-table td { padding-left: 5px; padding-right: 5px; }
   .t-kick { padding: 0 8px; font-size: 12px; }
 }
+
+/* 공원에 들어가기: 동물 선생님 고르기 */
+.t-walkcard { width: min(640px, 100%); max-height: 100%; overflow: auto; }
+.t-avatars { display: grid; grid-template-columns: repeat(auto-fill, minmax(118px, 1fr)); gap: 10px; }
+.t-avatar {
+  display: grid; justify-items: center; gap: 4px; padding: 10px 6px 8px; border-radius: 14px; cursor: pointer;
+  font-family: var(--font); font-size: 15px; color: var(--t-ink); background: #fbf9f5; border: 2px solid var(--t-line);
+}
+.t-avatar canvas { width: 88px; height: 100px; }
+.t-avatar:hover { border-color: #cdb8e6; }
+.t-avatar[aria-checked="true"] { border-color: var(--t-purple); background: var(--t-purple-tint); box-shadow: 0 0 0 3px rgba(106, 61, 154, 0.15); }
+.t-avatar:focus-visible { outline: 3px solid rgba(106, 61, 154, 0.45); outline-offset: 2px; }
+.t-walk-btns { display: flex; justify-content: flex-end; margin-top: 14px; }
+.t-walk-btns .t-btn { min-height: 48px; padding: 0 26px; }
+.t-dot.is-teacher { background: rgba(196, 120, 10, 0.96); font-weight: 700; z-index: 2; }
+.t-dot.is-teacher::after { border-top-color: rgba(196, 120, 10, 0.96); }

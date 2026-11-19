@@ -160,10 +160,11 @@
       if (!data) { delete S.others[pid]; setChip(); return; }
       var o = S.others[pid];
       if (!o) {
-        o = S.others[pid] = { x: data.x, y: data.y, walker: window.MPChars ? new MPChars.Walker({ id: data.s, gender: data.gd }) : null };
-        api().toast && api().toast(data.n + ' 친구가 공원에 왔어요');
+        o = S.others[pid] = { x: data.x, y: data.y, walker: makeWalker(data) };
+        api().toast && api().toast(data.tc ? '선생님이 공원에 오셨어요!' : data.n + ' 친구가 공원에 왔어요');
       }
-      if (o.walker && (o.data && (o.data.s !== data.s || o.data.gd !== data.gd))) o.walker.set(data.s, data.gd);
+      if (o.data && (!!o.data.tc !== !!data.tc)) o.walker = makeWalker(data);
+      else if (o.walker && (o.data && (o.data.s !== data.s || o.data.gd !== data.gd))) o.walker.set(data.s, data.gd);
       o.data = data; o.tx = data.x; o.ty = data.y; o.seen = performance.now();
       setChip();
     });
@@ -181,7 +182,13 @@
     S.others = {};
     setChip();
   }
+  // 친구는 학생 캐릭터(js/characters.js), 선생님(tc)은 동물 선생님(js/teacher-chars.js)으로 그림
+  function makeWalker(data) {
+    if (data.tc && window.MPTeacherChars) return new MPTeacherChars.Walker(data.s);
+    return window.MPChars ? new MPChars.Walker({ id: data.s, gender: data.gd }) : null;
+  }
   function kickOut(msg) {
+    if (S.isTeacher) { leave(); backToTeacher(); return; }
     flush();
     leave(); S.code = null; S.studentKey = null;
     if (api().toTitle) api().toTitle(msg);
@@ -194,7 +201,7 @@
       api().teleport(GATHER.x + Math.cos(a) * r, GATHER.y + Math.sin(a) * r * 0.6);
       api().toast && api().toast('선생님이 분수 광장으로 모두 불렀어요!');
       S.lastSend = 0;
-    } else if (cmd.type === 'kick' && cmd.target === S.pid) {
+    } else if (cmd.type === 'kick' && cmd.target === S.pid && !S.isTeacher) {
       api().closeRide && api().closeRide();
       kickOut('선생님이 공원에서 내보냈어요.');
     }
@@ -204,7 +211,7 @@
   function snapshot(full) {
     var p = api().player();
     var d = { x: Math.round(p.x), y: Math.round(p.y), d: p.dir, m: p.moving ? 1 : 0, w: p.ride || 'park' };
-    if (full) { d.n = p.nickname; d.g = p.grade; d.s = p.charId; d.gd = p.gender; }
+    if (full) { d.n = p.nickname; d.g = p.grade; d.s = p.charId; d.gd = p.gender; if (p.teacher) d.tc = 1; }
     return d;
   }
   function tick() {
@@ -233,12 +240,12 @@
       o.walker.draw(ctx, o.x, o.y, d.d || 'down', moving, time);
     });
   }
-  function nameTag(ctx, text, x, y, mine) {
+  function nameTag(ctx, text, x, y, mine, teacher) {
     ctx.save();
     ctx.font = '600 11px Jua, "Malgun Gothic", sans-serif';
     ctx.textAlign = 'center'; ctx.textBaseline = 'bottom';
     var w = ctx.measureText(text).width + 10;
-    ctx.fillStyle = mine ? 'rgba(18,131,122,0.92)' : 'rgba(40,24,70,0.82)';
+    ctx.fillStyle = teacher ? 'rgba(196,120,10,0.95)' : mine ? 'rgba(18,131,122,0.92)' : 'rgba(40,24,70,0.82)';
     var r = 6, bx = x - w / 2, by = y - 15;
     ctx.beginPath(); ctx.moveTo(bx + r, by); ctx.arcTo(bx + w, by, bx + w, by + 15, r); ctx.arcTo(bx + w, by + 15, bx, by + 15, r);
     ctx.arcTo(bx, by + 15, bx, by, r); ctx.arcTo(bx, by, bx + w, by, r); ctx.fill();
@@ -249,9 +256,9 @@
     if (!S.handle) return;
     Object.keys(S.others).forEach(function (pid) {
       var o = S.others[pid], d = o.data;
-      if (d && d.w === 'park') nameTag(ctx, d.n || '친구', o.x, o.y - 64, false);
+      if (d && d.w === 'park') nameTag(ctx, (d.tc ? '★ ' : '') + (d.n || '친구'), o.x, o.y - 64, false, !!d.tc);
     });
-    if (me) nameTag(ctx, me.nickname, me.x, me.y - 64, true);
+    if (me) nameTag(ctx, (S.isTeacher ? '★ ' : '') + me.nickname, me.x, me.y - 64, true, S.isTeacher);
   }
 
   // ---------- 위쪽 반 표시 ----------
@@ -259,11 +266,42 @@
     var chip = document.getElementById('roomChip');
     if (!chip) return;
     if (!S.handle) { chip.hidden = true; return; }
-    var all = Object.keys(S.others).map(function (k) { return S.others[k].data; }).filter(Boolean);
+    var every = Object.keys(S.others).map(function (k) { return S.others[k].data; }).filter(Boolean);
+    var all = every.filter(function (d) { return !d.tc; }), teacherIn = every.length > all.length;
     var inRide = all.filter(function (d) { return d.w !== 'park'; }).length;
     chip.hidden = false;
-    chip.textContent = '🏫 ' + (S.className || S.code + '반') + ' · 친구 ' + all.length + '명' + (inRide ? ' (놀이기구 ' + inRide + ')' : '');
+    chip.textContent = '🏫 ' + (S.className || S.code + '반') + ' · ' + (S.isTeacher ? '학생 ' : '친구 ') + all.length + '명' + (inRide ? ' (놀이기구 ' + inRide + ')' : '') + (teacherIn ? ' · ★ 선생님' : '');
     chip.title = all.map(function (d) { return d.n + (d.w !== 'park' ? ' — ' + (WHERE[d.w] || d.w) : ''); }).join('\n');
+  }
+
+  // ---------- 선생님 모드: 선생님 화면의 '공원에 들어가기' → index.html?teacher=반코드&avatar=동물 ----------
+  // 선생님 구글 계정(그 반을 만든 선생님)으로 확인한 뒤, 고른 동물 선생님으로 바로 그 반 공원에 들어감
+  function backToTeacher() { location.href = 'teacher.html' + (S.code ? '#room=' + S.code : ''); }
+  var TQ = /[?&]teacher=(\d{5})/.exec(location.search), TA = /[?&]avatar=([a-z]+)/.exec(location.search);
+  if (TQ && NET.teacher) {
+    S.isTeacher = true;
+    document.documentElement.classList.add('teacher-mode');
+    var started = false;
+    NET.teacher.watch(function (user) {
+      if (started) return;
+      if (!user) { location.href = 'teacher.html'; return; }
+      started = true;
+      var code = TQ[1];
+      NET.getRoom(code).then(function (meta) {
+        if (!meta || !NET.isOwner(meta)) { alert('내가 만든 반 공원이 아니에요. 선생님 화면으로 돌아갈게요.'); location.href = 'teacher.html'; return; }
+        if (!meta.open) { alert('공원이 닫혀 있어요. 선생님 화면에서 공원을 다시 연 뒤 들어와 주세요.'); location.href = 'teacher.html#room=' + code; return; }
+        S.code = code; S.teacher = meta.teacher || user.name; S.className = meta.name || (code + '반');
+        var avatar = TA && window.MPTeacherChars && MPTeacherChars.valid(TA[1]) ? TA[1] : (window.MPTeacherChars && MPTeacherChars.first());
+        // 위쪽 오른쪽에 '선생님 화면으로' 버튼
+        var right = document.querySelector('#hud .hud-right');
+        if (right) {
+          var b = el('button', 'btn hud-btn teacher-back', '← 선생님 화면'); b.type = 'button';
+          b.addEventListener('click', function () { leave(); backToTeacher(); });
+          right.insertBefore(b, right.firstChild);
+        }
+        api().enterAsTeacher(S.teacher, avatar);
+      });
+    });
   }
 
   window.MPMulti = {

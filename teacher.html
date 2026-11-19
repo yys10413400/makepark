@@ -102,6 +102,7 @@
           <div class="t-actions">
             <button id="tGather" class="t-btn primary owner-only" type="button">📣 모두 모으기 <small>분수 광장</small></button>
             <button id="tToggle" class="t-btn owner-only" type="button">공원 닫기</button>
+            <button id="tWalkOpen" class="t-btn owner-only" type="button">🐾 공원에 들어가기</button>
             <button id="tRecOpen" class="t-btn owner-only" type="button">📋 학생 기록 <span id="tRecBadge" class="t-count"></span></button>
           </div>
           <p id="tMsg" class="t-msg" aria-live="polite"></p>
@@ -143,6 +144,21 @@
         </div>
       </div>
 
+      <!-- 공원에 들어가기: 동물 선생님 고르기 -->
+      <div id="tWalkModal" class="t-modal" hidden>
+        <div class="t-card t-walkcard" role="dialog" aria-modal="true" aria-labelledby="tWalkTitle">
+          <div class="t-card-head">
+            <h2 id="tWalkTitle">어떤 선생님으로 들어갈까요?</h2>
+            <button id="tWalkClose" class="t-btn ghost sm t-close t-push" type="button" aria-label="닫기">✕</button>
+          </div>
+          <p class="t-sub">고른 동물 선생님으로 우리 반 공원을 걸어 다녀요. 학생들 화면에도 선생님이 보여요.</p>
+          <div id="tAvatars" class="t-avatars" role="radiogroup" aria-label="동물 선생님"></div>
+          <div class="t-walk-btns">
+            <button id="tWalkGo" class="t-btn primary" type="button">공원으로 출발!</button>
+          </div>
+        </div>
+      </div>
+
       <div class="t-danger-zone owner-only">
         <div>
           <h2>반 정리</h2>
@@ -159,6 +175,8 @@
   <script src="js/pwa.js"></script>
   <script src="js/data/park-data.js"></script>
   <script>window.MP_NET_ROLE = 'teacher';   // 선생님 화면: 구글 로그인(어느 컴퓨터에서든 같은 선생님)</script>
+  <script>document.write('<script src="js/data/teacher-sprites.js?t=' + Date.now() + '"><\/script>');</script>
+  <script src="js/teacher-chars.js"></script>
   <script src="js/net/firebase-config.js"></script>
   <script src="js/net/net.js"></script>
   <script src="js/net/teacher.js"></script>
