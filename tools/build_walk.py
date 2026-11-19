@@ -50,7 +50,8 @@ def lift_leg(stand, foot_x, cut_r=LEG_CUT, lift_r=LEG_LIFT):
     h, w = stand.shape[:2]
     cut, lift = int(h * cut_r), max(2, round(h * lift_r))
     top = stand.copy(); top[cut:] = 0
-    low = stand.copy(); low[:cut - lift * 3] = 0
+    # 종아리·발(cut 아래)만 옮김. 예전에는 cut 위 3칸까지 같이 옮겨 손·팔·치마 아랫단이 두 번 겹쳐 보였음
+    low = stand.copy(); low[:cut] = 0
     left = low.copy(); left[:, int(foot_x):] = 0
     right = low.copy(); right[:, :int(foot_x)] = 0
     left = np.roll(left, -lift, axis=0); left[-lift:] = 0

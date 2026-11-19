@@ -360,7 +360,7 @@
   }
   var DEBUG = /[?&]debug=1/.test(location.search);
   // 로비 조명에 맞춰 그리기(캐릭터 그림 파일은 그대로, 로비에서만):
-  //  색을 조금 빼고 보라빛을 곱한 뒤 머리 쪽에 촛불빛, 아래에 흐릿한 보라 그림자와 반짝이는 바닥에 비친 모습
+  //  색을 조금 빼고 보라빛을 얹은 뒤 머리 쪽에 촛불빛, 아래에 흐릿한 보라 그림자와 반짝이는 바닥에 비친 모습
   var off = document.createElement('canvas'), offR = document.createElement('canvas');
   function drawMe(c, t) {
     var me = S.me, h = charH(me.y), sid = api().character ? api().character().sid : 'F1';
@@ -384,15 +384,12 @@
     o.filter = 'saturate(0.82) brightness(0.92)';
     if (!MPChars.drawSprite(o, sid, fx, fy, me.dir, h, opt)) { opt = { bob: opt.bob }; MPChars.drawSprite(o, sid, fx, fy, me.dir, h, opt); }
     o.filter = 'none';
-    o.globalCompositeOperation = 'multiply';
-    o.fillStyle = 'rgb(222,200,238)'; o.fillRect(0, 0, ow, oh);
+    // 그림이 있는 곳에만(source-atop) 보랏빛과 촛불빛을 얹음 — 투명한 가장자리·팔 사이에는 색이 번지지 않음
+    o.globalCompositeOperation = 'source-atop';
+    o.fillStyle = 'rgba(80,40,130,0.16)'; o.fillRect(0, 0, ow, oh);
     var warm = o.createLinearGradient(0, 0, 0, oh);
-    warm.addColorStop(0, 'rgba(255,170,90,0.18)'); warm.addColorStop(0.55, 'rgba(255,170,90,0)');
-    o.globalCompositeOperation = 'screen';
+    warm.addColorStop(0, 'rgba(255,170,90,0.16)'); warm.addColorStop(0.55, 'rgba(255,170,90,0)');
     o.fillStyle = warm; o.fillRect(0, 0, ow, oh);
-    // 그림 모양 밖으로 번진 색은 지움
-    o.globalCompositeOperation = 'destination-in';
-    MPChars.drawSprite(o, sid, fx, fy, me.dir, h, opt);
     o.globalCompositeOperation = 'source-over';
     // 2) 바닥에 비친 모습(아래로 뒤집어 흐리게, 점점 사라지게)
     var r = offR.getContext('2d');

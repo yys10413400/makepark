@@ -564,10 +564,10 @@ window.MP_CHAR_SPRITES = {
     "right": [
      461,
      4,
-     217,
-     295,
-     97.2,
-     295
+     206,
+     292,
+     96.1,
+     292
     ],
     "up": [
      233,
@@ -1451,4 +1451,4 @@ window.MP_CHAR_SPRITES = {
   }
  }
 };
-window.MP_CHAR_VER = '20261119105625';
+window.MP_CHAR_VER = '20261119183926';
