@@ -9,6 +9,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Jua&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="css/style.css">
   <link rel="stylesheet" href="css/coaster.css">
+  <link rel="stylesheet" href="css/gatekeeper.css">
 </head>
 <body>
   <div id="app">
@@ -122,6 +123,9 @@
       </div>
     </section>
 
+    <!-- 유령의 집: 문지기의 비밀 규칙 (화면은 js/gatekeeper/ui.js 가 만듦) -->
+    <section id="gatekeeper" class="gk-overlay" hidden aria-label="유령의 집 — 문지기의 비밀 규칙"></section>
+
     <!-- 게임 화면 UI -->
     <div id="hud" hidden>
       <button class="chip" id="playerChip" type="button" aria-label="내 정보 바꾸기"><span class="dot"></span><span id="playerName"></span><span class="chip-grade" id="playerGrade"></span><span class="chip-edit" aria-hidden="true">✎</span></button>
@@ -181,5 +185,8 @@
   <script src="js/coaster/missions.js"></script>
   <script src="js/coaster/logic.js"></script>
   <script src="js/coaster/ui.js"></script>
+  <script src="js/gatekeeper/rules.js"></script>
+  <script src="js/gatekeeper/sprites.js"></script>
+  <script src="js/gatekeeper/ui.js"></script>
 </body>
 </html>

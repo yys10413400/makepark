@@ -245,7 +245,7 @@
   // ---------- 공원 안 프로필 수정 ----------
   guardIme(ui.profileNick);
   function openProfile() {
-    if (state.phase !== 'play' || state.modalFacility || state.profileOpen || state.charOpen || state.coasterOpen) return;
+    if (state.phase !== 'play' || state.modalFacility || state.profileOpen || state.charOpen || state.rideOpen) return;
     stopMoving(); state.keys = {};
     state.profileOpen = true;
     ui.profileNick.value = state.nickname;
@@ -291,6 +291,7 @@
   function facilityCleared(fid) {
     var s = readSave() || {};
     if (fid === 'coaster') { var st = (s.coaster && s.coaster.stamps) || {}; return Object.keys(st).some(function (k) { return st[k]; }); }
+    if (fid === 'ghost') return !!(s.gate && s.gate.cleared);   // 문지기 게임 혼자 추리하기 본 게임 한 판
     return false;
   }
   // 받침에 따라 조사 고르기: josa('탐험가', '을', '를') → '탐험가를'
@@ -366,6 +367,7 @@
       pendingBuy = null; renderChars();
       ui.charMsg.textContent = d.facility === 'coaster'
         ? facilityName(d.facility) + '에서 학년 과정을 끝내면 받을 수 있어요.'
+        : d.facility === 'ghost' ? '유령의 집 문지기와 혼자 추리하기 한 판을 끝내면 받을 수 있어요.'
         : josa(facilityName(d.facility), '이', '가') + ' 문을 열면 받을 수 있어요.';
       return;
     }
@@ -390,7 +392,7 @@
   }
   function openChars(mode, entry) {
     if (!window.MPChars || state.charOpen) return;
-    if (mode === 'edit' && (state.phase !== 'play' || state.modalFacility || state.profileOpen || state.coasterOpen)) return;
+    if (mode === 'edit' && (state.phase !== 'play' || state.modalFacility || state.profileOpen || state.rideOpen)) return;
     if (mode === 'edit') { stopMoving(); ui.enter.hidden = true; state.nearby = null; }
     state.keys = {};
     charMode = mode; charEntry = entry || null; pendingBuy = null;
@@ -478,7 +480,7 @@
     var p = state.player, speed = PARK.player.speed, k = state.keys;
     var ix = (k.right ? 1 : 0) - (k.left ? 1 : 0), iy = (k.down ? 1 : 0) - (k.up ? 1 : 0);
     p.moving = false;
-    if (state.modalFacility || state.profileOpen || state.charOpen || state.coasterOpen) return;
+    if (state.modalFacility || state.profileOpen || state.charOpen || state.rideOpen) return;
     if (ix || iy) {
       stopMoving();
       var len = Math.hypot(ix, iy), dx = ix / len * speed * dt, dy = iy / len * speed * dt;
@@ -532,7 +534,7 @@
     return best;
   }
   function updateNearby() {
-    var f = state.phase === 'play' && state.view === 'play' && !state.modalFacility && !state.profileOpen && !state.charOpen && !state.coasterOpen ? findNearby() : null;
+    var f = state.phase === 'play' && state.view === 'play' && !state.modalFacility && !state.profileOpen && !state.charOpen && !state.rideOpen ? findNearby() : null;
     if (f !== state.nearby) {
       state.nearby = f;
       ui.enter.hidden = !f;
@@ -540,11 +542,13 @@
     }
   }
   function openFacility(f) {
-    if (!f || state.modalFacility || state.coasterOpen) return;
+    if (!f || state.modalFacility || state.rideOpen) return;
     stopMoving(); state.keys = {};
-    if (f.id === 'coaster' && window.MPCoaster) { // 코딩 놀이기구: 코스터 익스프레스
-      state.coasterOpen = true; state.nearby = null; ui.enter.hidden = true;
-      window.MPCoaster.open();
+    // 놀이기구 화면이 따로 있는 시설: 코스터 익스프레스(코딩), 유령의 집(문지기의 비밀 규칙)
+    var ride = f.id === 'coaster' ? window.MPCoaster : f.id === 'ghost' ? window.MPGate : null;
+    if (ride) {
+      state.rideOpen = f.id; state.nearby = null; ui.enter.hidden = true;
+      ride.open();
       return;
     }
     state.modalFacility = f;
@@ -581,7 +585,7 @@
       if (e.code === 'Escape') { e.preventDefault(); closeProfile(); }
       return;
     }
-    if (state.coasterOpen) return; // 코스터 화면이 열려 있는 동안 공원 조작 멈춤
+    if (state.rideOpen) return; // 코스터 화면이 열려 있는 동안 공원 조작 멈춤
     if (state.modalFacility) {
       if (e.code === 'Escape' || e.code === 'Enter' || e.code === 'Space') { e.preventDefault(); closeFacility(); }
       return;
@@ -606,7 +610,7 @@
     return { x: e.clientX - r.left, y: e.clientY - r.top };
   }
   canvas.addEventListener('pointerdown', function (e) {
-    if (state.phase !== 'play' || state.modalFacility || state.profileOpen || state.charOpen || state.coasterOpen) return;
+    if (state.phase !== 'play' || state.modalFacility || state.profileOpen || state.charOpen || state.rideOpen) return;
     e.preventDefault();
     var sp = eventPoint(e), w = screenToWorld(sp.x, sp.y);
     if (state.view === 'map') {
@@ -811,10 +815,10 @@
 
   // ---------- 놀이기구 화면과 연결 ----------
   // 놀이기구(js/coaster/ui.js)는 이 창구로만 저장·프로필·공원 복귀를 다룸
-  function exitCoaster() {
-    state.coasterOpen = false; state.keys = {};
-    // 코스터 입구에서 입장 범위 밖, 이동할 수 있는 가장 가까운 곳에 세워 바로 다시 들어가지 않게
-    var f = PARK.facilities.filter(function (x) { return x.id === 'coaster'; })[0], e = f.entrance, best = null;
+  function exitRide(fid) {
+    state.rideOpen = false; state.keys = {};
+    // 시설 입구에서 입장 범위 밖, 이동할 수 있는 가장 가까운 곳에 세워 바로 다시 들어가지 않게
+    var f = PARK.facilities.filter(function (x) { return x.id === fid; })[0], e = f.entrance, best = null;
     for (var dist = f.radius + 12; dist < f.radius + 90 && !best; dist += 6) {
       for (var a = 0; a < 360; a += 15) {
         var rad = (a + 90) * Math.PI / 180, x = e.x + Math.cos(rad) * dist, y = e.y + Math.sin(rad) * dist;
@@ -832,7 +836,9 @@
     openChars: function () { openChars('edit'); },
     storageOk: function () { return storageOk; },
     profile: function () { return { nickname: state.nickname, grade: state.grade, band: state.gradeBand }; },
-    exitCoaster: exitCoaster
+    character: function () { return { sid: character.sid || 'F1' }; },
+    exitCoaster: function () { exitRide('coaster'); },
+    exitGate: function () { exitRide('ghost'); }
   };
 
   // 개발·검증용 핸들 (게임 동작에는 쓰이지 않음)
