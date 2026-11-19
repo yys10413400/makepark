@@ -53,7 +53,9 @@
       .then(function () {
         var app = window.firebase.apps.length ? window.firebase.app() : window.firebase.initializeApp(CFG);
         var auth = app.auth();
-        return auth.setPersistence(window.firebase.auth.Auth.Persistence.SESSION)   // 탭마다 다른 사람
+        // 학생 게임: 탭마다 다른 사람(SESSION) / 선생님 화면: 창을 닫았다 열어도 같은 선생님(LOCAL) — 공원 관리 권한 유지
+        var P = window.firebase.auth.Auth.Persistence;
+        return auth.setPersistence(window.MP_NET_PERSIST === 'local' ? P.LOCAL : P.SESSION)
           .then(function () { return auth.currentUser || auth.signInAnonymously().then(function (c) { return c.user; }); })
           .then(function (user) { uid = user.uid; fb = app.database(); return mode; });
       });
@@ -209,6 +211,84 @@
     });
   }
 
+  // ---------- 학생 기록: 반 공원에 저장(어느 기기에서든 이어 하기) ----------
+  // rooms/{code}/names/{key}            true                         이 반에 등록된 닉네임(누구나 읽기)
+  // rooms/{code}/students/{key}         { nick, grade, pin, created, save, updated }   본인(비밀번호 확인 후)·선생님만 읽기
+  // rooms/{code}/claims/{uid}           { key, pin }                 "이 기기는 이 학생" — 규칙이 비밀번호를 확인
+  // key: 닉네임(앞뒤 공백 제거, 소문자)을 글자 코드로 바꾼 것(Firebase 경로에 못 쓰는 글자 피하기)
+  function studentKey(nick) {
+    var t = String(nick || '').trim().toLowerCase(), out = 'k';
+    for (var i = 0; i < t.length; i++) out += t.charCodeAt(i).toString(36) + '_';
+    return out;
+  }
+  var SKEY = 'makepark.net.students';
+  function localStudents() { try { return JSON.parse(localStorage.getItem(SKEY)) || {}; } catch (e) { return {}; } }
+  function saveLocalStudents(v) { try { localStorage.setItem(SKEY, JSON.stringify(v)); } catch (e) { /* 저장 안 됨 */ } }
+  function validPin(p) { return /^\d{4}$/.test(String(p || '')); }
+
+  // 이 반에 이미 있는 닉네임인지
+  function studentExists(code, nick) {
+    var key = studentKey(nick);
+    return ready().then(function () {
+      if (mode === 'local') return !!((localStudents()[code] || {})[key]);
+      return fbRef('rooms/' + code + '/names/' + key).once('value').then(function (s) { return !!s.val(); });
+    });
+  }
+  // 로그인(없으면 새로 등록). → { ok, isNew, key, save } / { ok:false, reason:'pin'|'closed'|'error' }
+  function studentLogin(code, nick, grade, pin) {
+    var key = studentKey(nick);
+    if (!validPin(pin)) return Promise.resolve({ ok: false, reason: 'pin' });
+    return ready().then(function () {
+      if (mode === 'local') {
+        var all = localStudents(), room = all[code] = all[code] || {}, st = room[key];
+        if (!st) { room[key] = { nick: nick, grade: grade, pin: pin, created: Date.now(), save: null }; saveLocalStudents(all); return { ok: true, isNew: true, key: key, save: null }; }
+        if (st.pin !== pin) return { ok: false, reason: 'pin' };
+        return { ok: true, isNew: false, key: key, save: st.save || null };
+      }
+      var base = 'rooms/' + code;
+      return fbRef(base + '/names/' + key).once('value').then(function (s) {
+        var exists = !!s.val();
+        var make = exists ? Promise.resolve() : fbRef(base + '/students/' + key).set({ nick: nick, grade: grade, pin: pin, created: Date.now() })
+          .then(function () { return fbRef(base + '/names/' + key).set(true); });
+        return make
+          .then(function () { return fbRef(base + '/claims/' + uid).set({ key: key, pin: pin }); })   // 비밀번호가 다르면 규칙이 막음
+          .then(function () { return fbRef(base + '/students/' + key + '/save').once('value'); })
+          .then(function (sv) { return { ok: true, isNew: !exists, key: key, save: sv.val() }; },
+            function (err) { return { ok: false, reason: exists ? 'pin' : 'error', error: err }; });
+      });
+    });
+  }
+  function studentSave(code, key, save) {
+    return ready().then(function () {
+      if (mode === 'local') {
+        var all = localStudents(), st = (all[code] || {})[key];
+        if (st) { st.save = save; st.updated = Date.now(); saveLocalStudents(all); }
+        return;
+      }
+      return fbRef('rooms/' + code + '/students/' + key).update({ save: save, updated: Date.now() });
+    });
+  }
+  // 선생님: 반 학생 기록 목록 · 비밀번호 다시 정하기 · 반 기록 모두 지우기
+  function listStudents(code) {
+    return ready().then(function () {
+      if (mode === 'local') return localStudents()[code] || {};
+      return fbRef('rooms/' + code + '/students').once('value').then(function (s) { return s.val() || {}; });
+    });
+  }
+  function resetPin(code, key, pin) {
+    return ready().then(function () {
+      if (mode === 'local') { var all = localStudents(), st = (all[code] || {})[key]; if (st) { st.pin = pin; saveLocalStudents(all); } return; }
+      return fbRef('rooms/' + code + '/students/' + key + '/pin').set(pin);
+    });
+  }
+  function clearStudents(code) {
+    return ready().then(function () {
+      if (mode === 'local') { var all = localStudents(); delete all[code]; saveLocalStudents(all); return; }
+      var u = {}; u['rooms/' + code + '/students'] = null; u['rooms/' + code + '/names'] = null; u['rooms/' + code + '/claims'] = null;
+      return fb.ref().update(u);
+    });
+  }
+
   function myId() {
     if (mode === 'firebase') return uid;
     try {
@@ -220,6 +300,8 @@
 
   window.MPNet = {
     mode: mode, ready: ready, myId: myId, createRoom: createRoom, getRoom: getRoom, join: join, watch: watch,
-    command: command, setOpen: setOpen, newId: newId, validCode: validCode
+    command: command, setOpen: setOpen, newId: newId, validCode: validCode,
+    studentKey: studentKey, studentExists: studentExists, studentLogin: studentLogin, studentSave: studentSave,
+    listStudents: listStudents, resetPin: resetPin, clearStudents: clearStudents, validPin: validPin
   };
 })();

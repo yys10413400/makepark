@@ -51,7 +51,42 @@
     });
     buildMap();
     render();
+    loadRecords();
   }
+
+  // ---------- 우리 반 학생 기록 ----------
+  function loadRecords() {
+    if (!S.code) return;
+    NET.listStudents(S.code).then(function (all) {
+      var keys = Object.keys(all || {}).sort(function (a, b) { return (all[a].nick || '').localeCompare(all[b].nick || '', 'ko'); });
+      $('tRecCount').textContent = keys.length + '명';
+      $('tRecEmpty').hidden = keys.length > 0;
+      var tb = $('tRecList'); tb.textContent = '';
+      keys.forEach(function (key) {
+        var st = all[key], sv = st.save || {}, tr = document.createElement('tr');
+        var when = st.updated ? new Date(st.updated).toLocaleString('ko-KR', { month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit' }) : '—';
+        [st.nick || '?', ((sv.grade || st.grade) || '?') + '학년', (sv.tickets || 0) + '장', when].forEach(function (t) {
+          var td = document.createElement('td'); td.textContent = t; tr.appendChild(td);
+        });
+        var td = document.createElement('td'), b = document.createElement('button');
+        b.type = 'button'; b.className = 't-kick'; b.textContent = '비밀번호 다시 정하기';
+        b.addEventListener('click', function () {
+          var pin = prompt((st.nick || '학생') + ' 학생의 새 비밀번호(숫자 4자리)를 넣어 주세요.', '');
+          if (pin == null) return;
+          if (!NET.validPin(pin)) { msg('tMsg', '비밀번호는 숫자 4자리예요.'); return; }
+          NET.resetPin(S.code, key, pin).then(function () { msg('tMsg', (st.nick || '학생') + ' 학생의 비밀번호를 ' + pin + '(으)로 바꿨어요.'); });
+        });
+        td.appendChild(b); tr.appendChild(td); tb.appendChild(tr);
+      });
+    }, function (err) { msg('tMsg', '학생 기록을 불러오지 못했어요: ' + err.message); });
+  }
+  $('tRecRefresh').addEventListener('click', loadRecords);
+  $('tRecClear').addEventListener('click', function () {
+    if (!confirm('우리 반 학생들의 캐릭터·티켓·기록이 모두 지워져요. 되돌릴 수 없어요. 지울까요?')) return;
+    if (!confirm('정말 지울까요? (학년이 끝났을 때만 권해요)')) return;
+    NET.clearStudents(S.code).then(function () { msg('tMsg', '우리 반 학생 기록을 모두 지웠어요.'); loadRecords(); });
+  });
+  setInterval(function () { if (S.code && !document.hidden) loadRecords(); }, 15000);
   function renderState() {
     var m = S.meta;
     $('tState').textContent = !m ? '이 공원은 없어요' : m.open ? '🟢 열려 있어요 · ' + (m.teacher || '') : '🔴 닫혀 있어요 (학생이 들어올 수 없어요)';

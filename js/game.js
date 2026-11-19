@@ -4,6 +4,8 @@
   var PARK = window.MP_PARK;
   var W = PARK.world.width, H = PARK.world.height;
   var SAVE_KEY = 'makepark.save.v1';
+  // 지금 쓰는 저장 칸: 기본은 이 기기 기록. 반 공원에 들어가면 그 학생의 반 기록 칸(서버와 함께 저장)으로 바뀜
+  var saveKey = SAVE_KEY, saveHook = null;
 
   var grid = new WalkGrid(window.MP_WALKMASK, PARK);
   // 캐릭터: 고른 완성형 캐릭터(js/characters.js)로 그리고, 그림을 불러오기 전에는 임시 캐릭터로 그림
@@ -108,7 +110,8 @@
     // 계절만 저장: 위치·학년·진행 기록은 그대로 둠
     var data = readSave() || {};
     data.season = id;
-    try { localStorage.setItem(SAVE_KEY, JSON.stringify(data)); } catch (e) { /* 저장 불가 환경 */ }
+    try { localStorage.setItem(saveKey, JSON.stringify(data)); } catch (e) { /* 저장 불가 환경 */ }
+    if (saveHook) saveHook(data);
   }
   function nextSeason() {
     var ids = Object.keys(PARK.seasons);
@@ -122,7 +125,7 @@
   var storageOk = true;
   function readSave() {
     try {
-      var v = JSON.parse(localStorage.getItem(SAVE_KEY));
+      var v = JSON.parse(localStorage.getItem(saveKey));
       return v && typeof v === 'object' && !Array.isArray(v) ? v : null;
     } catch (e) { return null; }
   }
@@ -130,14 +133,15 @@
     var data = readSave();
     if (!data) {
       // 저장값이 깨져서 읽을 수 없으면 덮어쓰기 전에 원본을 따로 보관(나중에 복구할 수 있게)
-      try { var raw = localStorage.getItem(SAVE_KEY); if (raw) localStorage.setItem(SAVE_KEY + '.broken', raw); } catch (e) { /* 무시 */ }
+      try { var raw = localStorage.getItem(saveKey); if (raw) localStorage.setItem(saveKey + '.broken', raw); } catch (e) { /* 무시 */ }
       data = {};
     }
     for (var k in patch) data[k] = patch[k];
     data.version = 1;
-    try { localStorage.setItem(SAVE_KEY, JSON.stringify(data)); storageOk = true; }
+    try { localStorage.setItem(saveKey, JSON.stringify(data)); storageOk = true; }
     catch (e) { storageOk = false; } // 저장이 안 되는 환경: 이번 방문 동안 메모리 상태로 진행
     ui.storageNote.hidden = storageOk;
+    if (saveHook) saveHook(data);
   }
   function writeSave() {
     if (state.phase !== 'play') return;
@@ -247,6 +251,7 @@
   function toTitle(msg) {
     if (window.MPMulti) MPMulti.leave();
     writeSave();
+    window.MP_API.setSaveSlot(null);   // 반 기록 → 이 기기 기록
     stopMoving(); state.keys = {};
     if (state.modalFacility) closeFacility();
     if (state.profileOpen) closeProfile();
@@ -887,6 +892,15 @@
       if (state.view === 'map') setView('play');
     },
     toTitle: toTitle,
+    // 저장 칸 바꾸기: slot=null 이면 이 기기 기록, 문자열이면 반 기록 칸(data 로 채움). 캐릭터도 그 기록대로
+    setSaveSlot: function (slot, data) {
+      saveKey = slot ? 'makepark.class.' + slot : SAVE_KEY;
+      saveHook = null;
+      if (slot && data) { try { localStorage.setItem(saveKey, JSON.stringify(data)); } catch (e) { /* 저장 불가 */ } }
+      var cs = charSave(readSave());
+      if (character.set) character.set(cs.id, cs.gender);
+    },
+    onSave: function (fn) { saveHook = fn; },
     toast: toast,
     cancelEntry: function () { ui.enterPark.disabled = false; ui.enterPark.focus(); },
     // 공원에서 캐릭터가 화면에 그려지는 몸 키(CSS px). 유령의 집 로비도 같은 크기로 그림

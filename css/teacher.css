@@ -37,4 +37,8 @@ body.teacher { overflow: auto; height: auto; min-height: 100%; background: linea
 .t-list th { font-weight: 400; color: var(--e-brown-soft); font-size: 14px; }
 .t-kick { border: 1px solid #d9b878; background: #fff; border-radius: 99px; padding: 4px 12px; font: inherit; font-size: 13px; cursor: pointer; color: #8a2a2a; }
 .t-empty { margin: 8px 0 0; font-size: 14px; color: var(--e-brown-soft); }
+.t-recordcard { grid-column: 2; }
+.t-rec-actions { display: flex; gap: 10px; align-items: center; margin-top: 12px; flex-wrap: wrap; }
+.t-danger { border: 2px solid #c2412d; background: #fff; color: #c2412d; border-radius: 99px; padding: 8px 16px; font: inherit; font-size: 15px; cursor: pointer; }
+@media (max-width: 860px) { .t-recordcard { grid-column: auto; } }
 @media (max-width: 860px) { .t-room { grid-template-columns: 1fr; } .t-code { grid-row: auto; } }

@@ -42,6 +42,21 @@
     if (NET.mode === 'local') p.appendChild(el('p', 'join-mode', '지금은 시험 모드예요: 이 컴퓨터의 다른 탭끼리만 함께 보여요.'));
     ui.back = el('button', 'join-back', '← 뒤로'); ui.back.type = 'button'; p.appendChild(ui.back);
     wrap.appendChild(p);
+    // 2단계: 비밀번호 4자리 (반 공원에 저장된 내 기록 불러오기)
+    var q = ui.pinForm = el('form', 'entry-panel profile-panel join-panel'); q.hidden = true; q.noValidate = true; q.autocomplete = 'off';
+    q.setAttribute('role', 'dialog'); q.setAttribute('aria-modal', 'true'); q.setAttribute('aria-labelledby', 'pinTitle');
+    var ph = el('h2', 'profile-title', '비밀번호'); ph.id = 'pinTitle'; q.appendChild(ph);
+    ui.pinText = el('p', 'join-hello'); q.appendChild(ui.pinText);
+    var pbox = el('div', 'join-box');
+    var pl = el('label', 'join-label', '숫자 4자리'); pl.htmlFor = 'joinPin'; pbox.appendChild(pl);
+    ui.pin = el('input', 'nick-input join-code'); ui.pin.id = 'joinPin'; ui.pin.inputMode = 'numeric'; ui.pin.maxLength = 4; ui.pin.autocomplete = 'off';
+    pbox.appendChild(ui.pin);
+    ui.pinErr = el('p', 'field-msg join-err'); ui.pinErr.setAttribute('aria-live', 'polite'); pbox.appendChild(ui.pinErr);
+    ui.pinGo = el('button', 'entry-go join-go', '확인'); ui.pinGo.type = 'submit'; pbox.appendChild(ui.pinGo);
+    q.appendChild(pbox);
+    ui.pinBack = el('button', 'join-back', '← 반 코드 다시 넣기'); ui.pinBack.type = 'button'; q.appendChild(ui.pinBack);
+    wrap.appendChild(q);
+    ui.pin.addEventListener('input', function () { ui.pin.value = ui.pin.value.replace(/\D/g, '').slice(0, 4); ui.pinErr.textContent = ''; });
     document.getElementById('app').appendChild(wrap);
     ui.form = p;
     ui.code.addEventListener('input', function () { ui.code.value = ui.code.value.replace(/\D/g, '').slice(0, 5); ui.err.textContent = ''; });
@@ -68,17 +83,70 @@
         if (!meta.open) { ui.err.textContent = '지금은 닫힌 공원이에요. 선생님께 여쭤보세요.'; return; }
         api().patchSave({ roomCode: code });
         S.code = code; S.teacher = meta.teacher || '선생님';
-        ui.dlg.hidden = true;
-        pending.proceed();
-      }, function (err) {
+        return askPin(code, entry);
+      }).then(null, function (err) {
         ui.go.disabled = false;
         ui.err.textContent = '연결하지 못했어요. 인터넷을 확인하고 다시 눌러 주세요.';
         console.error(err);
       });
     };
-    ui.solo.onclick = function () { S.code = null; ui.dlg.hidden = true; pending.proceed(); };
+    ui.solo.onclick = function () { S.code = null; S.studentKey = null; api().setSaveSlot(null); ui.dlg.hidden = true; pending.proceed(); };
     ui.back.onclick = function () { ui.dlg.hidden = true; api().cancelEntry && api().cancelEntry(); };
+    showStep('code');
   }
+  function showStep(step) { ui.form.hidden = step !== 'code'; ui.pinForm.hidden = step !== 'pin'; }
+
+  // 처음 온 닉네임이면 비밀번호를 정하고, 있던 닉네임이면 비밀번호로 내 기록을 불러옴
+  function askPin(code, entry) {
+    return NET.studentExists(code, entry.name).then(function (exists) {
+      showStep('pin');
+      ui.pin.value = ''; ui.pinErr.textContent = ''; ui.pinGo.disabled = false;
+      ui.pin.type = exists ? 'password' : 'text';
+      ui.pinText.textContent = exists
+        ? entry.name + '님, 다시 왔군요! 비밀번호 4자리를 넣으면 모은 캐릭터와 기록을 이어서 할 수 있어요.'
+        : entry.name + '님은 ' + code + '반 공원에 처음 왔어요! 비밀번호 4자리를 정해 주세요. 다른 기기에서 이어 할 때 써요. 잊지 않게 기억해요!';
+      setTimeout(function () { ui.pin.focus(); }, 30);
+      ui.pinBack.onclick = function () { showStep('code'); ui.err.textContent = ''; ui.go.disabled = false; ui.code.focus(); };
+      ui.pinForm.onsubmit = function (e) {
+        e.preventDefault();
+        var pin = ui.pin.value;
+        if (!NET.validPin(pin)) { ui.pinErr.textContent = '비밀번호는 숫자 4자리예요.'; ui.pin.focus(); return; }
+        ui.pinGo.disabled = true; ui.pinErr.textContent = exists ? '내 기록을 불러오는 중…' : '반 공원에 등록하는 중…';
+        NET.studentLogin(code, entry.name, entry.grade, pin).then(function (res) {
+          ui.pinGo.disabled = false;
+          if (!res.ok) {
+            ui.pinErr.textContent = res.reason === 'pin' ? '비밀번호가 달라요. 잊어버렸으면 선생님께 말해 주세요.' : '등록하지 못했어요. 다시 눌러 주세요.';
+            ui.pin.select(); return;
+          }
+          useClassSave(code, res.key, res.save, entry);
+          ui.dlg.hidden = true;
+          pending.proceed();
+        }, function () { ui.pinGo.disabled = false; ui.pinErr.textContent = '연결하지 못했어요. 다시 눌러 주세요.'; });
+      };
+    });
+  }
+
+  // ---------- 반 기록: 서버에 저장된 내 기록으로 놀고, 바뀌면 자동으로 저장 ----------
+  var push = { timer: 0, data: null };
+  function useClassSave(code, key, save, entry) {
+    var data = save && typeof save === 'object' ? save : {};
+    data.nickname = entry.name; data.grade = entry.grade; data.version = 1;
+    delete data.roomCode;
+    S.studentKey = key;
+    api().setSaveSlot(code + '.' + key, data);
+    api().onSave(function (d) {
+      push.data = d;
+      if (!push.timer) push.timer = setTimeout(flush, 2500);   // 2.5초에 한 번 모아서 저장
+    });
+  }
+  function flush() {
+    clearTimeout(push.timer); push.timer = 0;
+    if (!push.data || !S.code || !S.studentKey) return;
+    var d = JSON.parse(JSON.stringify(push.data)); push.data = null;
+    NET.studentSave(S.code, S.studentKey, d).then(null, function (err) { console.error('반 기록 저장 실패', err); });
+  }
+  window.addEventListener('pagehide', flush);
+  document.addEventListener('visibilitychange', function () { if (document.hidden) flush(); });
 
   // ---------- 공원 입장 / 나가기 ----------
   function onEnter() {
@@ -112,7 +180,8 @@
     setChip();
   }
   function kickOut(msg) {
-    leave(); S.code = null;
+    flush();
+    leave(); S.code = null; S.studentKey = null;
     if (api().toTitle) api().toTitle(msg);
   }
   function onCommand(cmd, initial) {

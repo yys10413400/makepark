@@ -4,9 +4,9 @@
     ".write": false,
     "rooms": {
       "$code": {
-        ".read": "auth != null",
         ".validate": "$code.matches(/^[0-9]{5}$/)",
         "meta": {
+          ".read": "auth != null",
           ".write": "auth != null && ((!data.exists() && newData.child('owner').val() === auth.uid) || data.child('owner').val() === auth.uid)",
           ".validate": "newData.hasChildren(['teacher', 'open', 'created', 'owner'])",
           "teacher": { ".validate": "newData.isString() && newData.val().length <= 20" },
@@ -16,6 +16,7 @@
           "$other": { ".validate": false }
         },
         "cmd": {
+          ".read": "auth != null",
           ".write": "auth != null && root.child('rooms').child($code).child('meta/owner').val() === auth.uid",
           ".validate": "newData.hasChildren(['id', 'type', 'at'])",
           "id": { ".validate": "newData.isString() && newData.val().length <= 20" },
@@ -25,6 +26,7 @@
           "$other": { ".validate": false }
         },
         "players": {
+          ".read": "auth != null",
           "$pid": {
             ".write": "auth != null && (auth.uid === $pid || root.child('rooms').child($code).child('meta/owner').val() === auth.uid)",
             ".validate": "!newData.exists() || data.exists() || root.child('rooms').child($code).child('meta/open').val() === true",
@@ -38,6 +40,46 @@
             "m": { ".validate": "newData.val() === 0 || newData.val() === 1" },
             "w": { ".validate": "newData.isString() && newData.val().length <= 12" },
             "t": { ".validate": "newData.isNumber()" },
+            "$other": { ".validate": false }
+          }
+        },
+        "names": {
+          ".read": "auth != null",
+          ".write": "auth != null && root.child('rooms').child($code).child('meta/owner').val() === auth.uid",
+          "$key": {
+            ".write": "auth != null && !data.exists() && newData.val() === true && root.child('rooms').child($code).child('students').child($key).exists()",
+            ".validate": "newData.val() === true"
+          }
+        },
+        "students": {
+          ".read": "auth != null && root.child('rooms').child($code).child('meta/owner').val() === auth.uid",
+          ".write": "auth != null && root.child('rooms').child($code).child('meta/owner').val() === auth.uid",
+          "$key": {
+            ".read": "auth != null && root.child('rooms').child($code).child('claims').child(auth.uid).child('key').val() === $key",
+            ".write": "auth != null && !data.exists() && root.child('rooms').child($code).child('meta/open').val() === true",
+            ".validate": "newData.hasChildren(['nick', 'grade', 'pin', 'created'])",
+            "nick": { ".validate": "newData.isString() && newData.val().length >= 1 && newData.val().length <= 12" },
+            "grade": { ".validate": "newData.isNumber() && newData.val() >= 1 && newData.val() <= 6" },
+            "pin": { ".validate": "newData.isString() && newData.val().matches(/^[0-9]{4}$/)" },
+            "created": { ".validate": "newData.isNumber()" },
+            "save": {
+              ".write": "auth != null && root.child('rooms').child($code).child('claims').child(auth.uid).child('key').val() === $key"
+            },
+            "updated": {
+              ".write": "auth != null && root.child('rooms').child($code).child('claims').child(auth.uid).child('key').val() === $key",
+              ".validate": "newData.isNumber()"
+            },
+            "$other": { ".validate": false }
+          }
+        },
+        "claims": {
+          ".write": "auth != null && root.child('rooms').child($code).child('meta/owner').val() === auth.uid",
+          "$uid": {
+            ".read": "auth != null && auth.uid === $uid",
+            ".write": "auth != null && auth.uid === $uid",
+            ".validate": "newData.hasChildren(['key', 'pin']) && root.child('rooms').child($code).child('students').child(newData.child('key').val()).child('pin').val() === newData.child('pin').val()",
+            "key": { ".validate": "newData.isString() && newData.val().length <= 80" },
+            "pin": { ".validate": "newData.isString()" },
             "$other": { ".validate": false }
           }
         }

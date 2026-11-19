@@ -53,17 +53,31 @@
         <div id="tMap" class="t-map" role="img" aria-label="공원 지도 위 학생 위치"></div>
       </div>
       <div class="t-card t-listcard">
-        <h2>들어온 학생</h2>
+        <h2>지금 들어온 학생</h2>
         <table class="t-list">
           <thead><tr><th>닉네임</th><th>학년</th><th>있는 곳</th><th></th></tr></thead>
           <tbody id="tList"></tbody>
         </table>
         <p id="tEmpty" class="t-empty">아직 들어온 학생이 없어요. 학생들에게 반 코드를 알려 주세요.</p>
       </div>
+      <div class="t-card t-recordcard">
+        <h2>우리 반 학생 기록 <small id="tRecCount"></small></h2>
+        <p class="t-sub">학생이 처음 들어올 때 정한 비밀번호 4자리로 어느 기기에서든 자기 캐릭터·티켓·기록을 이어 해요. 비밀번호를 잊으면 여기서 다시 정해 주세요.</p>
+        <table class="t-list">
+          <thead><tr><th>닉네임</th><th>학년</th><th>티켓</th><th>마지막 저장</th><th></th></tr></thead>
+          <tbody id="tRecList"></tbody>
+        </table>
+        <p id="tRecEmpty" class="t-empty">아직 등록한 학생이 없어요.</p>
+        <div class="t-rec-actions">
+          <button id="tRecRefresh" class="profile-cancel t-btn" type="button">새로 보기</button>
+          <button id="tRecClear" class="t-danger" type="button">우리 반 기록 모두 지우기</button>
+        </div>
+      </div>
     </section>
   </main>
 
   <script src="js/data/park-data.js"></script>
+  <script>window.MP_NET_PERSIST = 'local';   // 선생님은 창을 닫았다 열어도 같은 사람(공원 관리 권한 유지)</script>
   <script src="js/net/firebase-config.js"></script>
   <script src="js/net/net.js"></script>
   <script src="js/net/teacher.js"></script>
