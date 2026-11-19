@@ -8,7 +8,15 @@
  * 웹용 Firebase 설정값은 브라우저에 그대로 전달되는 공개 식별자라 비밀번호가 아닙니다.
  * 대신 데이터베이스 규칙(database.rules.json)으로 쓸 수 있는 내용을 제한합니다.
  */
-window.MP_FIREBASE_CONFIG = null;
+window.MP_FIREBASE_CONFIG = {
+  apiKey: 'AIzaSyCijUnH2mShxQDoqZW_A6vqNYHl5rd5HrQ',
+  authDomain: 'makepark-cea3c.firebaseapp.com',
+  databaseURL: 'https://makepark-cea3c-default-rtdb.asia-southeast1.firebasedatabase.app',
+  projectId: 'makepark-cea3c',
+  storageBucket: 'makepark-cea3c.firebasestorage.app',
+  messagingSenderId: '505405728286',
+  appId: '1:505405728286:web:fe5f60b752422ae9d0b00f'
+};
 /* 예)
 window.MP_FIREBASE_CONFIG = {
   apiKey: '...',
