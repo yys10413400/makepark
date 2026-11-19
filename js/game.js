@@ -300,14 +300,17 @@
     return w + (has ? a : b);
   }
   function facilityName(fid) { var f = PARK.facilities.filter(function (x) { return x.id === fid; })[0]; return f ? f.name : fid; }
+  // 시험 모드(주소 뒤에 ?test=1): 모든 캐릭터를 티켓·건물 통과 없이 골라 볼 수 있음(저장된 티켓·보상은 그대로)
+  var CHAR_TEST = /[?&]test=1/.test(location.search);
   function charUnlocked(d, cs) {
-    return d.kind === 'free' || (d.kind === 'reward' && facilityCleared(d.facility)) || (d.kind === 'shop' && cs.owned.indexOf(d.id) >= 0);
+    return CHAR_TEST || d.kind === 'free' || (d.kind === 'reward' && facilityCleared(d.facility)) || (d.kind === 'shop' && cs.owned.indexOf(d.id) >= 0);
   }
   var charMode = 'edit', charEntry = null, pendingBuy = null;
   var CHAR_SECTIONS = [['free', '기본 캐릭터', '처음부터 고를 수 있어요'], ['reward', '건물 보상 캐릭터', '건물을 통과하면 받아요'], ['shop', '티켓 가게', '티켓으로 사요']];
   function renderChars() {
     var s = readSave() || {}, cs = charSave(s), tickets = s.tickets || 0;
     ui.charTickets.textContent = charMode === 'create' ? '건물 보상·티켓 가게 캐릭터는 공원에서 모을 수 있어요.' : '내 티켓 ' + tickets + '장';
+    if (CHAR_TEST) ui.charTickets.textContent = '시험 모드: 모든 캐릭터를 골라 볼 수 있어요 (보상 캐릭터는 기본 남자/여자를 먼저 골라 성별을 바꿔요)';
     ui.charList.textContent = '';
     CHAR_SECTIONS.forEach(function (sec) {
       if (charMode === 'create' && sec[0] !== 'free') return;

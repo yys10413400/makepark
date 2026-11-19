@@ -1,0 +1,94 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>캐릭터 걷기 시험</title>
+<style>
+  :root { --bg: #f6efe2; --ink: #4a3324; --card: #fffaf0; --line: #e4d6bd; --accent: #1a8f84; }
+  * { box-sizing: border-box; }
+  body { margin: 0; padding: 16px; background: var(--bg); color: var(--ink); font-family: system-ui, 'Malgun Gothic', sans-serif; }
+  h1 { font-size: 22px; margin: 0 0 4px; }
+  p.sub { margin: 0 0 12px; font-size: 14px; opacity: .8; }
+  .bar { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-bottom: 14px; position: sticky; top: 0; background: var(--bg); padding: 8px 0; z-index: 2; }
+  .bar button { font: inherit; padding: 8px 14px; border-radius: 999px; border: 2px solid var(--line); background: var(--card); color: var(--ink); cursor: pointer; }
+  .bar button.on { background: var(--accent); border-color: var(--accent); color: #fff; }
+  .bar label { font-size: 14px; display: inline-flex; align-items: center; gap: 6px; }
+  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(440px, 1fr)); gap: 10px; }
+  .card { background: var(--card); border: 2px solid var(--line); border-radius: 14px; padding: 8px 10px 6px; }
+  .card h2 { font-size: 15px; margin: 0 0 2px; display: flex; justify-content: space-between; }
+  .card h2 small { font-weight: 400; opacity: .7; }
+  .card canvas { display: block; width: 100%; height: auto; }
+  .tag { font-size: 12px; padding: 1px 8px; border-radius: 999px; background: #e8f4ef; color: #17695f; }
+  .tag.no { background: #f2e9e9; color: #8a4b4b; }
+</style>
+</head>
+<body>
+  <h1>캐릭터 걷기 시험</h1>
+  <p class="sub">모든 캐릭터가 앞·왼쪽·오른쪽·뒤로 걷는 모습을 한 번에 봐요. 게임 안에서 직접 걸어 보려면 <a href="index.html?test=1">index.html?test=1</a> 로 들어가 '캐릭터' 버튼에서 아무 캐릭터나 고르세요.</p>
+  <div class="bar">
+    <button id="walk" class="on" type="button">걷기</button>
+    <button id="stand" type="button">서 있기</button>
+    <label>빠르기 <input id="speed" type="range" min="0.25" max="2" step="0.25" value="1"></label>
+    <label>크기 <input id="size" type="range" min="50" max="220" step="10" value="150"></label>
+  </div>
+  <div class="grid" id="grid"></div>
+
+  <script src="js/data/character-sprites.js"></script>
+  <script src="js/characters.js"></script>
+  <script>
+  (function () {
+    var C = window.MPChars, SPR = window.MP_CHAR_SPRITES || {};
+    var names = {};
+    C.ROSTER.forEach(function (d) { names[d.id] = d; });
+    // 그림 id 목록: 보상 캐릭터는 남자아이(b)·여자아이(g) 둘 다
+    var list = [];
+    C.ROSTER.forEach(function (d) {
+      if (d.kind === 'reward') { list.push([d.id, 'boy', d.name + ' (남)']); list.push([d.id, 'girl', d.name + ' (여)']); }
+      else list.push([d.id, d.gender || 'boy', d.name]);
+    });
+    var DIRS = ['down', 'left', 'right', 'up'], LABEL = { down: '앞', left: '왼쪽', right: '오른쪽', up: '뒤' };
+    var walking = true, speed = 1, size = 150, cards = [];
+    var grid = document.getElementById('grid');
+    list.forEach(function (it) {
+      var sid = C.spriteId(it[0], it[1]);
+      var card = document.createElement('div'); card.className = 'card';
+      var h = document.createElement('h2');
+      var hasWalk = !!(SPR[sid] && SPR[sid].walk);
+      h.innerHTML = '<span>' + sid + ' · ' + it[2] + '</span>';
+      var tag = document.createElement('span'); tag.className = 'tag' + (hasWalk ? '' : ' no');
+      tag.textContent = hasWalk ? '걷는 자세 있음' : '코드로만 걷기';
+      h.appendChild(tag);
+      var cv = document.createElement('canvas'); cv.width = 640; cv.height = 300;
+      card.appendChild(h); card.appendChild(cv); grid.appendChild(card);
+      cards.push({ cv: cv, walker: new C.Walker({ id: it[0], gender: it[1] }) });
+    });
+    function frame(now) {
+      var t = now / 1000 * speed;
+      cards.forEach(function (c) {
+        var g = c.cv.getContext('2d'), w = c.cv.width, hgt = c.cv.height;
+        g.clearRect(0, 0, w, hgt);
+        g.save();
+        var s = size / 60;   // Walker 는 몸 키 60px 로 그림 → 크게 보이게 확대
+        DIRS.forEach(function (d, i) {
+          var cx = w * (i + 0.5) / 4, fy = hgt - 30;
+          g.save(); g.translate(cx, fy); g.scale(s, s);
+          c.walker.draw(g, 0, 0, d, walking, t);
+          g.restore();
+          g.fillStyle = '#4a3324'; g.font = '20px system-ui, sans-serif'; g.textAlign = 'center';
+          g.fillText(LABEL[d], cx, hgt - 6);
+        });
+        g.restore();
+      });
+      requestAnimationFrame(frame);
+    }
+    requestAnimationFrame(frame);
+    var bw = document.getElementById('walk'), bs = document.getElementById('stand');
+    bw.onclick = function () { walking = true; bw.classList.add('on'); bs.classList.remove('on'); };
+    bs.onclick = function () { walking = false; bs.classList.add('on'); bw.classList.remove('on'); };
+    document.getElementById('speed').oninput = function (e) { speed = +e.target.value; };
+    document.getElementById('size').oninput = function (e) { size = +e.target.value; };
+  })();
+  </script>
+</body>
+</html>
