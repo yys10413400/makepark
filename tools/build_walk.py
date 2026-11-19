@@ -18,6 +18,13 @@ from build_characters import remove_bg, enhance, ROOT, OUT, JS, PAD
 
 SRC = os.path.join(ROOT, 'assets', 'characters-src', 'walk')
 VIEWS = [('down', 'down'), ('up', 'up'), ('side', 'right')]
+# 다리가 보이는 캐릭터: 앞·뒤 걷는 칸을 만듦. (유령 R5·마법사 S6·공주님 S10 은 옷에 다리가 가려 제외 → 코드로만 걸음)
+LEGS = ['F1', 'F2', 'R1b', 'R1g', 'R2b', 'R2g', 'R3b', 'R3g', 'R4b', 'R4g', 'R6b', 'R6g', 'R7b', 'R7g',
+        'S1', 'S2', 'S3', 'S4', 'S5', 'S7', 'S8', 'S9']
+# 옆모습 원본을 색 보정 전 그림으로 받은 캐릭터(이것만 enhance). 나머지는 이미 진하게 만든 그림을 올려 받음
+RAW_SIDE = {'F1', 'F2'}
+# 제미나이가 오른쪽을 보게 그려 준 옆모습(뒤집지 않음)
+SIDE_RIGHT = {'S1'}
 
 
 def crop_alpha(rgba):
@@ -67,8 +74,10 @@ def main():
     txt = open(JS, encoding='utf-8').read()
     head = txt[:txt.index('window.')]
     meta = json.loads(txt[txt.index('{'):txt.rindex('}') + 1])
-    ids = sorted({f.split('_')[0] for f in os.listdir(SRC) if f.endswith('.png')})
-    for cid in ids:
+    only = sys.argv[1:]
+    for cid in LEGS:
+        if only and cid not in only:
+            continue
         sheet = np.array(Image.open(os.path.join(ROOT, meta[cid]['src'])).convert('RGBA'))
         ims, rects, x = [], {}, 0
         for src_view, view in VIEWS:
@@ -85,11 +94,12 @@ def main():
             if not os.path.exists(f):
                 continue
             rgba = crop_alpha(remove_bg(np.array(Image.open(f).convert('RGB')).astype(float)))
-            if src_view == 'side':
+            if src_view == 'side' and cid not in SIDE_RIGHT:
                 rgba = rgba[:, ::-1]
             s = head_width(stand) / head_width(rgba)
             im = Image.fromarray(rgba).resize((round(rgba.shape[1] * s), round(rgba.shape[0] * s)), Image.LANCZOS)
-            im = enhance(im)   # 앞·뒤는 이미 진하게 만든 서 있는 그림에서 오므로 옆모습만
+            if cid in RAW_SIDE:
+                im = enhance(im)
             arr = np.array(im)   # (서 있는 그림을 고쳐 받은 자세라 색이 같음. 다르면 match_color(arr, stand))
             im = Image.fromarray(arr)
             a = arr[..., 3] > 100

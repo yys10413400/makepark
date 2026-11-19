@@ -41,7 +41,7 @@
 - 저장: `makepark.save.v1`의 `character = { id, gender, owned }`, 티켓은 `tickets`.
 - 그림: 원본(`assets/characters-src/*.png`)에서 `python tools/build_characters.py`가 배경을 지우고 앞·뒤·옆 3칸으로 잘라 몸 키를 맞춥니다(모자 높이 보정 `HAT`, 왼쪽을 보는 옆모습은 `SIDE_FACES_LEFT`로 뒤집음). 왼쪽으로 걸을 때는 게임에서 옆모습을 뒤집어 그립니다.
 - 걷기: 걷기 칸 그림 없이 걸음마다 살짝 위아래로 움직이고, 옆모습은 가는 쪽으로 조금 숙여 걷습니다(`js/characters.js`의 `Walker.draw`). 지도 위 몸 키는 `DRAW_H`(60px).
-- 걷는 자세 그림: 기본 남녀(F1·F2)는 걷는 자세가 있어 [걷는 자세, 서 있기, 반대 발, 서 있기]로 걷습니다. 옆모습은 서 있는 그림을 제미나이에 올려 '다리·팔만 걷는 자세로' 고쳐 받은 원본(`assets/characters-src/walk/<id>_side.png`)을 쓰고, 앞·뒤는 서 있는 그림에서 한쪽 종아리를 살짝 들어 올려 만듭니다(제미나이 그림은 안짱다리처럼 나와서). `python tools/build_walk.py`로 `assets/characters/<id>-walk.webp`를 만들고, 앞·뒤 반대 발은 좌우로 뒤집어 씁니다.
+- 걷는 자세 그림: 다리가 보이는 22명(기본 남녀·건물 보상·티켓 가게, `build_walk.py`의 `LEGS`)은 걷는 자세가 있어 [걷는 자세, 서 있기, 반대 발, 서 있기]로 걷습니다. 옆모습은 서 있는 그림을 제미나이에 올려 '다리·팔만 걷는 자세로' 고쳐 받은 원본(`assets/characters-src/walk/<id>_side.png`)을 쓰고, 앞·뒤는 서 있는 그림에서 한쪽 종아리를 살짝 들어 올려 만듭니다(제미나이 그림은 안짱다리처럼 나와서). `python tools/build_walk.py`로 `assets/characters/<id>-walk.webp`를 만들고, 앞·뒤 반대 발은 좌우로 뒤집어 씁니다. 옷에 다리가 가려진 꼬마 유령·꼬마 마법사·공주님은 걷는 자세 없이 코드로만 걷습니다.
 
 ## 좌표계
 모든 좌표는 시즌 지도 원본 픽셀(1448×1086, 왼쪽 위 0,0) 기준입니다. 배경, 캐릭터, 충돌 영역, 입구가 같은 변환 하나로 그려지므로 화면 크기가 바뀌어도 어긋나지 않습니다.
