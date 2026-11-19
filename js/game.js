@@ -214,8 +214,13 @@
     var n = checkNick(ui.nickname.value), g = radioGrade('grade');
     if (!n.ok || !g) { titleTouched = true; updateTitle(); return; }
     // 처음 오면 공원에 들어가기 전에 내 캐릭터 고르기
-    if (window.MPChars && !(readSave() || {}).character) openChars('create', { name: n.value, grade: g });
-    else enterPark(n.value, g);
+    var proceed = function () {
+      if (window.MPChars && !(readSave() || {}).character) openChars('create', { name: n.value, grade: g });
+      else enterPark(n.value, g);
+    };
+    // 함께하기(js/net/multiplayer.js): 반 코드로 우리 반 공원에 들어갈지, 혼자 둘러볼지 먼저 고름
+    if (window.MPMulti) MPMulti.askRoom({ name: n.value, grade: g }, proceed);
+    else proceed();
   });
 
   function enterPark(name, grade) {
@@ -236,6 +241,22 @@
     snapCamera();
     writeSave();
     if (!storageOk) toast('이 기기에는 저장되지 않아요');
+    if (window.MPMulti) MPMulti.onEnter();
+  }
+  // 첫 화면으로 돌아가기(선생님이 내보내거나 공원을 닫았을 때)
+  function toTitle(msg) {
+    if (window.MPMulti) MPMulti.leave();
+    writeSave();
+    stopMoving(); state.keys = {};
+    if (state.modalFacility) closeFacility();
+    if (state.profileOpen) closeProfile();
+    if (state.charOpen) closeChars();
+    state.phase = 'title'; state.view = 'play';
+    ui.mapBar.hidden = true; ui.mapToggle.hidden = false;
+    ui.title.hidden = false; ui.hud.hidden = true; ui.enter.hidden = true; state.nearby = null;
+    ui.enterPark.disabled = false;
+    updateTitle();
+    if (msg) ui.hint.textContent = msg;
   }
   function showPlayer() {
     ui.playerName.textContent = state.nickname;
@@ -690,6 +711,8 @@
     }
 
     var p = state.player;
+    var multi = window.MPMulti && MPMulti.active();
+    if (multi) MPMulti.drawOthers(ctx, state.time, p.y, false, frameDt);   // 나보다 뒤(위쪽)에 있는 친구
     character.draw(ctx, p.x, p.y, p.dir, p.moving, state.time);
     // 앞쪽 건물·나무가 캐릭터를 가리면, 잃어버리지 않게 흐린 윤곽을 한 번 더 그림
     state.hidden = drawOccluders(p);
@@ -697,6 +720,10 @@
       ctx.globalAlpha = 0.35;
       character.draw(ctx, p.x, p.y, p.dir, p.moving, state.time);
       ctx.globalAlpha = 1;
+    }
+    if (multi) {
+      MPMulti.drawOthers(ctx, state.time, p.y, true, frameDt);            // 나보다 앞(아래쪽)에 있는 친구
+      MPMulti.drawNames(ctx, { x: p.x, y: p.y, nickname: state.nickname });
     }
     if (state.debug) drawDebugOccluders();
 
@@ -786,13 +813,15 @@
 
   // ---------- 루프 ----------
   var last = performance.now(), saveTimer = 0, fpsCount = 0, fpsTime = 0, fps = 0;
+  var frameDt = 0.016;
   function frame(now) {
-    var dt = Math.min(0.05, (now - last) / 1000); last = now;
+    var dt = Math.min(0.05, (now - last) / 1000); last = now; frameDt = dt;
     state.time += dt;
     if (fade.t < 1) fade.t = Math.min(1, fade.t + dt / 0.6);
     if (state.phase === 'play') {
       stepPlayer(dt);
       updateNearby();
+      if (window.MPMulti) MPMulti.tick(dt);
       saveTimer += dt;
       if (saveTimer > 1) { saveTimer = 0; writeSave(); }
     }
@@ -837,6 +866,29 @@
     storageOk: function () { return storageOk; },
     profile: function () { return { nickname: state.nickname, grade: state.grade, band: state.gradeBand }; },
     character: function () { return { sid: character.sid || 'F1' }; },
+    // 함께하기(js/net/multiplayer.js)용
+    player: function () {
+      var p = state.player, cs = charSave(readSave());
+      return { x: p.x, y: p.y, dir: p.dir, moving: !!p.moving, ride: state.rideOpen || null,
+        nickname: state.nickname, grade: state.grade, charId: cs.id, gender: cs.gender };
+    },
+    teleport: function (x, y) {
+      var t = grid.nearestWalkable(x, y);
+      if (!t) return;
+      state.player.x = t.x; state.player.y = t.y; state.player.dir = 'down';
+      stopMoving(); snapCamera(); updateNearby(); writeSave();
+    },
+    closeRide: function () {
+      if (state.rideOpen === 'coaster' && window.MPCoaster) MPCoaster.close();
+      else if (state.rideOpen === 'ghost' && window.MPGate) MPGate.close();
+      if (state.modalFacility) closeFacility();
+      if (state.charOpen) closeChars();
+      if (state.profileOpen) closeProfile();
+      if (state.view === 'map') setView('play');
+    },
+    toTitle: toTitle,
+    toast: toast,
+    cancelEntry: function () { ui.enterPark.disabled = false; ui.enterPark.focus(); },
     // 공원에서 캐릭터가 화면에 그려지는 몸 키(CSS px). 유령의 집 로비도 같은 크기로 그림
     charScreenH: function () { return ((window.MPChars && MPChars.DRAW_H) || 60) * playScale(); },
     exitCoaster: function () { exitRide('coaster'); },

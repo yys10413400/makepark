@@ -1,0 +1,47 @@
+{
+  "rules": {
+    ".read": false,
+    ".write": false,
+    "rooms": {
+      "$code": {
+        ".read": "auth != null",
+        ".validate": "$code.matches(/^[0-9]{5}$/)",
+        "meta": {
+          ".write": "auth != null && ((!data.exists() && newData.child('owner').val() === auth.uid) || data.child('owner').val() === auth.uid)",
+          ".validate": "newData.hasChildren(['teacher', 'open', 'created', 'owner'])",
+          "teacher": { ".validate": "newData.isString() && newData.val().length <= 20" },
+          "open": { ".validate": "newData.isBoolean()" },
+          "created": { ".validate": "newData.isNumber()" },
+          "owner": { ".validate": "newData.isString() && (!data.exists() || newData.val() === data.val())" },
+          "$other": { ".validate": false }
+        },
+        "cmd": {
+          ".write": "auth != null && root.child('rooms').child($code).child('meta/owner').val() === auth.uid",
+          ".validate": "newData.hasChildren(['id', 'type', 'at'])",
+          "id": { ".validate": "newData.isString() && newData.val().length <= 20" },
+          "type": { ".validate": "newData.val() === 'gather' || newData.val() === 'kick'" },
+          "target": { ".validate": "newData.isString() && newData.val().length <= 64" },
+          "at": { ".validate": "newData.isNumber()" },
+          "$other": { ".validate": false }
+        },
+        "players": {
+          "$pid": {
+            ".write": "auth != null && (auth.uid === $pid || root.child('rooms').child($code).child('meta/owner').val() === auth.uid)",
+            ".validate": "!newData.exists() || data.exists() || root.child('rooms').child($code).child('meta/open').val() === true",
+            "n": { ".validate": "newData.isString() && newData.val().length >= 1 && newData.val().length <= 12" },
+            "g": { ".validate": "newData.isNumber() && newData.val() >= 1 && newData.val() <= 6" },
+            "s": { ".validate": "newData.isString() && newData.val().length <= 8" },
+            "gd": { ".validate": "newData.val() === 'boy' || newData.val() === 'girl'" },
+            "x": { ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 1448" },
+            "y": { ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 1086" },
+            "d": { ".validate": "newData.val() === 'up' || newData.val() === 'down' || newData.val() === 'left' || newData.val() === 'right'" },
+            "m": { ".validate": "newData.val() === 0 || newData.val() === 1" },
+            "w": { ".validate": "newData.isString() && newData.val().length <= 12" },
+            "t": { ".validate": "newData.isNumber()" },
+            "$other": { ".validate": false }
+          }
+        }
+      }
+    }
+  }
+}

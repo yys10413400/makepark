@@ -10,6 +10,7 @@
   <link rel="stylesheet" href="css/style.css">
   <link rel="stylesheet" href="css/coaster.css">
   <link rel="stylesheet" href="css/gatekeeper.css">
+  <link rel="stylesheet" href="css/net.css">
 </head>
 <body>
   <div id="app">
@@ -129,6 +130,7 @@
     <!-- 게임 화면 UI -->
     <div id="hud" hidden>
       <button class="chip" id="playerChip" type="button" aria-label="내 정보 바꾸기"><span class="dot"></span><span id="playerName"></span><span class="chip-grade" id="playerGrade"></span><span class="chip-edit" aria-hidden="true">✎</span></button>
+      <span class="chip room-chip" id="roomChip" hidden></span>
       <div class="hud-right">
         <button id="charOpen" class="btn hud-btn" type="button">캐릭터</button>
         <button id="seasonToggle" class="btn hud-btn season-btn" type="button"><small>계절</small> <span id="seasonLabel">크리스마스</span></button>
@@ -188,5 +190,8 @@
   <script src="js/gatekeeper/rules.js"></script>
   <script src="js/gatekeeper/sprites.js"></script>
   <script src="js/gatekeeper/ui.js"></script>
+  <script src="js/net/firebase-config.js"></script>
+  <script src="js/net/net.js"></script>
+  <script src="js/net/multiplayer.js"></script>
 </body>
 </html>

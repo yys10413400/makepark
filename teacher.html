@@ -1,0 +1,71 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>메이크파크 선생님 화면</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Jua&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/style.css">
+  <link rel="stylesheet" href="css/teacher.css">
+</head>
+<body class="teacher">
+  <main class="t-wrap">
+    <header class="t-head">
+      <h1>메이크파크 <span>선생님 화면</span></h1>
+      <p id="tMode" class="t-mode" hidden></p>
+    </header>
+
+    <!-- 반 공원 만들기 -->
+    <section id="tSetup" class="t-card t-setup" aria-labelledby="tSetupTitle">
+      <h2 id="tSetupTitle">우리 반 공원 만들기</h2>
+      <p class="t-sub">공원을 만들면 반 코드(숫자 5자리)가 나와요. 학생들은 첫 화면에서 닉네임·학년을 넣고 이 코드로 들어와요.</p>
+      <form id="tCreate" class="t-row" autocomplete="off">
+        <label for="tName">선생님 이름(학생에게 보여요)</label>
+        <input id="tName" class="nick-input" maxlength="20" placeholder="예) 김선생님">
+        <button class="entry-go t-btn" type="submit">공원 만들기</button>
+      </form>
+      <form id="tOpen" class="t-row" autocomplete="off">
+        <label for="tOld">이미 만든 반 코드로 다시 열기</label>
+        <input id="tOld" class="nick-input" inputmode="numeric" maxlength="5" placeholder="5자리">
+        <button class="profile-cancel t-btn" type="submit">열기</button>
+      </form>
+      <p id="tSetupMsg" class="field-msg" aria-live="polite"></p>
+    </section>
+
+    <!-- 반 공원 보기 -->
+    <section id="tRoom" class="t-room" hidden>
+      <div class="t-card t-code">
+        <p class="t-code-label">반 코드</p>
+        <p id="tCode" class="t-code-num"></p>
+        <p id="tState" class="t-state"></p>
+        <div class="t-actions">
+          <button id="tCopy" class="profile-cancel t-btn" type="button">코드 복사</button>
+          <button id="tGather" class="entry-go t-btn" type="button">모두 모으기 (분수 광장)</button>
+          <button id="tToggle" class="profile-cancel t-btn" type="button">공원 닫기</button>
+          <button id="tNew" class="t-link" type="button">다른 공원 만들기</button>
+        </div>
+        <p id="tMsg" class="t-msg" aria-live="polite"></p>
+      </div>
+      <div class="t-card t-mapcard">
+        <h2>공원 지도 <small id="tCount"></small></h2>
+        <div id="tMap" class="t-map" role="img" aria-label="공원 지도 위 학생 위치"></div>
+      </div>
+      <div class="t-card t-listcard">
+        <h2>들어온 학생</h2>
+        <table class="t-list">
+          <thead><tr><th>닉네임</th><th>학년</th><th>있는 곳</th><th></th></tr></thead>
+          <tbody id="tList"></tbody>
+        </table>
+        <p id="tEmpty" class="t-empty">아직 들어온 학생이 없어요. 학생들에게 반 코드를 알려 주세요.</p>
+      </div>
+    </section>
+  </main>
+
+  <script src="js/data/park-data.js"></script>
+  <script src="js/net/firebase-config.js"></script>
+  <script src="js/net/net.js"></script>
+  <script src="js/net/teacher.js"></script>
+</body>
+</html>
