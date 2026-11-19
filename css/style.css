@@ -277,13 +277,15 @@ button.chip:focus-visible { outline: 3px solid var(--mint); outline-offset: 2px;
    그림에서 패널(문장·성 포함)만 오려 낸 entry-panel.webp 를 화면 높이의 72% 크기로
    공원 지도(게임 화면) 위 가운데에 띄웁니다.
    패널 위 정확한 자리에 투명한 실제 입력칸·학년 버튼·출발 버튼을 올립니다(글씨는 그림 그대로 보임).
-   좌표는 오려 낸 패널 그림(1012×918) 기준 백분율. 세로로 좁은 화면은 위의 CSS 버전을 씁니다. */
-@media (min-width: 720px) and (min-height: 520px) and (min-aspect-ratio: 5/4) {
+   좌표는 오려 낸 패널 그림(1012×918) 기준 백분율.
+   PC·태블릿(가로·세로 모두)은 이 그림 버전, 폭이 좁은 휴대폰이나 아주 낮은 화면만 위의 CSS 버전을 씁니다. */
+@media (min-width: 560px) and (min-height: 520px) {
   /* 배경은 따로 두지 않고 뒤의 공원 지도(게임 화면)가 그대로 보이게, 가장자리만 살짝 어둡게 */
   #title.entry-overlay { padding: 0; align-items: center; overflow: hidden;
     background: radial-gradient(ellipse at center, rgba(255, 250, 235, 0) 40%, rgba(30, 45, 80, 0.32)); }
   .entry-main {
-    flex: none; height: 72%; width: auto; aspect-ratio: 1012 / 918; max-width: 96vw;
+    /* 가로 화면은 높이의 72%, 세로 화면(태블릿 세우기)은 폭의 94%를 넘지 않게 */
+    flex: none; height: auto; width: min(94vw, calc(72vh * 1012 / 918)); aspect-ratio: 1012 / 918; max-width: 96vw;
     margin: 0; padding: 0; container-type: inline-size;
     background: url("../assets/ui/entry-panel.webp") center / 100% 100% no-repeat;
     filter: drop-shadow(0 10px 24px rgba(40, 30, 10, 0.25));
