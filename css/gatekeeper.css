@@ -100,18 +100,18 @@ kbd { font-family: inherit; font-size: 0.75em; padding: 0 0.4em; border-radius: 
 .gk-fig > img { position: absolute; display: block; pointer-events: none; }
 .gk-badge { filter: drop-shadow(0 0.1em 0.08em rgba(0, 0, 0, 0.25)); }
 
-/* 황금문 앞 손님: 틀(300×535) 높이를 화면의 47%로 */
-.gk-guest { left: 62.2%; top: 32%; height: 47%; transition: transform 0.6s ease, opacity 0.6s ease; z-index: 2; }
+/* 황금문 앞 손님: 틀(300×535) 높이를 화면의 47%로, 문 가운데(그림 x≈1250) 계단 앞에 서게 */
+.gk-guest { left: 68.4%; top: 31.5%; height: 47%; transition: transform 0.6s ease, opacity 0.6s ease; z-index: 2; }
 .gk-guest .gk-fig { height: 100%; }
 .gk-guest.enter { transform: translateX(45%); opacity: 0; transition: none; }
 .gk-guest.leave-pass { transform: translate(-4%, -8%) scale(0.72); opacity: 0; }
 .gk-guest.leave-stop { transform: translateX(60%); opacity: 0; }
 
 /* 문지기 유령: 손님 왼쪽 옆자리(손님의 배지·오른손 소품을 가리지 않게) */
-.gk-ghost { left: 43.5%; top: 31%; height: 37%; width: 17%; object-fit: contain; object-position: center bottom; z-index: 1; animation: gk-float 2.6s ease-in-out infinite; }
+.gk-ghost { left: 50%; top: 33%; height: 37%; width: 17%; object-fit: contain; object-position: center bottom; z-index: 1; animation: gk-float 2.6s ease-in-out infinite; }
 @keyframes gk-float { 50% { transform: translateY(-1.2%); } }
 .gk-bubble {
-  left: 35%; top: 4.5%; width: 29%; min-height: 10%; z-index: 4; display: flex; align-items: center; justify-content: center;
+  left: 40%; top: 4.5%; width: 29%; min-height: 10%; z-index: 4; display: flex; align-items: center; justify-content: center;
   padding: 1cqw 1.4cqw; border-radius: 1.4cqw; font-size: 1.55cqw; line-height: 1.35; text-align: center;
   background: #fff8ea; color: #3b2410; border: 0.18cqw solid #d9b878; box-shadow: 0 0.35cqw 0 rgba(40, 10, 60, 0.45);
 }

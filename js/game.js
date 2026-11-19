@@ -837,6 +837,8 @@
     storageOk: function () { return storageOk; },
     profile: function () { return { nickname: state.nickname, grade: state.grade, band: state.gradeBand }; },
     character: function () { return { sid: character.sid || 'F1' }; },
+    // 공원에서 캐릭터가 화면에 그려지는 몸 키(CSS px). 유령의 집 로비도 같은 크기로 그림
+    charScreenH: function () { return ((window.MPChars && MPChars.DRAW_H) || 60) * playScale(); },
     exitCoaster: function () { exitRide('coaster'); },
     exitGate: function () { exitRide('ghost'); }
   };

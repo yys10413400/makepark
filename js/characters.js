@@ -128,6 +128,6 @@
 
   window.MPChars = {
     ROSTER: ROSTER, byId: function (id) { return BY_ID[id] || null; },
-    spriteId: spriteId, load: load, drawSprite: drawSprite, Walker: Walker, BODY_H: BODY_H
+    spriteId: spriteId, load: load, drawSprite: drawSprite, Walker: Walker, BODY_H: BODY_H, DRAW_H: DRAW_H
   };
 })();

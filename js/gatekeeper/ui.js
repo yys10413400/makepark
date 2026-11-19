@@ -211,7 +211,7 @@
     ui.root.hidden = false;
     document.body.classList.add('gate-open');
     showScene('lobby');
-    S.me = { x: 870, y: 880, dir: 'up', moving: false };
+    S.me = { x: 836, y: 900, dir: 'up', moving: false };
     S.dest = null; S.keys = {}; S.dialog = false; ui.dialog.hidden = true;
     S.last = performance.now();
     cancelAnimationFrame(S.raf);
@@ -235,7 +235,7 @@
     clearTimeout(S.timer); S.round = null; S.busy = false;
     showScene('lobby');
     // 유령 앞에 서서 바로 다시 말을 걸 수 있게
-    S.me = { x: GHOST.x - 150, y: GHOST.y + 40, dir: 'right', moving: false };
+    S.me = { x: GHOST.x - 130, y: GHOST.y + 40, dir: 'right', moving: false };
     S.dest = null; S.keys = {};
     closeDialog();
     S.last = performance.now();
@@ -244,11 +244,12 @@
 
   // ---------- 로비 걷기 ----------
   // 걸을 수 있는 바닥(그림 좌표 다각형)과 막힌 가구(발 기준 타원)
-  var FLOOR = [[30, 640], [115, 520], [330, 470], [470, 432], [1560, 432], [1640, 520], [1652, 860], [1060, 872], [1050, 936],
-    [690, 936], [680, 872], [24, 860]];
-  var BLOCKS = [{ x: 240, y: 440, rx: 135, ry: 42 }, { x: 615, y: 425, rx: 95, ry: 22 }, { x: 1640, y: 470, rx: 70, ry: 60 }];
-  var GHOST = { x: 1180, y: 560, h: 235 };
-  var EXIT_Y = 912;
+  var FLOOR = [[60, 600], [120, 520], [180, 470], [430, 450], [470, 432], [1580, 432], [1640, 470], [1660, 560],
+    [1660, 930], [1075, 930], [1070, 815], [962, 815], [958, 941], [712, 941], [708, 815], [600, 815], [595, 930], [10, 930], [10, 640]];
+  // 의자·스탠드 탁자·괘종시계 받침
+  var BLOCKS = [{ x: 275, y: 448, rx: 95, ry: 30 }, { x: 382, y: 440, rx: 45, ry: 20 }, { x: 565, y: 422, rx: 70, ry: 18 }];
+  var GHOST = { x: 1095, y: 520, h: 165 };
+  var EXIT_Y = 840;   // 아래 카펫(입구) 쪽
   function inPoly(x, y, p) {
     var c = false;
     for (var i = 0, j = p.length - 1; i < p.length; j = i++) {
@@ -259,10 +260,14 @@
   function walkable(x, y) {
     if (!inPoly(x, y, FLOOR)) return false;
     for (var i = 0; i < BLOCKS.length; i++) { var b = BLOCKS[i], dx = (x - b.x) / b.rx, dy = (y - b.y) / b.ry; if (dx * dx + dy * dy < 1) return false; }
-    var gx = (x - GHOST.x) / 70, gy = (y - GHOST.y) / 26;   // 유령 발밑
+    var gx = (x - GHOST.x) / 55, gy = (y - GHOST.y) / 22;   // 유령 발밑
     return gx * gx + gy * gy >= 1;
   }
-  function charH(y) { return 168 + (y - 432) * 0.2; }   // 안쪽(위)일수록 작게
+  // 캐릭터 몸 키: 공원에서 돌아다닐 때 화면에 보이는 크기와 똑같이(그림 좌표로 바꿔서)
+  function charH() {
+    var r = ui.canvas.getBoundingClientRect(), px = api().charScreenH ? api().charScreenH() : 94;
+    return r.height ? px * IH / r.height : 125;
+  }
   var KEYMAP = { ArrowUp: 'up', KeyW: 'up', ArrowDown: 'down', KeyS: 'down', ArrowLeft: 'left', KeyA: 'left', ArrowRight: 'right', KeyD: 'right' };
   function step(dt) {
     if (S.dialog || S.scene !== 'lobby') { S.me.moving = false; return; }
@@ -283,11 +288,11 @@
       me.dir = Math.abs(dx) > Math.abs(dy) ? (dx < 0 ? 'left' : 'right') : (dy < 0 ? 'up' : 'down');
     }
     me.moving = moved;
-    S.nearGhost = Math.hypot(me.x - GHOST.x, (me.y - GHOST.y) * 1.4) < 250;
+    S.nearGhost = Math.hypot(me.x - GHOST.x, (me.y - GHOST.y) * 1.4) < 210;
     S.nearExit = !S.nearGhost && me.y > EXIT_Y;
     ui.talk.hidden = !S.nearGhost;
     ui.leave.hidden = !S.nearExit;
-    if (S.nearGhost) { ui.talk.style.left = pct(GHOST.x, IW); ui.talk.style.top = pct(GHOST.y - GHOST.h - 70, IH); }
+    if (S.nearGhost) { ui.talk.style.left = pct(GHOST.x, IW); ui.talk.style.top = pct(GHOST.y - GHOST.h - 80, IH); }
     if (S.nearExit) { ui.leave.style.left = pct(me.x, IW); ui.leave.style.top = pct(me.y - charH(me.y) - 70, IH); }
   }
   var ghostImgs = {};
@@ -303,8 +308,8 @@
       { y: GHOST.y, draw: function () {
         var bob = Math.sin(t * 2.2) * 8, w = GHOST.h * gm.w / gm.h;
         c.save(); c.fillStyle = 'rgba(20,0,40,0.28)';
-        c.beginPath(); c.ellipse(GHOST.x, GHOST.y, 70 - bob, 16, 0, 0, Math.PI * 2); c.fill(); c.restore();
-        if (gi.complete && gi.naturalWidth) c.drawImage(gi, GHOST.x - w / 2, GHOST.y - GHOST.h - 26 + bob, w, GHOST.h);
+        c.beginPath(); c.ellipse(GHOST.x, GHOST.y, 50 - bob * 0.6, 12, 0, 0, Math.PI * 2); c.fill(); c.restore();
+        if (gi.complete && gi.naturalWidth) c.drawImage(gi, GHOST.x - w / 2, GHOST.y - GHOST.h - 18 + bob * 0.7, w, GHOST.h);
       } },
       { y: S.me.y, draw: function () { drawMe(c, t); } }
     ];
@@ -641,7 +646,7 @@
       if (S.dialog) return;
       var p = lobbyPoint(e);
       // 유령을 누르면 그 앞으로 걸어감
-      if (Math.abs(p.x - GHOST.x) < 110 && p.y > GHOST.y - GHOST.h - 30 && p.y < GHOST.y + 20) p = { x: GHOST.x - 140, y: GHOST.y + 30 };
+      if (Math.abs(p.x - GHOST.x) < 90 && p.y > GHOST.y - GHOST.h - 30 && p.y < GHOST.y + 20) p = { x: GHOST.x - 120, y: GHOST.y + 30 };
       if (!walkable(p.x, p.y)) {
         // 가장 가까운 바닥 칸으로
         var best = null;
