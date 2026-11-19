@@ -116,7 +116,7 @@
     var gate = ui.gate = el('div', 'gk-scene gk-gate'); gate.hidden = true;
     gate.style.backgroundImage = 'url(' + SPR.base + 'checkpoint.webp)';
     var board = ui.board = el('div', 'gk-board');
-    board.appendChild(img('record-board', 'gk-board-img', '손님 기록판: 위 두 칸은 통과, 아래 두 칸은 잠깐'));
+    board.appendChild(img(SPR.board.src, 'gk-board-img', '손님 기록판: 왼쪽 두 칸은 통과, 오른쪽 두 칸은 잠깐'));
     ui.slots = SPR.boardSlots.map(function (s, i) {
       var d = el('div', 'gk-slot ' + (i < 2 ? 'is-pass' : 'is-stop'));
       d.style.left = s.x + '%'; d.style.top = s.y + '%'; d.style.width = s.w + '%'; d.style.height = s.h + '%';
@@ -136,6 +136,8 @@
     ui.info = el('p', 'gk-info'); gate.appendChild(ui.info);
     ui.gateExit = btn('gk-pill gk-exit', '로비로', function () { toLobby(); });
     gate.appendChild(ui.gateExit);
+    ui.helpBtn = btn('gk-pill gk-help', '? 어떻게 해요', openHelp);
+    gate.appendChild(ui.helpBtn);
     ui.passBtn = btn('gk-judge gk-judge-pass', '통과', function () { judge(true); });
     ui.stopBtn = btn('gk-judge gk-judge-stop', '잠깐!', function () { judge(false); });
     gate.appendChild(ui.passBtn); gate.appendChild(ui.stopBtn);
@@ -370,11 +372,11 @@
     var lines = [FIRST_GUIDE];
     if (!R.practice) lines.push('이번엔 배지가 없는 손님과 빈손인 손님도 와요.');
     var title = R.practice ? '연습 문제' : (S.mode === 'friend' ? '친구가 만든 비밀 규칙' : '본 게임') + ' · ' + BAND_LABEL[R.band];
-    showModal(title, lines, [{ text: '시작하기', main: true, fn: function () { hideModal(); nextGuest(); } }]);
+    showModal(R.practice ? '연습 문제 · 어떻게 놀아요?' : title, lines, [{ text: '시작하기', main: true, fn: function () { hideModal(); nextGuest(); } }], null, R.practice ? howTo() : null);
   }
   function renderBoard() {
     var R = S.round;
-    // 위: 통과 2장, 아래: 잠깐 2장
+    // 왼쪽: 통과 2장, 오른쪽: 잠깐 2장
     var order = R.records.filter(function (k) { return k.pass; }).concat(R.records.filter(function (k) { return !k.pass; }));
     ui.slots.forEach(function (slot, i) {
       slot.textContent = '';
@@ -485,6 +487,12 @@
     ui.guestWrap.textContent = '';
     say('오늘 손님은 여기까지! 비밀 규칙을 알려 줄게.');
     var lines = [], btns = [], gain = 0, newClear = false, saved = true;
+    var passList = R.known.filter(function (k) { return k.pass; }), stopList = R.known.filter(function (k) { return !k.pass; });
+    function uniq(list) { var seen = {}; return list.map(G.comboText).filter(function (t) { return seen[t] ? false : (seen[t] = 1); }).join(', '); }
+    var why = el('div', 'gk-why');
+    why.appendChild(el('p', 'gk-why-line ok', '통과: ' + uniq(passList)));
+    why.appendChild(el('p', 'gk-why-line no', '잠깐!: ' + uniq(stopList)));
+    if (R.practice) why.appendChild(el('p', 'gk-why-tip', '달 배지만 보면 통과도 잠깐!도 있고, 열쇠만 봐도 그래요. 배지와 소품을 함께 봐야 규칙이 보여요!'));
     if (R.practice) {
       saved = patchGate(function (g) { g.practiced = true; });
       lines.push('처음에 맞힌 손님 ' + S.score + ' / ' + R.total);
@@ -515,14 +523,15 @@
       btns.push({ text: '로비로', fn: function () { hideModal(); toLobby(); } });
     }
     var who = R.practice ? '연습 끝! 비밀 규칙' : S.mode === 'friend' ? (S.friend.maker === 1 ? '친구 1이' : '친구 2가') + ' 만든 비밀 규칙' : '비밀 규칙';
-    showModal(who, lines, btns, R.text);
+    showModal(who, lines, btns, R.text, why);
   }
 
-  function showModal(title, lines, btns, ruleText) {
+  function showModal(title, lines, btns, ruleText, extra) {
     var c = ui.modalCard; c.textContent = '';
     var h = el('h2', 'gk-card-title', title); h.id = 'gkModalTitle'; c.setAttribute('aria-labelledby', 'gkModalTitle');
     c.appendChild(h);
     if (ruleText) c.appendChild(el('p', 'gk-card-rule', ruleText));
+    if (extra) c.appendChild(extra);
     lines.forEach(function (l) { c.appendChild(el('p', 'gk-card-line', l)); });
     var row = el('div', 'gk-card-btns');
     var first = null;
@@ -532,6 +541,43 @@
     if (first) setTimeout(function () { first.focus(); }, 30);
   }
   function hideModal() { ui.modal.hidden = true; }
+
+  // ---------- 어떻게 놀아요? (규칙 찾는 법) ----------
+  function howTo() {
+    var box = el('div', 'gk-howto');
+    function row(num, title, sub, pics) {
+      var r = el('div', 'gk-howto-row');
+      r.appendChild(el('span', 'gk-howto-num', num));
+      var t = el('div', 'gk-howto-text');
+      t.appendChild(el('p', 'gk-howto-title', title));
+      if (pics) t.appendChild(pics);
+      t.appendChild(el('p', 'gk-howto-sub', sub));
+      r.appendChild(t); box.appendChild(r);
+    }
+    var pics = el('div', 'gk-howto-pics');
+    function pic(v) {
+      var p = el('span', 'gk-howto-pic');
+      if (v === 'none' || v === 'empty') p.appendChild(el('span', 'gk-howto-x', '✕'));
+      else p.appendChild(img(SPR.items[v].src, '', ''));
+      p.appendChild(el('span', '', NAMES[v]));
+      return p;
+    }
+    pics.appendChild(el('span', 'gk-howto-group', '가슴 배지'));
+    ['star', 'moon', 'none'].forEach(function (v) { pics.appendChild(pic(v)); });
+    pics.appendChild(el('span', 'gk-howto-group', '손에 든 것'));
+    ['key', 'lantern', 'empty'].forEach(function (v) { pics.appendChild(pic(v)); });
+    row('1', '손님의 배지와 손에 든 것만 봐요', '얼굴, 남자·여자, 머리핀, 신발 색은 규칙과 상관없어요.', pics);
+    row('2', '‘통과’ 손님과 ‘잠깐!’ 손님을 비교해요', '통과한 손님에게만 있는 점이 비밀 규칙이에요. 배지 하나, 소품 하나만 보면 안 맞을 때가 많아요. 둘을 함께 봐요!');
+    var three = el('p', 'gk-howto-sub');
+    three.innerHTML = '예) 규칙이 ‘열쇠를 든 손님이 통과’라면 → 열쇠를 들었으면 <b class="ok">통과</b>, 아니면 <b class="no">잠깐!</b>';
+    row('3', '새 손님이 규칙에 맞으면 ‘통과’, 아니면 ‘잠깐!’', '', null);
+    box.lastChild.querySelector('.gk-howto-text').replaceChild(three, box.lastChild.querySelector('.gk-howto-sub'));
+    return box;
+  }
+  function openHelp() {
+    if (!ui.modal.hidden || S.scene !== 'gate') return;
+    showModal('어떻게 놀아요?', [], [{ text: '알겠어!', main: true, fn: hideModal }], null, howTo());
+  }
 
   // ---------- 친구랑 문지기 ----------
   function defaultParts() { return { link: 'and', badge: 'moon', item: 'key', item2: 'lantern' }; }

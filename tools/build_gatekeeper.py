@@ -12,7 +12,7 @@ import os
 import shutil
 
 import numpy as np
-from PIL import Image
+from PIL import Image, ImageDraw
 from scipy import ndimage
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -33,6 +33,66 @@ def trim(im, pad=4):
     x0, y0 = max(0, x0 - pad), max(0, y0 - pad)
     x1, y1 = min(im.width, x1 + pad), min(im.height, y1 + pad)
     return im.crop((x0, y0, x1, y1)), (int(x0), int(y0))
+
+
+def clear_paper(im):
+    """종이 바탕색에 가까운 픽셀은 투명하게(조각을 붙인 자리에 네모 자국이 남지 않게). 글자·선만 남김"""
+    a = np.array(im).astype(int)
+    d = np.abs(a[..., :3] - np.array([246, 234, 215])).sum(-1)
+    a[..., 3] = np.clip((d - 14) * 12, 0, 255) * (a[..., 3] > 0)
+    return Image.fromarray(a.astype('uint8'))
+
+
+def nine_slice(src, w, h, c):
+    """모서리(c px)는 그대로 두고 가장자리·가운데만 늘려 w×h 로"""
+    W, H = src.size
+    out = Image.new('RGBA', (w, h))
+    xs = [(0, c, 0, c), (c, W - c, c, w - c), (W - c, W, w - c, w)]
+    ys = [(0, c, 0, c), (c, H - c, c, h - c), (H - c, H, h - c, h)]
+    for sx0, sx1, dx0, dx1 in xs:
+        for sy0, sy1, dy0, dy1 in ys:
+            piece = src.crop((sx0, sy0, sx1, sy1)).resize((dx1 - dx0, dy1 - dy0), Image.LANCZOS)
+            out.alpha_composite(piece, (dx0, dy0))
+    return out
+
+
+# 가로 손님 기록판: 받은 세로 기록판(1024×1356)의 테두리·제목·'통과'/'잠깐!' 머리글·카드 칸을 잘라 가로로 다시 놓음
+# (새로 그리지 않고 받은 그림 조각만 씀). 왼쪽 두 칸 = 통과, 오른쪽 두 칸 = 잠깐!
+WIDE = (1600, 820)
+
+
+def build_wide_board(board):
+    W, H = WIDE
+    # 테두리: 모서리는 그대로, 가장자리는 글자·칸이 없는 깨끗한 줄무늬만 늘림
+    BW, BH, c = board.width, board.height, 110
+    out = Image.new('RGBA', (W, H))
+    for sx, dx in ((0, 0), (BW - c, W - c)):
+        for sy, dy in ((0, 0), (BH - c, H - c)):
+            out.alpha_composite(board.crop((sx, sy, sx + c, sy + c)), (dx, dy))
+    out.alpha_composite(board.crop((150, 0, 300, c)).resize((W - 2 * c, c), Image.LANCZOS), (c, 0))
+    out.alpha_composite(board.crop((150, BH - c, 300, BH)).resize((W - 2 * c, c), Image.LANCZOS), (c, H - c))
+    out.alpha_composite(board.crop((0, 1236, c, 1246)).resize((c, H - 2 * c), Image.LANCZOS), (0, c))
+    out.alpha_composite(board.crop((BW - c, 1236, BW, 1246)).resize((c, H - 2 * c), Image.LANCZOS), (W - c, c))
+    out.alpha_composite(board.crop((300, 1236, 700, 1246)).resize((W - 2 * c, H - 2 * c), Image.LANCZOS), (c, c))
+    title = clear_paper(board.crop((345, 48, 684, 140)))
+    out.alpha_composite(title, ((W - title.width) // 2, 22))
+    s = 0.78
+    for (y0, y1), cx in (((165, 262), W // 4 + 10), ((697, 800), W * 3 // 4 - 10)):
+        head = clear_paper(board.crop((40, y0, 985, y1)))
+        head = head.resize((int(head.width * s), int(head.height * s)), Image.LANCZOS)
+        out.alpha_composite(head, (cx - head.width // 2, 128))
+    # 가운데 세로 구분선(머리글 선과 같은 색)
+    line_col = tuple(int(v) for v in np.array(board)[215, 120])
+    d = ImageDraw.Draw(out)
+    d.line([(W // 2, 150), (W // 2, H - 50)], fill=line_col, width=4)
+    slot = board.crop((52, 280, 498, 669))
+    slots = []
+    cw, ch, top = 345, 548, 228
+    for x in (55, 420, W // 2 + 35, W // 2 + 400):
+        out.alpha_composite(nine_slice(slot, cw, ch, 48), (x, top))
+        slots.append({'x': round(x / W * 100, 3), 'y': round(top / H * 100, 3), 'w': round(cw / W * 100, 3), 'h': round(ch / H * 100, 3)})
+    out.save(os.path.join(OUT, 'record-board-wide.webp'), 'WEBP', quality=92, method=6)
+    return {'w': W, 'h': H, 'slots': slots}
 
 
 def main():
@@ -83,6 +143,7 @@ def main():
     part, (ox, oy) = trim(board, pad=0)
     part.save(os.path.join(OUT, 'record-board.webp'), 'WEBP', quality=92, method=6)
     meta['record-board'] = {'w': part.width, 'h': part.height, 'sheetX': ox, 'sheetY': oy}
+    meta['record-board-wide'] = build_wide_board(part)
     for bg in ('lobby.webp', 'checkpoint.webp'):
         shutil.copyfile(os.path.join(SRC, bg), os.path.join(OUT, bg))
     print(json.dumps(meta, indent=1))
