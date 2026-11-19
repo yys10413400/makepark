@@ -148,7 +148,7 @@ def main():
         print(cid, sheet.size, {v: rects[v][2:4] for v in VIEWS})
     with open(JS, 'w', encoding='utf-8') as f:
         f.write('// tools/build_characters.py 가 만듦. 칸: [x, y, 너비, 높이, 발x(칸 안), 발y(칸 안)], 몸 키 ' + str(BODY_H) + 'px 기준\n')
-        f.write('window.MP_CHAR_SPRITES = ' + json.dumps(meta, ensure_ascii=False, indent=1, sort_keys=True) + ';\n')
+        f.write('window.MP_CHAR_SPRITES = ' + json.dumps(meta, ensure_ascii=False, indent=1, sort_keys=True) + ';\n' + "window.MP_CHAR_VER = '" + __import__('time').strftime('%Y%m%d%H%M%S') + "';\n")
 
 
 if __name__ == '__main__':

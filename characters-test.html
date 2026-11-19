@@ -34,8 +34,8 @@
   </div>
   <div class="grid" id="grid"></div>
 
-  <script src="js/data/character-sprites.js"></script>
-  <script src="js/characters.js"></script>
+  <script>document.write('<script src="js/data/character-sprites.js?t=' + Date.now() + '"><\/script>');</script>
+  <script>document.write('<script src="js/characters.js?t=' + Date.now() + '"><\/script>');</script>
   <script>
   (function () {
     var C = window.MPChars, SPR = window.MP_CHAR_SPRITES || {};

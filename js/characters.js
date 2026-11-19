@@ -56,7 +56,8 @@
     e.img.onerror = function () { e.done = true; console.error('캐릭터 그림을 불러오지 못했어요: ' + sid); };
     var walk = /-walk$/.test(sid), base = SPR[sid.replace(/-walk$/, '')];
     var src = base && (walk ? base.walk && base.walk.src : base.src);
-    if (src) e.img.src = src; else e.done = true;
+    // 그림을 다시 만들면 버전(MP_CHAR_VER)이 바뀌어 브라우저가 예전 그림을 쓰지 않음
+    if (src) e.img.src = src + (window.MP_CHAR_VER ? '?v=' + window.MP_CHAR_VER : ''); else e.done = true;
     return e;
   }
   function hasWalk(sid) { return !!(SPR[sid] && SPR[sid].walk); }

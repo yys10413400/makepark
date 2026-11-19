@@ -122,7 +122,7 @@ def main():
         meta[cid]['walk'] = {'src': 'assets/characters/' + cid + '-walk.webp', 'views': rects}
         print(cid, out.size, {v: r[2:4] for v, r in rects.items()})
     with open(JS, 'w', encoding='utf-8') as fo:
-        fo.write(head + 'window.MP_CHAR_SPRITES = ' + json.dumps(meta, ensure_ascii=False, indent=1, sort_keys=True) + ';\n')
+        fo.write(head + 'window.MP_CHAR_SPRITES = ' + json.dumps(meta, ensure_ascii=False, indent=1, sort_keys=True) + ';\n' + "window.MP_CHAR_VER = '" + __import__('time').strftime('%Y%m%d%H%M%S') + "';\n")
 
 
 if __name__ == '__main__':
