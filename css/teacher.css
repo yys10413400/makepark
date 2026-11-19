@@ -42,3 +42,29 @@ body.teacher { overflow: auto; height: auto; min-height: 100%; background: linea
 .t-danger { border: 2px solid #c2412d; background: #fff; color: #c2412d; border-radius: 99px; padding: 8px 16px; font: inherit; font-size: 15px; cursor: pointer; }
 @media (max-width: 860px) { .t-recordcard { grid-column: auto; } }
 @media (max-width: 860px) { .t-room { grid-template-columns: 1fr; } .t-code { grid-row: auto; } }
+
+/* 로그인 · 내 반 목록 · 반 관리 머리줄 */
+.t-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+.t-who { display: flex; align-items: center; gap: 10px; font-size: 16px; }
+.t-google { width: 100%; }
+#tHome { display: grid; gap: 16px; margin-top: 18px; }
+#tHome[hidden] { display: none; }
+.t-rooms { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 12px; }
+.t-roomcard {
+  display: grid; gap: 4px; text-align: left; padding: 14px 16px; border-radius: 14px; cursor: pointer;
+  background: #fff; border: 2px solid rgba(226, 179, 87, 0.7); box-shadow: 0 3px 0 rgba(150, 105, 30, 0.25); font: inherit; color: inherit;
+}
+.t-roomcard:hover { border-color: var(--e-purple); }
+.t-roomcard-name { font-size: 19px; color: var(--e-purple); }
+.t-roomcard-code { font-size: 14px; color: var(--e-brown-soft); letter-spacing: 0.05em; }
+.t-roomcard-state { font-size: 14px; }
+.t-grid2 { display: grid; grid-template-columns: 1fr 1fr auto; gap: 12px; align-items: end; }
+.t-grid2 label { display: grid; gap: 6px; font-size: 15px; }
+.t-grid2 small { color: var(--e-brown-soft); font-size: 12px; }
+@media (max-width: 720px) { .t-grid2 { grid-template-columns: 1fr; } }
+.t-old { margin-top: 12px; font-size: 14px; color: var(--e-brown-soft); }
+.t-old summary { cursor: pointer; }
+.t-inline { display: flex; gap: 8px; margin-top: 8px; max-width: 320px; }
+.t-roombar { display: flex; align-items: center; gap: 12px; margin-top: 18px; flex-wrap: wrap; }
+.t-classname { margin: 0; font-weight: 400; font-size: 24px; color: var(--e-purple); }
+#tRoom .t-room { margin-top: 12px; }

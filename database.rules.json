@@ -2,14 +2,30 @@
   "rules": {
     ".read": false,
     ".write": false,
+    "teachers": {
+      "$uid": {
+        ".read": "auth != null && auth.uid === $uid",
+        ".write": "auth != null && auth.uid === $uid && auth.token.firebase.sign_in_provider !== 'anonymous'",
+        "rooms": {
+          "$code": {
+            ".validate": "$code.matches(/^[0-9]{5}$/) && newData.hasChildren(['name', 'created'])",
+            "name": { ".validate": "newData.isString() && newData.val().length <= 30" },
+            "created": { ".validate": "newData.isNumber()" },
+            "$other": { ".validate": false }
+          }
+        },
+        "$other": { ".validate": false }
+      }
+    },
     "rooms": {
       "$code": {
         ".validate": "$code.matches(/^[0-9]{5}$/)",
         "meta": {
           ".read": "auth != null",
-          ".write": "auth != null && ((!data.exists() && newData.child('owner').val() === auth.uid) || data.child('owner').val() === auth.uid)",
+          ".write": "auth != null && auth.token.firebase.sign_in_provider !== 'anonymous' && ((!data.exists() && newData.child('owner').val() === auth.uid) || data.child('owner').val() === auth.uid)",
           ".validate": "newData.hasChildren(['teacher', 'open', 'created', 'owner'])",
           "teacher": { ".validate": "newData.isString() && newData.val().length <= 20" },
+          "name": { ".validate": "newData.isString() && newData.val().length >= 1 && newData.val().length <= 30" },
           "open": { ".validate": "newData.isBoolean()" },
           "created": { ".validate": "newData.isNumber()" },
           "owner": { ".validate": "newData.isString() && (!data.exists() || newData.val() === data.val())" },

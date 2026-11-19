@@ -82,7 +82,7 @@
         if (!meta) { ui.err.textContent = '그런 반 공원이 없어요. 코드를 다시 확인해 주세요.'; return; }
         if (!meta.open) { ui.err.textContent = '지금은 닫힌 공원이에요. 선생님께 여쭤보세요.'; return; }
         api().patchSave({ roomCode: code });
-        S.code = code; S.teacher = meta.teacher || '선생님';
+        S.code = code; S.teacher = meta.teacher || '선생님'; S.className = meta.name || (code + '반');
         return askPin(code, entry);
       }).then(null, function (err) {
         ui.go.disabled = false;
@@ -104,7 +104,7 @@
       ui.pin.type = exists ? 'password' : 'text';
       ui.pinText.textContent = exists
         ? entry.name + '님, 다시 왔군요! 비밀번호 4자리를 넣으면 모은 캐릭터와 기록을 이어서 할 수 있어요.'
-        : entry.name + '님은 ' + code + '반 공원에 처음 왔어요! 비밀번호 4자리를 정해 주세요. 다른 기기에서 이어 할 때 써요. 잊지 않게 기억해요!';
+        : entry.name + '님은 ' + S.className + ' 공원에 처음 왔어요! 비밀번호 4자리를 정해 주세요. 다른 기기에서 이어 할 때 써요. 잊지 않게 기억해요!';
       setTimeout(function () { ui.pin.focus(); }, 30);
       ui.pinBack.onclick = function () { showStep('code'); ui.err.textContent = ''; ui.go.disabled = false; ui.code.focus(); };
       ui.pinForm.onsubmit = function (e) {
@@ -170,9 +170,10 @@
     S.handle.onMeta(function (meta) {
       if (!S.handle) return;
       if (!meta || !meta.open) kickOut('선생님이 공원을 닫았어요. 다음에 또 만나요!');
+      else if (meta.name && meta.name !== S.className) { S.className = meta.name; setChip(); }   // 선생님이 반 이름을 바꿈
     });
     setChip();
-    api().toast && api().toast(S.code + '반 공원에 들어왔어요!');
+    api().toast && api().toast(S.className + ' 공원에 들어왔어요!');
   }
   function leave() {
     if (S.handle) { S.handle.leave(); S.handle = null; }
@@ -260,7 +261,7 @@
     var all = Object.keys(S.others).map(function (k) { return S.others[k].data; }).filter(Boolean);
     var inRide = all.filter(function (d) { return d.w !== 'park'; }).length;
     chip.hidden = false;
-    chip.textContent = '🏫 ' + S.code + '반 · 친구 ' + all.length + '명' + (inRide ? ' (놀이기구 ' + inRide + ')' : '');
+    chip.textContent = '🏫 ' + (S.className || S.code + '반') + ' · 친구 ' + all.length + '명' + (inRide ? ' (놀이기구 ' + inRide + ')' : '');
     chip.title = all.map(function (d) { return d.n + (d.w !== 'park' ? ' — ' + (WHERE[d.w] || d.w) : ''); }).join('\n');
   }
 

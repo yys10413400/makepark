@@ -42,23 +42,36 @@
       document.head.appendChild(s);
     });
   }
-  // 익명 로그인: 사람마다(탭마다) 고유 번호(uid)가 생기고, 데이터베이스 규칙이 이 번호로
-  // '내 캐릭터 정보는 나만', '명령·공원 열고 닫기는 공원을 만든 선생님만' 쓰게 막음
-  var uid = null;
-  function fbReady() {
-    if (readyP) return readyP;
-    readyP = loadScript(SDK + 'firebase-app-compat.js')
+  // 학생: 익명 로그인 — 탭마다 고유 번호(uid)가 생기고, 규칙이 '내 캐릭터 정보는 나만' 쓰게 막음
+  // 선생님(teacher.html, MP_NET_ROLE='teacher'): 구글 로그인 — 어느 컴퓨터에서든 같은 선생님(공원 관리 권한·내 반 목록)
+  var uid = null, app = null, authP = null, teacherUser = null, teacherWaiters = [];
+  var ROLE = window.MP_NET_ROLE === 'teacher' ? 'teacher' : 'student';
+  function fbInit() {
+    if (authP) return authP;
+    authP = loadScript(SDK + 'firebase-app-compat.js')
       .then(function () { return loadScript(SDK + 'firebase-auth-compat.js'); })
       .then(function () { return loadScript(SDK + 'firebase-database-compat.js'); })
       .then(function () {
-        var app = window.firebase.apps.length ? window.firebase.app() : window.firebase.initializeApp(CFG);
-        var auth = app.auth();
-        // 학생 게임: 탭마다 다른 사람(SESSION) / 선생님 화면: 창을 닫았다 열어도 같은 선생님(LOCAL) — 공원 관리 권한 유지
+        app = window.firebase.apps.length ? window.firebase.app() : window.firebase.initializeApp(CFG);
+        fb = app.database();
         var P = window.firebase.auth.Auth.Persistence;
-        return auth.setPersistence(window.MP_NET_PERSIST === 'local' ? P.LOCAL : P.SESSION)
-          .then(function () { return auth.currentUser || auth.signInAnonymously().then(function (c) { return c.user; }); })
-          .then(function (user) { uid = user.uid; fb = app.database(); return mode; });
+        return app.auth().setPersistence(ROLE === 'teacher' ? P.LOCAL : P.SESSION).then(function () { return app.auth(); });
       });
+    return authP;
+  }
+  function fbReady() {
+    if (readyP) return readyP;
+    if (ROLE === 'teacher') {
+      // 선생님 로그인이 끝날 때까지 기다림
+      readyP = fbInit().then(function () {
+        return new Promise(function (ok) { if (teacherUser) ok(mode); else teacherWaiters.push(ok); });
+      });
+      return readyP;
+    }
+    readyP = fbInit().then(function (auth) {
+      return (auth.currentUser || auth.signInAnonymously().then(function (c) { return c.user; }))
+        .then(function (user) { uid = user.uid; return mode; });
+    });
     return readyP;
   }
   function fbRef(path) { return fb.ref(path); }
@@ -161,22 +174,22 @@
   // ================= 공통 =================
   function ready() { return mode === 'firebase' ? fbReady() : localReady(); }
 
-  function createRoom(teacher) {
+  function createRoom(teacherName, className) {
     return ready().then(function () {
-      var meta = { teacher: String(teacher || '선생님').slice(0, 20), open: true, created: Date.now() };
-      if (mode === 'firebase') meta.owner = uid;   // 이 공원의 선생님(명령·열고 닫기 권한)
+      var name = String(className || '').trim().slice(0, 30) || '우리 반';
+      var meta = { teacher: String(teacherName || '선생님').slice(0, 20), name: name, open: true, created: Date.now(), owner: uid };   // owner: 이 공원의 선생님
       if (mode === 'local') {
         var r = rooms(), code;
         do { code = roomCode(); } while (r[code]);
         r[code] = { meta: meta, cmd: null }; saveRooms(r); roomChanged();
-        return code;
+        return addMyRoom(code, name).then(function () { return code; });
       }
       // 겹치지 않는 번호를 찾을 때까지(트랜잭션으로 빈 자리에만 씀)
       function tryOne(n) {
         var code = roomCode();
         return fbRef('rooms/' + code + '/meta').transaction(function (cur) { return cur ? undefined : meta; })
           .then(function (res) {
-            if (res.committed) return code;
+            if (res.committed) return addMyRoom(code, name).then(function () { return code; });
             if (n > 8) throw new Error('반 코드를 만들지 못했어요');
             return tryOne(n + 1);
           });
@@ -289,6 +302,99 @@
     });
   }
 
+  // ---------- 선생님 로그인 ----------
+  // MPNet.teacher.watch(fn(user|null)) · signIn(name?) · signOut()  — user = { uid, name, email }
+  var TKEY = 'makepark.net.teacher';
+  var teacher = {
+    watch: function (fn) {
+      if (mode === 'local') {
+        var t = null; try { t = JSON.parse(localStorage.getItem(TKEY)); } catch (e) { /* 없음 */ }
+        teacherUser = t; uid = t && t.uid;
+        fn(t);
+        teacher._fn = fn;
+        return;
+      }
+      fbInit().then(function (auth) {
+        auth.onAuthStateChanged(function (user) {
+          teacherUser = user && !user.isAnonymous ? { uid: user.uid, name: user.displayName || '', email: user.email || '' } : null;
+          uid = teacherUser ? teacherUser.uid : null;
+          if (teacherUser) { var w = teacherWaiters; teacherWaiters = []; w.forEach(function (ok) { ok(mode); }); }
+          fn(teacherUser);
+        });
+      });
+    },
+    // 시험 모드는 이름만으로(이 컴퓨터 안에서만), Firebase 는 구글 계정 창
+    signIn: function (name) {
+      if (mode === 'local') {
+        var nm = String(name || '').trim() || '선생님';
+        var t = { uid: 't_' + studentKey(nm).slice(1), name: nm, email: '' };
+        try { localStorage.setItem(TKEY, JSON.stringify(t)); } catch (e) { /* 무시 */ }
+        teacherUser = t; uid = t.uid;
+        if (teacher._fn) teacher._fn(t);
+        return Promise.resolve(t);
+      }
+      return fbInit().then(function (auth) { return auth.signInWithPopup(new window.firebase.auth.GoogleAuthProvider()); });
+    },
+    signOut: function () {
+      if (mode === 'local') {
+        try { localStorage.removeItem(TKEY); } catch (e) { /* 무시 */ }
+        teacherUser = null; uid = null;
+        if (teacher._fn) teacher._fn(null);
+        return Promise.resolve();
+      }
+      readyP = null;
+      return fbInit().then(function (auth) { return auth.signOut(); });
+    }
+  };
+
+  // ---------- 내 반 목록 (teachers/{uid}/rooms/{code} = { name, created }) ----------
+  var MKEY = 'makepark.net.myrooms';
+  function localMine() { try { return JSON.parse(localStorage.getItem(MKEY)) || {}; } catch (e) { return {}; } }
+  function myRooms() {
+    return ready().then(function () {
+      if (mode === 'local') return localMine()[uid] || {};
+      return fbRef('teachers/' + uid + '/rooms').once('value').then(function (s) { return s.val() || {}; });
+    });
+  }
+  function addMyRoom(code, name) {
+    var v = { name: name, created: Date.now() };
+    if (mode === 'local') { var all = localMine(); (all[uid] = all[uid] || {})[code] = v; try { localStorage.setItem(MKEY, JSON.stringify(all)); } catch (e) { /* 무시 */ } return Promise.resolve(); }
+    return fbRef('teachers/' + uid + '/rooms/' + code).set(v);
+  }
+  // 반 공원 통째로 지우기(학생 기록 포함) + 내 반 목록에서 빼기
+  function deleteRoom(code) {
+    return ready().then(function () {
+      if (mode === 'local') {
+        var r = rooms(); delete r[code]; saveRooms(r); roomChanged();
+        var st = localStudents(); delete st[code]; saveLocalStudents(st);
+        var all = localMine(); if (all[uid]) delete all[uid][code]; try { localStorage.setItem(MKEY, JSON.stringify(all)); } catch (e) { /* 무시 */ }
+        return;
+      }
+      var u = {}, base = 'rooms/' + code + '/';
+      ['players', 'cmd', 'names', 'students', 'claims', 'meta'].forEach(function (k) { u[base + k] = null; });   // meta 는 마지막(권한 확인에 씀)
+      return fb.ref().update(u).then(function () { return fbRef('teachers/' + uid + '/rooms/' + code).remove(); });
+    });
+  }
+  // 반 이름 바꾸기
+  function renameRoom(code, name) {
+    return ready().then(function () {
+      if (mode === 'local') {
+        var r = rooms(); if (r[code]) { r[code].meta.name = name; saveRooms(r); roomChanged(); }
+        var all = localMine(); if (all[uid] && all[uid][code]) { all[uid][code].name = name; try { localStorage.setItem(MKEY, JSON.stringify(all)); } catch (e) { /* 무시 */ } }
+        return;
+      }
+      var u = {}; u['rooms/' + code + '/meta/name'] = name; u['teachers/' + uid + '/rooms/' + code + '/name'] = name;
+      return fb.ref().update(u);
+    });
+  }
+  // 반 학생 수(등록된 닉네임 수)
+  function countStudents(code) {
+    return ready().then(function () {
+      if (mode === 'local') return Object.keys(localStudents()[code] || {}).length;
+      return fbRef('rooms/' + code + '/names').once('value').then(function (s) { return s.numChildren(); });
+    });
+  }
+
   function myId() {
     if (mode === 'firebase') return uid;
     try {
@@ -302,6 +408,8 @@
     mode: mode, ready: ready, myId: myId, createRoom: createRoom, getRoom: getRoom, join: join, watch: watch,
     command: command, setOpen: setOpen, newId: newId, validCode: validCode,
     studentKey: studentKey, studentExists: studentExists, studentLogin: studentLogin, studentSave: studentSave,
-    listStudents: listStudents, resetPin: resetPin, clearStudents: clearStudents, validPin: validPin
+    listStudents: listStudents, resetPin: resetPin, clearStudents: clearStudents, validPin: validPin,
+    teacher: teacher, myRooms: myRooms, deleteRoom: deleteRoom, renameRoom: renameRoom, countStudents: countStudents,
+    isOwner: function (meta) { return !!(meta && uid && meta.owner === uid); }
   };
 })();

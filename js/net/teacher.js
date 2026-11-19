@@ -1,32 +1,85 @@
 /*
  * 메이크파크 선생님 화면 (teacher.html)
- * - 반 공원 만들기 → 반 코드(5자리) / 이미 만든 코드로 다시 열기(이 기기에 기억)
- * - 들어온 학생 목록(닉네임·학년·있는 곳)과 공원 지도 위 위치
- * - 모두 모으기(분수 광장) · 학생 내보내기 · 공원 닫기/다시 열기
+ * 1) 선생님 로그인: Firebase 는 구글 계정(어느 컴퓨터에서든 같은 선생님), 시험 모드는 이름만(이 컴퓨터 안에서)
+ * 2) 내 반 목록: 여러 학교·여러 반을 이름을 붙여 만들고, 눌러서 열기 / 새 반 만들기 / 예전 반 코드로 열기
+ * 3) 반 관리: 반 코드, 지금 들어온 학생(목록·지도 위치), 모두 모으기·내보내기·공원 닫기,
+ *    우리 반 학생 기록(비밀번호 다시 정하기·기록 모두 지우기)·반 이름 바꾸기·반 없애기
  * 연결: js/net/net.js (MPNet)
  */
 (function () {
   'use strict';
   var NET = window.MPNet, PARK = window.MP_PARK;
-  var KEY = 'makepark.teacher';
   var $ = function (id) { return document.getElementById(id); };
-  var S = { code: null, meta: null, handle: null, players: {}, seen: {} };
+  var S = { user: null, code: null, meta: null, handle: null, players: {}, owner: false };
   var WHERE = { park: '공원', coaster: '코스터 익스프레스', ghost: '유령의 집' };
-
-  function remember(code) { try { localStorage.setItem(KEY, JSON.stringify({ code: code })); } catch (e) { /* 무시 */ } }
-  function recall() { try { return (JSON.parse(localStorage.getItem(KEY)) || {}).code || null; } catch (e) { return null; } }
   function msg(id, text) { $(id).textContent = text || ''; }
+  function show(view) { $('tLogin').hidden = view !== 'login'; $('tHome').hidden = view !== 'home'; $('tRoom').hidden = view !== 'room'; }
 
   if (NET.mode === 'local') {
     $('tMode').hidden = false;
-    $('tMode').textContent = '시험 모드: Firebase 설정 전이라 이 컴퓨터의 같은 브라우저 탭끼리만 연결돼요. (설정 방법: docs/firebase-setup.md)';
+    $('tMode').textContent = '시험 모드: Firebase 설정 전이라 이 컴퓨터의 같은 브라우저 탭끼리만 연결되고, 로그인도 이름만으로 해요. (설정 방법: docs/firebase-setup.md)';
+    $('tLocalLogin').hidden = false;
+  } else {
+    $('tGoogle').hidden = false;
   }
 
+  // ---------- 1. 로그인 ----------
+  $('tGoogle').addEventListener('click', function () {
+    msg('tLoginMsg', 'Google 로그인 창을 여는 중…');
+    NET.teacher.signIn().then(null, function (err) {
+      msg('tLoginMsg', err && err.code === 'auth/popup-blocked' ? '팝업이 막혔어요. 브라우저에서 팝업을 허용해 주세요.'
+        : err && err.code === 'auth/unauthorized-domain' ? '이 주소는 Firebase 로그인 허용 목록에 없어요. 설정 안내의 "승인된 도메인"을 확인해 주세요.'
+        : '로그인하지 못했어요. 다시 눌러 주세요.');
+    });
+  });
+  $('tLocalLogin').addEventListener('submit', function (e) { e.preventDefault(); NET.teacher.signIn($('tLocalName').value); });
+  $('tLogout').addEventListener('click', function () {
+    if (S.handle) S.handle.leave();
+    S.handle = null; S.code = null;
+    NET.teacher.signOut();
+  });
+  NET.teacher.watch(function (user) {
+    S.user = user;
+    $('tWho').hidden = !user;
+    if (!user) { show('login'); msg('tLoginMsg', ''); return; }
+    $('tWhoName').textContent = '👩‍🏫 ' + (user.name || user.email || '선생님');
+    if (!$('tName').value) $('tName').value = user.name || '';
+    openHome();
+  });
+
+  // ---------- 2. 내 반 목록 ----------
+  function openHome() {
+    if (S.handle) { S.handle.leave(); S.handle = null; }
+    S.code = null;
+    show('home');
+    var box = $('tMyRooms'); box.textContent = '불러오는 중…';
+    NET.myRooms().then(function (mine) {
+      var codes = Object.keys(mine || {}).sort(function (a, b) { return (mine[b].created || 0) - (mine[a].created || 0); });
+      box.textContent = '';
+      $('tMyCount').textContent = codes.length + '개';
+      $('tMyEmpty').hidden = codes.length > 0;
+      codes.forEach(function (code) {
+        var card = document.createElement('button'); card.type = 'button'; card.className = 't-roomcard';
+        var nm = document.createElement('span'); nm.className = 't-roomcard-name'; nm.textContent = mine[code].name || '우리 반';
+        var cd = document.createElement('span'); cd.className = 't-roomcard-code'; cd.textContent = '반 코드 ' + code;
+        var st = document.createElement('span'); st.className = 't-roomcard-state'; st.textContent = '…';
+        card.appendChild(nm); card.appendChild(cd); card.appendChild(st);
+        card.addEventListener('click', function () { openRoom(code); });
+        box.appendChild(card);
+        Promise.all([NET.getRoom(code), NET.countStudents(code)]).then(function (r) {
+          var meta = r[0];
+          st.textContent = !meta ? '없어진 반' : (meta.open ? '🟢 열림' : '🔴 닫힘') + ' · 학생 ' + r[1] + '명';
+        });
+      });
+    }, function (err) { box.textContent = '반 목록을 불러오지 못했어요: ' + err.message; });
+  }
   $('tCreate').addEventListener('submit', function (e) {
     e.preventDefault();
-    var name = $('tName').value.trim() || '선생님';
-    msg('tSetupMsg', '공원을 만드는 중…');
-    NET.createRoom(name).then(function (code) { open(code); }, function (err) { msg('tSetupMsg', '만들지 못했어요: ' + err.message); });
+    var cls = $('tClass').value.trim(), name = $('tName').value.trim() || (S.user && S.user.name) || '선생님';
+    if (!cls) { msg('tSetupMsg', '반 이름을 적어 주세요. (예: 메이크초 4학년 2반)'); $('tClass').focus(); return; }
+    msg('tSetupMsg', '반 공원을 만드는 중…');
+    NET.createRoom(name, cls).then(function (code) { msg('tSetupMsg', ''); $('tClass').value = ''; openRoom(code); },
+      function (err) { msg('tSetupMsg', '만들지 못했어요: ' + err.message); });
   });
   $('tOld').addEventListener('input', function () { $('tOld').value = $('tOld').value.replace(/\D/g, '').slice(0, 5); });
   $('tOpen').addEventListener('submit', function (e) {
@@ -34,15 +87,17 @@
     var code = $('tOld').value.trim();
     NET.getRoom(code).then(function (meta) {
       if (!meta) { msg('tSetupMsg', '그런 반 공원이 없어요.'); return; }
-      open(code);
+      openRoom(code);
     });
   });
 
-  function open(code) {
+  // ---------- 3. 반 관리 ----------
+  function openRoom(code) {
     if (S.handle) S.handle.leave();
-    S.code = code; S.players = {}; remember(code);
-    $('tSetup').hidden = true; $('tRoom').hidden = false;
-    $('tCode').textContent = code;
+    S.code = code; S.players = {}; S.meta = null;
+    show('room');
+    $('tCode').textContent = code; $('tClassName').textContent = ''; msg('tMsg', '');
+    $('tRecList').textContent = ''; $('tRecCount').textContent = '';
     S.handle = NET.watch(code);
     S.handle.onMeta(function (meta) { S.meta = meta; renderState(); });
     S.handle.onPlayer(function (pid, data) {
@@ -51,12 +106,90 @@
     });
     buildMap();
     render();
-    loadRecords();
+  }
+  function renderState() {
+    var m = S.meta;
+    S.owner = NET.isOwner(m) || (NET.mode === 'local' && m && !m.owner);   // 예전 시험용 반(주인 기록 없음)은 시험 모드에서 관리 가능
+    $('tNotOwner').hidden = !m || S.owner;
+    document.querySelectorAll('#tRoom .owner-only').forEach(function (e) { e.hidden = !S.owner; });
+    $('tRename').hidden = !S.owner;
+    $('tClassName').textContent = m ? (m.name || '이름 없는 반') : '없어진 반';
+    $('tState').textContent = !m ? '이 공원은 없어요' : m.open ? '🟢 열려 있어요 · ' + (m.teacher || '') : '🔴 닫혀 있어요 (학생이 들어올 수 없어요)';
+    $('tToggle').textContent = m && m.open ? '공원 닫기' : '공원 다시 열기';
+    if (S.owner && !S.recLoaded) { S.recLoaded = true; loadRecords(); }
+  }
+  $('tBack').addEventListener('click', function () { S.recLoaded = false; openHome(); });
+  $('tRename').addEventListener('click', function () {
+    var nm = prompt('새 반 이름을 적어 주세요.', (S.meta && S.meta.name) || '');
+    if (nm == null || !nm.trim()) return;
+    NET.renameRoom(S.code, nm.trim().slice(0, 30)).then(function () { msg('tMsg', '반 이름을 바꿨어요.'); });
+  });
+  $('tCopy').addEventListener('click', function () {
+    var t = S.code;
+    (navigator.clipboard ? navigator.clipboard.writeText(t) : Promise.reject()).then(function () { msg('tMsg', '반 코드를 복사했어요.'); }, function () { msg('tMsg', '반 코드: ' + t); });
+  });
+  $('tGather').addEventListener('click', function () {
+    NET.command(S.code, { type: 'gather' }).then(function () { msg('tMsg', '모두 분수 광장으로 불렀어요. 놀이기구 안에 있던 학생도 나와요.'); });
+  });
+  $('tToggle').addEventListener('click', function () {
+    var willOpen = !(S.meta && S.meta.open);
+    if (!willOpen && !confirm('공원을 닫을까요? 들어와 있는 학생은 모두 첫 화면으로 돌아가요. (학생 기록은 그대로예요)')) return;
+    NET.setOpen(S.code, willOpen).then(function () { msg('tMsg', willOpen ? '공원을 다시 열었어요.' : '공원을 닫았어요.'); });
+  });
+  $('tDelete').addEventListener('click', function () {
+    var nm = (S.meta && S.meta.name) || S.code;
+    if (!confirm('"' + nm + '" 반을 없앨까요? 반 코드와 학생 기록이 모두 지워지고 되돌릴 수 없어요.')) return;
+    if (!confirm('정말 없앨까요?')) return;
+    NET.deleteRoom(S.code).then(function () { S.recLoaded = false; openHome(); }, function (err) { msg('tMsg', '없애지 못했어요: ' + err.message); });
+  });
+
+  // ---------- 지도·지금 들어온 학생 ----------
+  var dots = {};
+  function buildMap() {
+    var m = $('tMap'); m.textContent = ''; dots = {};
+    m.style.aspectRatio = PARK.world.width + ' / ' + PARK.world.height;
+    m.style.backgroundImage = 'url(' + PARK.seasons[PARK.defaultSeason].map + ')';
+  }
+  function entranceOf(id) {
+    var f = PARK.facilities.filter(function (x) { return x.id === id; })[0];
+    return f ? f.entrance : { x: 0, y: 0 };
+  }
+  function render() {
+    var ids = Object.keys(S.players).sort(function (a, b) { return (S.players[a].n || '').localeCompare(S.players[b].n || '', 'ko'); });
+    $('tCount').textContent = ids.length + '명';
+    $('tEmpty').hidden = ids.length > 0;
+    var tb = $('tList'); tb.textContent = '';
+    ids.forEach(function (pid) {
+      var d = S.players[pid], tr = document.createElement('tr');
+      [d.n || '?', (d.g || '?') + '학년', WHERE[d.w] || d.w || '공원'].forEach(function (t) { var td = document.createElement('td'); td.textContent = t; tr.appendChild(td); });
+      var td = document.createElement('td');
+      if (S.owner) {
+        var b = document.createElement('button');
+        b.type = 'button'; b.className = 't-kick'; b.textContent = '내보내기';
+        b.addEventListener('click', function () {
+          if (!confirm((d.n || '이 학생') + ' 학생을 공원에서 내보낼까요?')) return;
+          NET.command(S.code, { type: 'kick', target: pid }).then(function () { msg('tMsg', (d.n || '학생') + ' 학생을 내보냈어요.'); });
+        });
+        td.appendChild(b);
+      }
+      tr.appendChild(td); tb.appendChild(tr);
+    });
+    var map = $('tMap');
+    Object.keys(dots).forEach(function (pid) { if (!S.players[pid]) { map.removeChild(dots[pid]); delete dots[pid]; } });
+    ids.forEach(function (pid) {
+      var d = S.players[pid], dot = dots[pid];
+      if (!dot) { dot = dots[pid] = document.createElement('span'); dot.className = 't-dot'; map.appendChild(dot); }
+      var pos = d.w && d.w !== 'park' ? entranceOf(d.w) : d;
+      dot.style.left = (pos.x / PARK.world.width * 100) + '%';
+      dot.style.top = (pos.y / PARK.world.height * 100) + '%';
+      dot.textContent = d.n || '?';
+      dot.classList.toggle('in-ride', !!(d.w && d.w !== 'park'));
+    });
   }
 
   // ---------- 우리 반 학생 기록 ----------
   function loadRecords() {
-    if (!S.code) return;
+    if (!S.code || !S.owner) return;
     NET.listStudents(S.code).then(function (all) {
       var keys = Object.keys(all || {}).sort(function (a, b) { return (all[a].nick || '').localeCompare(all[b].nick || '', 'ko'); });
       $('tRecCount').textContent = keys.length + '명';
@@ -82,77 +215,9 @@
   }
   $('tRecRefresh').addEventListener('click', loadRecords);
   $('tRecClear').addEventListener('click', function () {
-    if (!confirm('우리 반 학생들의 캐릭터·티켓·기록이 모두 지워져요. 되돌릴 수 없어요. 지울까요?')) return;
+    if (!confirm('이 반 학생들의 캐릭터·티켓·기록이 모두 지워져요. 되돌릴 수 없어요. 지울까요?')) return;
     if (!confirm('정말 지울까요? (학년이 끝났을 때만 권해요)')) return;
-    NET.clearStudents(S.code).then(function () { msg('tMsg', '우리 반 학생 기록을 모두 지웠어요.'); loadRecords(); });
+    NET.clearStudents(S.code).then(function () { msg('tMsg', '이 반 학생 기록을 모두 지웠어요.'); loadRecords(); });
   });
-  setInterval(function () { if (S.code && !document.hidden) loadRecords(); }, 15000);
-  function renderState() {
-    var m = S.meta;
-    $('tState').textContent = !m ? '이 공원은 없어요' : m.open ? '🟢 열려 있어요 · ' + (m.teacher || '') : '🔴 닫혀 있어요 (학생이 들어올 수 없어요)';
-    $('tToggle').textContent = m && m.open ? '공원 닫기' : '공원 다시 열기';
-  }
-
-  $('tCopy').addEventListener('click', function () {
-    var t = S.code;
-    (navigator.clipboard ? navigator.clipboard.writeText(t) : Promise.reject()).then(function () { msg('tMsg', '반 코드를 복사했어요.'); }, function () { msg('tMsg', '반 코드: ' + t); });
-  });
-  $('tGather').addEventListener('click', function () {
-    NET.command(S.code, { type: 'gather' }).then(function () { msg('tMsg', '모두 분수 광장으로 불렀어요. 놀이기구 안에 있던 학생도 나와요.'); });
-  });
-  $('tToggle').addEventListener('click', function () {
-    var open = !(S.meta && S.meta.open);
-    if (!open && !confirm('공원을 닫을까요? 들어와 있는 학생은 모두 첫 화면으로 돌아가요.')) return;
-    NET.setOpen(S.code, open).then(function () { msg('tMsg', open ? '공원을 다시 열었어요.' : '공원을 닫았어요.'); });
-  });
-  $('tNew').addEventListener('click', function () {
-    if (S.handle) S.handle.leave();
-    S.handle = null; S.code = null;
-    try { localStorage.removeItem(KEY); } catch (e) { /* 무시 */ }
-    $('tRoom').hidden = true; $('tSetup').hidden = false; msg('tSetupMsg', '');
-  });
-
-  // ---------- 지도·목록 ----------
-  var dots = {};
-  function buildMap() {
-    var m = $('tMap'); m.textContent = ''; dots = {};
-    m.style.aspectRatio = PARK.world.width + ' / ' + PARK.world.height;
-    m.style.backgroundImage = 'url(' + PARK.seasons[PARK.defaultSeason].map + ')';
-  }
-  function render() {
-    var ids = Object.keys(S.players).sort(function (a, b) { return (S.players[a].n || '').localeCompare(S.players[b].n || '', 'ko'); });
-    $('tCount').textContent = ids.length + '명';
-    $('tEmpty').hidden = ids.length > 0;
-    var tb = $('tList'); tb.textContent = '';
-    ids.forEach(function (pid) {
-      var d = S.players[pid], tr = document.createElement('tr');
-      [d.n || '?', (d.g || '?') + '학년', WHERE[d.w] || d.w || '공원'].forEach(function (t) { var td = document.createElement('td'); td.textContent = t; tr.appendChild(td); });
-      var td = document.createElement('td'), b = document.createElement('button');
-      b.type = 'button'; b.className = 't-kick'; b.textContent = '내보내기';
-      b.addEventListener('click', function () {
-        if (!confirm((d.n || '이 학생') + ' 학생을 공원에서 내보낼까요?')) return;
-        NET.command(S.code, { type: 'kick', target: pid }).then(function () { msg('tMsg', (d.n || '학생') + ' 학생을 내보냈어요.'); });
-      });
-      td.appendChild(b); tr.appendChild(td); tb.appendChild(tr);
-    });
-    // 지도 점
-    var map = $('tMap');
-    Object.keys(dots).forEach(function (pid) { if (!S.players[pid]) { map.removeChild(dots[pid]); delete dots[pid]; } });
-    ids.forEach(function (pid) {
-      var d = S.players[pid], dot = dots[pid];
-      if (!dot) { dot = dots[pid] = document.createElement('span'); dot.className = 't-dot'; map.appendChild(dot); }
-      var pos = d.w && d.w !== 'park' ? entranceOf(d.w) : d;
-      dot.style.left = (pos.x / PARK.world.width * 100) + '%';
-      dot.style.top = (pos.y / PARK.world.height * 100) + '%';
-      dot.textContent = d.n || '?';
-      dot.classList.toggle('in-ride', d.w && d.w !== 'park');
-    });
-  }
-  function entranceOf(id) {
-    var f = PARK.facilities.filter(function (x) { return x.id === id; })[0];
-    return f ? f.entrance : { x: 0, y: 0 };
-  }
-
-  var saved = recall();
-  if (saved) NET.getRoom(saved).then(function (meta) { if (meta) open(saved); });
+  setInterval(function () { if (S.code && S.owner && !document.hidden) loadRecords(); }, 15000);
 })();

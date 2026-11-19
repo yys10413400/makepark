@@ -14,70 +14,107 @@
   <main class="t-wrap">
     <header class="t-head">
       <h1>메이크파크 <span>선생님 화면</span></h1>
-      <p id="tMode" class="t-mode" hidden></p>
+      <div id="tWho" class="t-who" hidden>
+        <span id="tWhoName"></span>
+        <button id="tLogout" class="t-link" type="button">로그아웃</button>
+      </div>
     </header>
+    <p id="tMode" class="t-mode" hidden></p>
 
-    <!-- 반 공원 만들기 -->
-    <section id="tSetup" class="t-card t-setup" aria-labelledby="tSetupTitle">
-      <h2 id="tSetupTitle">우리 반 공원 만들기</h2>
-      <p class="t-sub">공원을 만들면 반 코드(숫자 5자리)가 나와요. 학생들은 첫 화면에서 닉네임·학년을 넣고 이 코드로 들어와요.</p>
-      <form id="tCreate" class="t-row" autocomplete="off">
-        <label for="tName">선생님 이름(학생에게 보여요)</label>
-        <input id="tName" class="nick-input" maxlength="20" placeholder="예) 김선생님">
-        <button class="entry-go t-btn" type="submit">공원 만들기</button>
+    <!-- 1. 선생님 로그인 -->
+    <section id="tLogin" class="t-card t-setup" aria-labelledby="tLoginTitle" hidden>
+      <h2 id="tLoginTitle">선생님 로그인</h2>
+      <p class="t-sub">로그인하면 어느 학교 컴퓨터에서든 내가 만든 반 공원을 열고 관리할 수 있어요. 학생은 로그인 없이 반 코드로 들어와요.</p>
+      <button id="tGoogle" class="entry-go t-btn t-google" type="button" hidden>Google 계정으로 로그인</button>
+      <form id="tLocalLogin" class="t-row" autocomplete="off" hidden>
+        <label for="tLocalName">시험용 로그인: 선생님 이름</label>
+        <input id="tLocalName" class="nick-input" maxlength="20" placeholder="예) 김선생님">
+        <button class="entry-go t-btn" type="submit">로그인</button>
       </form>
-      <form id="tOpen" class="t-row" autocomplete="off">
-        <label for="tOld">이미 만든 반 코드로 다시 열기</label>
-        <input id="tOld" class="nick-input" inputmode="numeric" maxlength="5" placeholder="5자리">
-        <button class="profile-cancel t-btn" type="submit">열기</button>
-      </form>
-      <p id="tSetupMsg" class="field-msg" aria-live="polite"></p>
+      <p id="tLoginMsg" class="field-msg" aria-live="polite"></p>
     </section>
 
-    <!-- 반 공원 보기 -->
-    <section id="tRoom" class="t-room" hidden>
-      <div class="t-card t-code">
-        <p class="t-code-label">반 코드</p>
-        <p id="tCode" class="t-code-num"></p>
-        <p id="tState" class="t-state"></p>
-        <div class="t-actions">
-          <button id="tCopy" class="profile-cancel t-btn" type="button">코드 복사</button>
-          <button id="tGather" class="entry-go t-btn" type="button">모두 모으기 (분수 광장)</button>
-          <button id="tToggle" class="profile-cancel t-btn" type="button">공원 닫기</button>
-          <button id="tNew" class="t-link" type="button">다른 공원 만들기</button>
+    <!-- 2. 내 반 목록 -->
+    <section id="tHome" hidden>
+      <div class="t-card">
+        <h2>내 반 <small id="tMyCount"></small></h2>
+        <div id="tMyRooms" class="t-rooms"></div>
+        <p id="tMyEmpty" class="t-empty">아직 만든 반이 없어요. 아래에서 첫 반을 만들어 보세요.</p>
+      </div>
+      <div class="t-card t-newroom">
+        <h2>새 반 만들기</h2>
+        <form id="tCreate" class="t-grid2" autocomplete="off">
+          <label>반 이름 <small>(학교·학년·반, 학생에게 보여요)</small>
+            <input id="tClass" class="nick-input" maxlength="30" placeholder="예) 메이크초 4학년 2반">
+          </label>
+          <label>선생님 이름 <small>(학생에게 보여요)</small>
+            <input id="tName" class="nick-input" maxlength="20" placeholder="예) 김선생님">
+          </label>
+          <button class="entry-go t-btn" type="submit">반 공원 만들기</button>
+        </form>
+        <p id="tSetupMsg" class="field-msg" aria-live="polite"></p>
+        <details class="t-old">
+          <summary>예전에 만든 반 코드로 열기</summary>
+          <form id="tOpen" class="t-inline" autocomplete="off">
+            <input id="tOld" class="nick-input" inputmode="numeric" maxlength="5" placeholder="5자리">
+            <button class="profile-cancel t-btn" type="submit">열기</button>
+          </form>
+        </details>
+      </div>
+    </section>
+
+    <!-- 3. 반 공원 관리 -->
+    <section id="tRoom" hidden>
+      <div class="t-roombar">
+        <button id="tBack" class="profile-cancel t-btn" type="button">← 내 반 목록</button>
+        <h2 id="tClassName" class="t-classname"></h2>
+        <button id="tRename" class="t-link" type="button">이름 바꾸기</button>
+      </div>
+      <p id="tNotOwner" class="t-mode" hidden>이 반은 다른 선생님 계정이 만들었어요. 학생 위치는 볼 수 있지만, 모으기·닫기·학생 기록은 만든 선생님만 할 수 있어요.</p>
+      <div class="t-room">
+        <div class="t-card t-code">
+          <p class="t-code-label">반 코드</p>
+          <p id="tCode" class="t-code-num"></p>
+          <p id="tState" class="t-state"></p>
+          <div class="t-actions">
+            <button id="tCopy" class="profile-cancel t-btn" type="button">코드 복사</button>
+            <button id="tGather" class="entry-go t-btn owner-only" type="button">모두 모으기 (분수 광장)</button>
+            <button id="tToggle" class="profile-cancel t-btn owner-only" type="button">공원 닫기</button>
+          </div>
+          <p id="tMsg" class="t-msg" aria-live="polite"></p>
         </div>
-        <p id="tMsg" class="t-msg" aria-live="polite"></p>
-      </div>
-      <div class="t-card t-mapcard">
-        <h2>공원 지도 <small id="tCount"></small></h2>
-        <div id="tMap" class="t-map" role="img" aria-label="공원 지도 위 학생 위치"></div>
-      </div>
-      <div class="t-card t-listcard">
-        <h2>지금 들어온 학생</h2>
-        <table class="t-list">
-          <thead><tr><th>닉네임</th><th>학년</th><th>있는 곳</th><th></th></tr></thead>
-          <tbody id="tList"></tbody>
-        </table>
-        <p id="tEmpty" class="t-empty">아직 들어온 학생이 없어요. 학생들에게 반 코드를 알려 주세요.</p>
-      </div>
-      <div class="t-card t-recordcard">
-        <h2>우리 반 학생 기록 <small id="tRecCount"></small></h2>
-        <p class="t-sub">학생이 처음 들어올 때 정한 비밀번호 4자리로 어느 기기에서든 자기 캐릭터·티켓·기록을 이어 해요. 비밀번호를 잊으면 여기서 다시 정해 주세요.</p>
-        <table class="t-list">
-          <thead><tr><th>닉네임</th><th>학년</th><th>티켓</th><th>마지막 저장</th><th></th></tr></thead>
-          <tbody id="tRecList"></tbody>
-        </table>
-        <p id="tRecEmpty" class="t-empty">아직 등록한 학생이 없어요.</p>
-        <div class="t-rec-actions">
-          <button id="tRecRefresh" class="profile-cancel t-btn" type="button">새로 보기</button>
-          <button id="tRecClear" class="t-danger" type="button">우리 반 기록 모두 지우기</button>
+        <div class="t-card t-mapcard">
+          <h2>공원 지도 <small id="tCount"></small></h2>
+          <div id="tMap" class="t-map" role="img" aria-label="공원 지도 위 학생 위치"></div>
+        </div>
+        <div class="t-card t-listcard">
+          <h2>지금 들어온 학생</h2>
+          <table class="t-list">
+            <thead><tr><th>닉네임</th><th>학년</th><th>있는 곳</th><th></th></tr></thead>
+            <tbody id="tList"></tbody>
+          </table>
+          <p id="tEmpty" class="t-empty">아직 들어온 학생이 없어요. 학생들에게 반 코드를 알려 주세요.</p>
+        </div>
+        <div class="t-card t-recordcard owner-only">
+          <h2>우리 반 학생 기록 <small id="tRecCount"></small></h2>
+          <p class="t-sub">학생이 처음 들어올 때 정한 비밀번호 4자리로 어느 기기에서든 자기 캐릭터·티켓·기록을 이어 해요. 비밀번호를 잊으면 여기서 다시 정해 주세요.</p>
+          <table class="t-list">
+            <thead><tr><th>닉네임</th><th>학년</th><th>티켓</th><th>마지막 저장</th><th></th></tr></thead>
+            <tbody id="tRecList"></tbody>
+          </table>
+          <p id="tRecEmpty" class="t-empty">아직 등록한 학생이 없어요.</p>
+          <div class="t-rec-actions">
+            <button id="tRecRefresh" class="profile-cancel t-btn" type="button">새로 보기</button>
+            <button id="tRecClear" class="t-danger" type="button">우리 반 기록 모두 지우기</button>
+            <button id="tDelete" class="t-danger" type="button">이 반 없애기</button>
+          </div>
         </div>
       </div>
     </section>
   </main>
 
   <script src="js/data/park-data.js"></script>
-  <script>window.MP_NET_PERSIST = 'local';   // 선생님은 창을 닫았다 열어도 같은 사람(공원 관리 권한 유지)</script>
+  <script>window.MP_NET_ROLE = 'teacher';   // 선생님 화면: 구글 로그인(어느 컴퓨터에서든 같은 선생님)</script>
   <script src="js/net/firebase-config.js"></script>
   <script src="js/net/net.js"></script>
   <script src="js/net/teacher.js"></script>
