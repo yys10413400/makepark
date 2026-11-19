@@ -20,39 +20,41 @@
   function el(tag, cls, text) { var e = document.createElement(tag); if (cls) e.className = cls; if (text != null) e.textContent = text; return e; }
 
   // ---------- '어디로 갈까요?' ----------
+  // 유령의 집 '비밀 규칙' 안내창처럼: 크림색 카드 하나에 제목·한 줄 안내·입력칸·버튼만
   function buildDialog() {
     var wrap = ui.dlg = el('section', 'overlay dim join-overlay'); wrap.hidden = true;
-    var p = el('form', 'entry-panel profile-panel join-panel'); p.setAttribute('role', 'dialog'); p.setAttribute('aria-modal', 'true');
-    p.setAttribute('aria-labelledby', 'joinTitle'); p.noValidate = true; p.autocomplete = 'off';
-    var h = el('h2', 'profile-title', '어디로 갈까요?'); h.id = 'joinTitle'; p.appendChild(h);
-    ui.hello = el('p', 'join-hello'); p.appendChild(ui.hello);
-    var box = el('div', 'join-box');
-    box.appendChild(el('p', 'join-head', '🏫 우리 반 공원'));
-    var lab = el('label', 'join-label', '선생님이 알려 준 반 코드(숫자 5자리)'); lab.htmlFor = 'joinCode'; box.appendChild(lab);
-    ui.code = el('input', 'nick-input join-code'); ui.code.id = 'joinCode'; ui.code.type = 'text';
-    ui.code.inputMode = 'numeric'; ui.code.maxLength = 5; ui.code.placeholder = '예) 48213'; ui.code.autocomplete = 'off';
-    box.appendChild(ui.code);
-    ui.err = el('p', 'field-msg join-err'); ui.err.setAttribute('aria-live', 'polite'); box.appendChild(ui.err);
-    ui.go = el('button', 'entry-go join-go', '우리 반 공원 입장'); ui.go.type = 'submit'; box.appendChild(ui.go);
-    p.appendChild(box);
-    p.appendChild(el('p', 'join-or', '또는'));
-    ui.solo = el('button', 'profile-cancel join-solo', '혼자 둘러보기'); ui.solo.type = 'button'; p.appendChild(ui.solo);
+    function card(titleId, title) {
+      var f = el('form', 'join-card'); f.noValidate = true; f.autocomplete = 'off';
+      f.setAttribute('role', 'dialog'); f.setAttribute('aria-modal', 'true'); f.setAttribute('aria-labelledby', titleId);
+      var h = el('h2', 'join-title', title); h.id = titleId; f.appendChild(h);
+      return f;
+    }
+    // 1단계: 반 코드
+    var p = card('joinTitle', '🏫 우리 반 공원');
+    ui.hello = el('p', 'join-line'); p.appendChild(ui.hello);
+    ui.code = el('input', 'join-input'); ui.code.id = 'joinCode'; ui.code.type = 'text';
+    ui.code.inputMode = 'numeric'; ui.code.maxLength = 5; ui.code.placeholder = '반 코드 5자리'; ui.code.autocomplete = 'off';
+    ui.code.setAttribute('aria-label', '선생님이 알려 준 반 코드(숫자 5자리)');
+    p.appendChild(ui.code);
+    ui.err = el('p', 'join-err'); ui.err.setAttribute('aria-live', 'polite'); p.appendChild(ui.err);
+    var row = el('div', 'join-btns');
+    ui.go = el('button', 'join-btn', '입장하기'); ui.go.type = 'submit'; row.appendChild(ui.go);
+    ui.solo = el('button', 'join-btn light', '혼자 둘러보기'); ui.solo.type = 'button'; row.appendChild(ui.solo);
+    p.appendChild(row);
     // 선생님 화면은 따로 설치하는 '메이크파크 선생님' 앱(teacher.html) — 학생 앱에는 링크를 두지 않음
-    if (NET.mode === 'local') p.appendChild(el('p', 'join-mode', '지금은 시험 모드예요: 이 컴퓨터의 다른 탭끼리만 함께 보여요.'));
+    if (NET.mode === 'local') p.appendChild(el('p', 'join-mode', '시험 모드: 이 컴퓨터의 다른 탭끼리만 함께 보여요.'));
     ui.back = el('button', 'join-back', '← 뒤로'); ui.back.type = 'button'; p.appendChild(ui.back);
     wrap.appendChild(p);
     // 2단계: 비밀번호 4자리 (반 공원에 저장된 내 기록 불러오기)
-    var q = ui.pinForm = el('form', 'entry-panel profile-panel join-panel'); q.hidden = true; q.noValidate = true; q.autocomplete = 'off';
-    q.setAttribute('role', 'dialog'); q.setAttribute('aria-modal', 'true'); q.setAttribute('aria-labelledby', 'pinTitle');
-    var ph = el('h2', 'profile-title', '비밀번호'); ph.id = 'pinTitle'; q.appendChild(ph);
-    ui.pinText = el('p', 'join-hello'); q.appendChild(ui.pinText);
-    var pbox = el('div', 'join-box');
-    var pl = el('label', 'join-label', '숫자 4자리'); pl.htmlFor = 'joinPin'; pbox.appendChild(pl);
-    ui.pin = el('input', 'nick-input join-code'); ui.pin.id = 'joinPin'; ui.pin.inputMode = 'numeric'; ui.pin.maxLength = 4; ui.pin.autocomplete = 'off';
-    pbox.appendChild(ui.pin);
-    ui.pinErr = el('p', 'field-msg join-err'); ui.pinErr.setAttribute('aria-live', 'polite'); pbox.appendChild(ui.pinErr);
-    ui.pinGo = el('button', 'entry-go join-go', '확인'); ui.pinGo.type = 'submit'; pbox.appendChild(ui.pinGo);
-    q.appendChild(pbox);
+    var q = ui.pinForm = card('pinTitle', '🔒 비밀번호'); q.hidden = true;
+    ui.pinText = el('p', 'join-line'); q.appendChild(ui.pinText);
+    ui.pin = el('input', 'join-input'); ui.pin.id = 'joinPin'; ui.pin.inputMode = 'numeric'; ui.pin.maxLength = 4; ui.pin.autocomplete = 'off';
+    ui.pin.placeholder = '숫자 4자리'; ui.pin.setAttribute('aria-label', '비밀번호 숫자 4자리');
+    q.appendChild(ui.pin);
+    ui.pinErr = el('p', 'join-err'); ui.pinErr.setAttribute('aria-live', 'polite'); q.appendChild(ui.pinErr);
+    var qrow = el('div', 'join-btns');
+    ui.pinGo = el('button', 'join-btn', '확인'); ui.pinGo.type = 'submit'; qrow.appendChild(ui.pinGo);
+    q.appendChild(qrow);
     ui.pinBack = el('button', 'join-back', '← 반 코드 다시 넣기'); ui.pinBack.type = 'button'; q.appendChild(ui.pinBack);
     wrap.appendChild(q);
     ui.pin.addEventListener('input', function () { ui.pin.value = ui.pin.value.replace(/\D/g, '').slice(0, 4); ui.pinErr.textContent = ''; });
@@ -65,7 +67,7 @@
   function askRoom(entry, proceed) {
     if (!ui.dlg) buildDialog();
     pending = { entry: entry, proceed: proceed };
-    ui.hello.textContent = entry.name + '님, 오늘은 어디서 놀까요?';
+    ui.hello.textContent = entry.name + '님, 선생님이 알려 준 반 코드를 넣어요.';
     var s = api().readSave() || {};
     ui.code.value = s.roomCode || '';
     ui.err.textContent = ''; ui.go.disabled = false;
@@ -102,8 +104,8 @@
       ui.pin.value = ''; ui.pinErr.textContent = ''; ui.pinGo.disabled = false;
       ui.pin.type = exists ? 'password' : 'text';
       ui.pinText.textContent = exists
-        ? entry.name + '님, 다시 왔군요! 비밀번호 4자리를 넣으면 모은 캐릭터와 기록을 이어서 할 수 있어요.'
-        : entry.name + '님은 ' + S.className + ' 공원에 처음 왔어요! 비밀번호 4자리를 정해 주세요. 다른 기기에서 이어 할 때 써요. 잊지 않게 기억해요!';
+        ? entry.name + '님, 다시 왔군요! 비밀번호를 넣으면 기록을 이어서 해요.'
+        : '처음 왔어요! 비밀번호 4자리를 정해요. 다른 기기에서 이어 할 때 써요.';
       setTimeout(function () { ui.pin.focus(); }, 30);
       ui.pinBack.onclick = function () { showStep('code'); ui.err.textContent = ''; ui.go.disabled = false; ui.code.focus(); };
       ui.pinForm.onsubmit = function (e) {

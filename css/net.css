@@ -1,28 +1,39 @@
-/* 함께하기: '어디로 갈까요?' 창 · 위쪽 반 표시 (입장 화면과 같은 크림·금색 패널) */
-.join-overlay { z-index: 30; }
-.join-panel { width: min(460px, 100%); padding-top: 22px; }
-.join-hello { margin: 4px 0 12px; font-size: 15px; color: var(--e-teal); }
-.join-box {
-  padding: 14px 16px 16px; border-radius: 16px; text-align: left;
-  background: rgba(255, 255, 255, 0.55); border: 2px solid rgba(226, 179, 87, 0.55);
+/* 함께하기: 공원 입장 창 — 유령의 집 '비밀 규칙' 안내창(gk-card)과 같은 크림색 카드·보라 버튼 */
+.join-overlay { z-index: 30; background: rgba(25, 8, 40, 0.5); }
+.join-card {
+  width: min(400px, 100%); padding: 22px 24px 16px; border-radius: 22px; text-align: center;
+  background: #fbf1dc; border: 3px solid #e2b357; box-shadow: 0 8px 0 rgba(40, 10, 60, 0.5);
+  max-height: calc(100% - 8px); overflow: auto;
 }
-.join-head { margin: 0 0 6px; font-size: 19px; color: var(--e-brown); }
-.join-label { display: block; margin-bottom: 6px; font-size: 14px; color: var(--e-brown-soft); }
-.join-code {
-  width: 100%; font-size: 26px; letter-spacing: 0.35em; text-align: center; font-family: var(--font);
+.join-card[hidden] { display: none; }
+.join-title { margin: 0 0 6px; font-size: 26px; font-weight: 400; color: #4a2370; }
+.join-line { margin: 0 0 14px; font-size: 16px; line-height: 1.4; color: #5a3a1c; }
+.join-input {
+  display: block; width: 100%; min-height: 54px; padding: 6px 12px; border-radius: 14px; outline: none;
+  font: inherit; font-size: 28px; letter-spacing: 0.3em; text-align: center; color: #3b2410;
+  background: #fff; border: 2px dashed #d9b878;
 }
-.join-err { min-height: 20px; margin: 6px 0 0; font-size: 14px; }
-.join-go { width: 100%; margin-top: 8px; }
-.join-or { display: flex; align-items: center; gap: 10px; margin: 12px 0; font-size: 14px; color: var(--e-brown-soft); }
-.join-or::before, .join-or::after { content: ""; flex: 1; height: 2px; background: rgba(226, 179, 87, 0.45); }
-.join-solo { width: 100%; }
-.join-teacher { display: inline-block; margin-top: 14px; font-size: 14px; color: var(--e-purple); }
-.join-mode { margin: 10px 0 0; font-size: 12.5px; color: #9a6a20; background: #fff3cf; border-radius: 10px; padding: 6px 10px; }
+.join-input::placeholder { font-size: 18px; letter-spacing: 0; color: #b09670; }
+.join-input:focus { border-style: solid; border-color: #6a3d9a; box-shadow: 0 0 0 3px rgba(106, 61, 154, 0.2); }
+.join-err { min-height: 20px; margin: 6px 0 0; font-size: 14px; color: #c0392b; }
+.join-btns { display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; margin-top: 6px; }
+.join-btn {
+  flex: 1 1 140px; min-height: 50px; padding: 8px 16px; border-radius: 16px; cursor: pointer; touch-action: manipulation;
+  font: inherit; font-size: 20px; line-height: 1.2;
+  background: #6a3d9a; color: #fff6e0; border: 2px solid #f3e3bd; box-shadow: 0 4px 0 #3d1f5c;
+}
+.join-btn:hover:not(:disabled) { background: #7b4cad; }
+.join-btn:active:not(:disabled) { transform: translateY(3px); box-shadow: 0 1px 0 #3d1f5c; }
+.join-btn.light { background: #fff8e8; color: #4a2370; border-color: #d9b878; box-shadow: 0 4px 0 #b79a63; }
+.join-btn.light:hover { background: #fffdf5; }
+.join-btn:disabled { opacity: 0.55; cursor: not-allowed; }
+.join-btn:focus-visible { outline: 3px solid #6a3d9a; outline-offset: 3px; }
+.join-mode { margin: 12px 0 0; font-size: 12.5px; color: #9a6a20; background: #fff3cf; border-radius: 10px; padding: 6px 10px; }
 .join-back {
-  display: block; margin: 12px auto 0; padding: 4px 10px; border: 0; background: none; cursor: pointer;
-  font: inherit; font-size: 14px; color: var(--e-brown-soft);
+  display: block; margin: 10px auto 0; padding: 4px 10px; border: 0; background: none; cursor: pointer;
+  font: inherit; font-size: 14px; color: #8a6a4a;
 }
-.join-back:focus-visible, .join-teacher:focus-visible { outline: 3px solid var(--e-purple); outline-offset: 3px; border-radius: 6px; }
+.join-back:focus-visible { outline: 3px solid #6a3d9a; outline-offset: 3px; border-radius: 6px; }
 
 /* 위쪽: 우리 반 공원 · 친구 수 */
 .room-chip { font-size: 16px; color: var(--e-purple); margin-right: auto; margin-left: 8px; max-width: 34vw; }
