@@ -44,7 +44,7 @@ def enhance(im):
     out = rgb.convert('RGBA'); out.putalpha(a)
     return out
 # 제미나이가 옆모습을 왼쪽을 보게 그린 캐릭터: 옆모습 칸을 좌우로 뒤집어 모두 오른쪽을 보게 맞춤
-SIDE_FACES_LEFT = {'F1', 'F2', 'R1b', 'R1g', 'R4b', 'R4g', 'R5b', 'R5g', 'R6b', 'R6g', 'R7b', 'S2', 'S4', 'S7'}
+SIDE_FACES_LEFT = {'F1', 'F2', 'R1b', 'R1g', 'R4b', 'R5b', 'R6b', 'R6g', 'R7b', 'S1', 'S2', 'S4', 'S7'}
 
 
 def remove_bg(rgb):

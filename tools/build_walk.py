@@ -18,13 +18,13 @@ from build_characters import remove_bg, enhance, ROOT, OUT, JS, PAD
 
 SRC = os.path.join(ROOT, 'assets', 'characters-src', 'walk')
 VIEWS = [('down', 'down'), ('up', 'up'), ('side', 'right')]
-# 다리가 보이는 캐릭터: 앞·뒤 걷는 칸을 만듦. (유령 R5·마법사 S6·공주님 S10 은 옷에 다리가 가려 제외 → 코드로만 걸음)
+# 다리가 보이는 캐릭터: 앞·뒤 걷는 칸을 만듦. (유령 R5 는 천에 다리가 가려 제외 → 코드로만 걸음. 마법사 S6·공주님 S10 은 옷자락 아래 신발만 들어 올림)
 LEGS = ['F1', 'F2', 'R1b', 'R1g', 'R2b', 'R2g', 'R3b', 'R3g', 'R4b', 'R4g', 'R6b', 'R6g', 'R7b', 'R7g',
-        'S1', 'S2', 'S3', 'S4', 'S5', 'S7', 'S8', 'S9']
+        'S1', 'S2', 'S3', 'S4', 'S5', 'S6', 'S7', 'S8', 'S9', 'S10']
 # 옆모습 원본을 색 보정 전 그림으로 받은 캐릭터(이것만 enhance). 나머지는 이미 진하게 만든 그림을 올려 받음
 RAW_SIDE = {'F1', 'F2'}
 # 제미나이가 오른쪽을 보게 그려 준 옆모습(뒤집지 않음)
-SIDE_RIGHT = {'S1'}
+SIDE_RIGHT = {'R4g'}
 
 
 def crop_alpha(rgba):
@@ -41,12 +41,14 @@ def head_width(a):
 
 LEG_CUT = 0.79    # 이 높이(위에서부터 비율) 아래를 종아리·발로 봄
 LEG_LIFT = 0.06   # 들어 올리는 높이(키에 대한 비율)
+# 긴 옷 캐릭터: 옷자락 아래 신발 부분만 [자르는 높이, 들어 올리는 높이]
+LEG_BY = {'S6': (0.90, 0.035), 'S10': (0.92, 0.03)}
 
 
-def lift_leg(stand, foot_x):
+def lift_leg(stand, foot_x, cut_r=LEG_CUT, lift_r=LEG_LIFT):
     """그림 왼쪽 다리의 종아리·발을 위로 살짝 올린 '한 걸음' 그림. 올린 다리는 반바지·치마 밑으로 들어감."""
     h, w = stand.shape[:2]
-    cut, lift = int(h * LEG_CUT), max(2, round(h * LEG_LIFT))
+    cut, lift = int(h * cut_r), max(2, round(h * lift_r))
     top = stand.copy(); top[cut:] = 0
     low = stand.copy(); low[:cut - lift * 3] = 0
     left = low.copy(); left[:, int(foot_x):] = 0
@@ -85,7 +87,7 @@ def main():
             stand = sheet[r[1]:r[1] + r[3], r[0]:r[0] + r[2]]
             if view in ('down', 'up'):
                 # 앞·뒤: 서 있는 그림에서 한쪽 종아리만 살짝 들어 올려 만듦(제미나이 그림은 안짱다리가 됨)
-                im = lift_leg(stand, r[4])
+                im = lift_leg(stand, r[4], *LEG_BY.get(cid, (LEG_CUT, LEG_LIFT)))
                 ims.append((view, im))
                 rects[view] = [x + PAD, PAD, im.width, im.height, r[4], im.height]
                 x += im.width + PAD * 2
