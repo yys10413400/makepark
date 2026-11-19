@@ -155,6 +155,15 @@
     st.appendChild(ui.builder);
     ui.handoff = el('div', 'gk-scene gk-handoff'); ui.handoff.hidden = true;
     st.appendChild(ui.handoff);
+    // 내 티켓: 로비는 왼쪽 위, 검문대는 오른쪽 위(진행 표시 아래). 받으면 숫자가 하나씩 올라감
+    ui.tickets = el('p', 'gk-tickets');
+    ui.tickets.appendChild(el('span', 'gk-tickets-icon', '🎟'));
+    ui.ticketNum = el('b', '', '0');
+    ui.tickets.appendChild(document.createTextNode('티켓 '));
+    ui.tickets.appendChild(ui.ticketNum);
+    ui.tickets.appendChild(document.createTextNode('장'));
+    ui.tickets.setAttribute('aria-live', 'polite');
+    st.appendChild(ui.tickets);
 
     // 그림 미리 불러오기
     ['ghost-idle', 'ghost-hello', 'ghost-think', 'ghost-pass', 'ghost-stop', 'ghost-cheer'].forEach(function (n) { var i = new Image(); i.src = SPR.base + n + '.webp'; });
@@ -215,7 +224,7 @@
     ui.root.hidden = false;
     document.body.classList.add('gate-open');
     showScene('lobby');
-    S.me = { x: 836, y: 900, dir: 'up', moving: false };
+    S.me = { x: 836, y: 822, dir: 'up', moving: false };   // 계단 위(카펫 끝)에서 시작
     S.dest = null; S.keys = {}; S.dialog = false; ui.dialog.hidden = true;
     S.last = performance.now();
     cancelAnimationFrame(S.raf);
@@ -234,6 +243,26 @@
     ui.gate.hidden = name !== 'gate';
     ui.builder.hidden = name !== 'builder';
     ui.handoff.hidden = name !== 'handoff';
+    showTickets();
+  }
+  function ticketCount() { return save().tickets || 0; }
+  // from 을 주면 from → 지금 장수까지 하나씩 올라가며 '+N' 이 떠오름
+  function showTickets(from) {
+    var e = ui.tickets, to = ticketCount();
+    e.hidden = !(S.scene === 'lobby' || S.scene === 'gate');
+    e.className = 'gk-tickets at-' + S.scene;
+    clearTimeout(S.tkTimer);
+    if (from == null || from >= to) { ui.ticketNum.textContent = String(to); return; }
+    var plus = el('span', 'gk-tickets-plus', '+' + (to - from));
+    e.appendChild(plus);
+    setTimeout(function () { if (plus.parentNode) plus.parentNode.removeChild(plus); }, 1600);
+    e.classList.add('gain');
+    var n = from;
+    (function up() {
+      n++; ui.ticketNum.textContent = String(n);
+      if (n < to) S.tkTimer = setTimeout(up, 140);
+      else setTimeout(function () { e.classList.remove('gain'); }, 500);
+    })();
   }
   function toLobby() {
     clearTimeout(S.timer); S.round = null; S.busy = false; if (ui.modal) ui.modal.hidden = true;
@@ -253,7 +282,7 @@
   // 의자·스탠드 탁자·괘종시계 받침
   var BLOCKS = [{ x: 275, y: 448, rx: 95, ry: 30 }, { x: 382, y: 440, rx: 45, ry: 20 }, { x: 565, y: 422, rx: 70, ry: 18 }];
   var GHOST = { x: 1095, y: 520, h: 165 };
-  var EXIT_Y = 840;   // 아래 카펫(입구) 쪽
+  var EXIT_Y = 868;   // 아래 카펫(입구)으로 내려가면 '공원으로 나가기'
   function inPoly(x, y, p) {
     var c = false;
     for (var i = 0, j = p.length - 1; i < p.length; j = i++) {
@@ -572,6 +601,7 @@
       if (!run.rewarded) {
         run.rewarded = true;   // 보상은 판마다 한 번만
         gain = TICKETS.solo + run.stars;
+        var before = ticketCount();
         saved = patchGate(function (g) {
           g.rounds = (g.rounds || 0) + 1;
           if (!g.cleared) { g.cleared = true; newClear = true; }
@@ -579,6 +609,7 @@
           g.best[run.band] = Math.max(g.best[run.band] || 0, run.first);
           return { tickets: (save().tickets || 0) + gain };
         });
+        showTickets(before);
       }
       lines.push('처음에 맞힌 손님 ' + run.first + ' / ' + run.guests + ' · 규칙 맞히기 별 ' + run.stars + ' / ' + STAGES);
       if (gain) lines.push('티켓 ' + gain + '장을 받았어요!');
@@ -590,7 +621,9 @@
       if (!S.friendRewarded) {
         S.friendRewarded = true;   // 보상은 판마다 한 번만
         gain = TICKETS.friend;
+        var before2 = ticketCount();
         saved = patchGate(function (g) { g.rounds = (g.rounds || 0) + 1; return { tickets: (save().tickets || 0) + gain }; });
+        showTickets(before2);
         lines.push('티켓 ' + gain + '장을 받았어요!');
       }
       var maker = S.friend.maker;

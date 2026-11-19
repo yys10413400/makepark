@@ -137,6 +137,23 @@ kbd { font-family: inherit; font-size: 0.75em; padding: 0 0.4em; border-radius: 
 
 .gk-help { right: 9.6%; top: 2.6%; z-index: 6; }
 
+/* 내 티켓 */
+.gk-tickets {
+  position: absolute; z-index: 9; margin: 0; display: flex; align-items: center; gap: 0.4cqw;
+  padding: 0.35cqw 1.1cqw; border-radius: 99px; font-size: 1.3cqw; white-space: nowrap;
+  background: #fbf1dc; color: #4a2370; border: 0.14cqw solid #e2b357; box-shadow: 0 0.25cqw 0 rgba(40, 10, 60, 0.45);
+}
+.gk-tickets b { font-weight: 400; min-width: 1.4em; text-align: center; color: #b3261e; }
+.gk-tickets.at-lobby { left: 1.6%; top: 2.6%; }
+.gk-tickets.at-gate { right: 1.6%; top: 16.6%; }
+.gk-tickets.gain { animation: gk-gain 0.5s ease-in-out infinite alternate; }
+@keyframes gk-gain { to { transform: scale(1.12); box-shadow: 0 0 1.2cqw rgba(255, 210, 63, 0.9); } }
+.gk-tickets-plus {
+  position: absolute; right: 0.6cqw; top: -1.8cqw; font-size: 1.5cqw; color: #ffd23f; text-shadow: 0 0.12cqw 0 #4a2370;
+  animation: gk-plus 1.6s ease-out forwards; pointer-events: none;
+}
+@keyframes gk-plus { from { transform: translateY(1cqw); opacity: 0; } 20% { opacity: 1; } to { transform: translateY(-2cqw); opacity: 0; } }
+
 /* 어떻게 놀아요? */
 .gk-howto { text-align: left; margin: 0.4cqw 0 0.6cqw; }
 .gk-howto-row { display: flex; gap: 1cqw; align-items: flex-start; padding: 0.7cqw 0; border-bottom: 0.1cqw dashed #e0c99c; }
@@ -303,7 +320,7 @@ kbd { font-family: inherit; font-size: 0.75em; padding: 0 0.4em; border-radius: 
 .gk-handoff .gk-choice { font-size: 2cqw; padding: 0.9cqw 3cqw; }
 
 @media (prefers-reduced-motion: reduce) {
-  .gk-ghost, .gk-prompt, .is-hint, .gk-spot, .gk-lcard.pop { animation: none; }
+  .gk-ghost, .gk-prompt, .is-hint, .gk-spot, .gk-lcard.pop, .gk-tickets.gain { animation: none; }
   .gk-spot { filter: drop-shadow(0 0 0.2em #ffd23f); }
   .is-hint { box-shadow: 0 0 0 0.6cqw rgba(255, 214, 90, 0.95); }
   .gk-guest { transition: none; }
