@@ -536,9 +536,9 @@ window.MP_CHAR_SPRITES = {
    "right": [
     461,
     4,
-    228,
+    217,
     297,
-    92.2,
+    96.2,
     297
    ],
    "up": [
@@ -564,10 +564,10 @@ window.MP_CHAR_SPRITES = {
     "right": [
      461,
      4,
-     228,
-     294,
-     93.5,
-     294
+     217,
+     295,
+     97.2,
+     295
     ],
     "up": [
      233,
@@ -1451,4 +1451,4 @@ window.MP_CHAR_SPRITES = {
   }
  }
 };
-window.MP_CHAR_VER = '20261119105327';
+window.MP_CHAR_VER = '20261119105625';
