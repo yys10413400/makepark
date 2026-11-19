@@ -24,7 +24,7 @@ LEGS = ['F1', 'F2', 'R1b', 'R1g', 'R2b', 'R2g', 'R3b', 'R3g', 'R4b', 'R4g', 'R6b
 # 옆모습 원본을 색 보정 전 그림으로 받은 캐릭터(이것만 enhance). 나머지는 이미 진하게 만든 그림을 올려 받음
 RAW_SIDE = {'F1', 'F2'}
 # 제미나이가 오른쪽을 보게 그려 준 옆모습(뒤집지 않음)
-SIDE_RIGHT = {'R4g'}
+SIDE_RIGHT = {'S1', 'R4g'}
 
 
 def crop_alpha(rgba):
