@@ -281,7 +281,7 @@
     [1660, 930], [1075, 930], [1070, 815], [962, 815], [958, 941], [712, 941], [708, 815], [600, 815], [595, 930], [10, 930], [10, 640]];
   // 의자·스탠드 탁자·괘종시계 받침
   var BLOCKS = [{ x: 275, y: 448, rx: 95, ry: 30 }, { x: 382, y: 440, rx: 45, ry: 20 }, { x: 565, y: 422, rx: 70, ry: 18 }];
-  var GHOST = { x: 1095, y: 520, h: 165 };
+  var GHOST = { x: 1095, y: 520, h: 195 };
   var EXIT_Y = 868;   // 아래 카펫(입구)으로 내려가면 '공원으로 나가기'
   function inPoly(x, y, p) {
     var c = false;
@@ -297,9 +297,14 @@
     return gx * gx + gy * gy >= 1;
   }
   // 캐릭터 몸 키: 공원에서 돌아다닐 때 화면에 보이는 크기와 똑같이(그림 좌표로 바꿔서)
-  function charH() {
+  // 캐릭터 몸 키: 공원에서 걸을 때 화면 크기의 1.3배(로비는 방 안을 가까이 그린 그림이라 의자 높이쯤이 자연스러움)
+  // + 원근: 방 안쪽(위)은 조금 작게, 앞쪽(아래)은 조금 크게
+  var LOBBY_SCALE = 1.3, FLOOR_TOP = 432;
+  function charH(y) {
     var r = ui.canvas.getBoundingClientRect(), px = api().charScreenH ? api().charScreenH() : 94;
-    return r.height ? px * IH / r.height : 125;
+    var base = r.height ? px * IH / r.height : 125;
+    var depth = 0.86 + Math.max(0, Math.min(1, (y - FLOOR_TOP) / (IH - FLOOR_TOP))) * 0.32;
+    return base * LOBBY_SCALE * depth;
   }
   var KEYMAP = { ArrowUp: 'up', KeyW: 'up', ArrowDown: 'down', KeyS: 'down', ArrowLeft: 'left', KeyA: 'left', ArrowRight: 'right', KeyD: 'right' };
   function step(dt) {
@@ -354,17 +359,53 @@
     }
   }
   var DEBUG = /[?&]debug=1/.test(location.search);
+  // 로비 조명에 맞춰 그리기(캐릭터 그림 파일은 그대로, 로비에서만):
+  //  색을 조금 빼고 보라빛을 곱한 뒤 머리 쪽에 촛불빛, 아래에 흐릿한 보라 그림자와 반짝이는 바닥에 비친 모습
+  var off = document.createElement('canvas'), offR = document.createElement('canvas');
   function drawMe(c, t) {
     var me = S.me, h = charH(me.y), sid = api().character ? api().character().sid : 'F1';
-    c.save(); c.fillStyle = 'rgba(20,0,40,0.3)';
-    c.beginPath(); c.ellipse(me.x, me.y - 2, h * 0.24, h * 0.07, 0, 0, Math.PI * 2); c.fill(); c.restore();
+    // 부드러운 그림자
+    var sw = h * 0.3, g = c.createRadialGradient(me.x, me.y, 0, me.x, me.y, sw);
+    g.addColorStop(0, 'rgba(30,8,50,0.55)'); g.addColorStop(1, 'rgba(30,8,50,0)');
+    c.save(); c.translate(me.x, me.y); c.scale(1, 0.28); c.translate(-me.x, -me.y);
+    c.fillStyle = g; c.beginPath(); c.arc(me.x, me.y, sw, 0, Math.PI * 2); c.fill(); c.restore();
     if (!window.MPChars) return;
     var opt;
     if (me.moving) {
       var f = Math.floor(t * 7) % 4, side = me.dir === 'left' || me.dir === 'right';
       opt = f % 2 === 0 ? { walk: true, mirror: f === 2 && !side } : { bob: h * 0.02 };
     } else opt = { sy: 1 + Math.sin(t * 2.4) * 0.01 };
-    if (!MPChars.drawSprite(c, sid, me.x, me.y, me.dir, h, opt)) MPChars.drawSprite(c, sid, me.x, me.y, me.dir, h, { bob: opt.bob });
+    // 1) 따로 그린 뒤 색 맞추기
+    var ow = Math.ceil(h * 1.05), oh = Math.ceil(h * 1.15), fx = ow / 2, fy = oh - 2;
+    if (off.width !== ow || off.height !== oh) { off.width = ow; off.height = oh; offR.width = ow; offR.height = oh; }
+    var o = off.getContext('2d');
+    o.globalCompositeOperation = 'source-over'; o.filter = 'none';
+    o.clearRect(0, 0, ow, oh);
+    o.filter = 'saturate(0.82) brightness(0.92)';
+    if (!MPChars.drawSprite(o, sid, fx, fy, me.dir, h, opt)) { opt = { bob: opt.bob }; MPChars.drawSprite(o, sid, fx, fy, me.dir, h, opt); }
+    o.filter = 'none';
+    o.globalCompositeOperation = 'multiply';
+    o.fillStyle = 'rgb(222,200,238)'; o.fillRect(0, 0, ow, oh);
+    var warm = o.createLinearGradient(0, 0, 0, oh);
+    warm.addColorStop(0, 'rgba(255,170,90,0.18)'); warm.addColorStop(0.55, 'rgba(255,170,90,0)');
+    o.globalCompositeOperation = 'screen';
+    o.fillStyle = warm; o.fillRect(0, 0, ow, oh);
+    // 그림 모양 밖으로 번진 색은 지움
+    o.globalCompositeOperation = 'destination-in';
+    MPChars.drawSprite(o, sid, fx, fy, me.dir, h, opt);
+    o.globalCompositeOperation = 'source-over';
+    // 2) 바닥에 비친 모습(아래로 뒤집어 흐리게, 점점 사라지게)
+    var r = offR.getContext('2d');
+    r.clearRect(0, 0, ow, oh);
+    r.save(); r.translate(0, oh); r.scale(1, -1); r.drawImage(off, 0, 0); r.restore();
+    var fade = r.createLinearGradient(0, 0, 0, oh * 0.45);
+    fade.addColorStop(0, 'rgba(0,0,0,0.22)'); fade.addColorStop(1, 'rgba(0,0,0,0)');
+    r.globalCompositeOperation = 'destination-in';
+    r.fillStyle = fade; r.fillRect(0, 0, ow, oh);
+    r.globalCompositeOperation = 'source-over';
+    c.drawImage(offR, me.x - fx, me.y - 2);
+    // 3) 캐릭터
+    c.drawImage(off, me.x - fx, me.y - fy);
   }
   function loop(now) {
     if (!S.open) return;
