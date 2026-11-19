@@ -35,6 +35,18 @@
 }
 .join-back:focus-visible { outline: 3px solid #6a3d9a; outline-offset: 3px; border-radius: 6px; }
 
+/* 가로로 눕힌 휴대폰: 입장 카드도 한 화면에 */
+@media (max-height: 519px) and (orientation: landscape) {
+  .join-overlay { padding: 8px; }
+  .join-card { padding: 12px 20px 8px; border-radius: 18px; }
+  .join-title { font-size: 21px; margin-bottom: 2px; }
+  .join-line { margin-bottom: 8px; font-size: 14px; }
+  .join-input { min-height: 44px; font-size: 24px; }
+  .join-err { min-height: 16px; margin-top: 3px; font-size: 13px; }
+  .join-btn { min-height: 42px; font-size: 18px; }
+  .join-back { margin-top: 4px; }
+}
+
 /* 위쪽: 우리 반 공원 · 친구 수 */
 .room-chip { font-size: 16px; color: var(--e-purple); margin-right: auto; margin-left: 8px; max-width: 34vw; }
 @media (max-width: 720px) { .room-chip { font-size: 13px; max-width: 40vw; } }

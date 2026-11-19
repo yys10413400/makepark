@@ -338,6 +338,28 @@ button.chip:focus-visible { outline: 3px solid var(--mint); outline-offset: 2px;
   .entry-main .entry-storage { position: absolute; left: 0; right: 0; top: 105%; margin: 0; font-size: 1.65cqw; color: #fff; text-shadow: 0 1px 3px rgba(120, 20, 10, 0.9); }
 }
 
+/* ---------- 가로로 눕힌 휴대폰(화면 높이가 낮음): 입장 창이 한 화면에 다 들어오게 ----------
+   부제·안내 줄·성 그림을 빼고, 학년 6개를 한 줄로, 칸과 버튼 높이를 줄임 */
+@media (max-height: 519px) and (orientation: landscape) {
+  #title.entry-overlay { padding: max(8px, env(safe-area-inset-top)) max(12px, env(safe-area-inset-right)) max(8px, env(safe-area-inset-bottom)) max(12px, env(safe-area-inset-left)); }
+  .entry-main { --notch: 12px; width: min(660px, 100%); padding: 20px 22px 12px; }
+  .entry-main .crest-castle, .entry-main .entry-sub, .entry-main .entry-note, .entry-main .bottom-star { display: none; }
+  .entry-main .entry-crest { transform: translate(-50%, -50%); }
+  .entry-main .entry-crest > span { padding: 2px 16px 3px; font-size: 15px; border-width: 2px; }
+  .entry-main .crest-star { width: 14px; height: 14px; margin-top: -6px; }
+  .entry-main .entry-title { font-size: 19px; }
+  .entry-main .entry-welcome { margin: 2px 0 0; font-size: 12px; }
+  .entry-main .nick-row { margin-top: 8px; flex-direction: row; align-items: center; }
+  .entry-main .nick-label { min-width: 70px; font-size: 16px; }
+  .entry-main .nick-input { min-height: 38px; padding: 4px 12px; font-size: 16px; border-width: 2px; }
+  .entry-main .field-msg { min-height: 0.9em; margin: 1px 0 0; padding-left: 82px; font-size: 12px; }
+  .entry-main .grade-legend { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
+  .entry-main .grade-grid { grid-template-columns: repeat(6, 1fr); gap: 6px; padding-left: 0; margin-top: 2px; }
+  .entry-main .grade-opt span { min-height: 36px; font-size: 16px; padding: 2px; }
+  .entry-main .entry-go { min-height: 42px; margin-top: 8px; font-size: 20px; border-width: 3px; }
+  .entry-main .entry-hint { margin-top: 2px; font-size: 12px; min-height: 0; }
+}
+
 @media (prefers-reduced-motion: reduce) { .grade-opt span, .entry-go { transition: none; } }
 
 /* 좁은 화면: 위쪽 버튼이 4개라 닉네임이 보이도록 버튼을 줄임 */
