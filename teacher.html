@@ -102,6 +102,7 @@
           <div class="t-actions">
             <button id="tGather" class="t-btn primary owner-only" type="button">📣 모두 모으기 <small>분수 광장</small></button>
             <button id="tToggle" class="t-btn owner-only" type="button">공원 닫기</button>
+            <button id="tRecOpen" class="t-btn owner-only" type="button">📋 학생 기록 <span id="tRecBadge" class="t-count"></span></button>
           </div>
           <p id="tMsg" class="t-msg" aria-live="polite"></p>
         </div>
@@ -122,17 +123,24 @@
         </div>
       </div>
 
-      <div class="t-card t-recordcard owner-only">
-        <div class="t-card-head">
-          <h2>우리 반 학생 기록</h2><span id="tRecCount" class="t-count"></span>
-          <button id="tRecRefresh" class="t-btn ghost sm t-push" type="button">↻ 새로 보기</button>
+      <!-- 우리 반 학생 기록: '📋 학생 기록' 버튼으로 여는 큰 창 -->
+      <div id="tRecModal" class="t-modal" hidden>
+        <div class="t-card t-recordcard" role="dialog" aria-modal="true" aria-labelledby="tRecTitle">
+          <div class="t-card-head">
+            <h2 id="tRecTitle">우리 반 학생 기록</h2><span id="tRecCount" class="t-count"></span>
+            <button id="tRecRefresh" class="t-btn ghost sm t-push" type="button">↻ 새로 보기</button>
+            <button id="tRecClose" class="t-btn ghost sm t-close" type="button" aria-label="닫기">✕</button>
+          </div>
+          <p class="t-sub">학생은 처음 정한 비밀번호 4자리로 어느 기기에서든 기록을 이어 해요. 잊었으면 여기서 다시 정해 주세요.</p>
+          <div class="t-rec-scroll">
+            <table class="t-table">
+              <thead><tr><th>닉네임</th><th>학년</th><th>티켓</th><th>마지막 저장</th><th></th></tr></thead>
+              <tbody id="tRecList"></tbody>
+            </table>
+            <p id="tRecEmpty" class="t-empty">아직 등록한 학생이 없어요.</p>
+          </div>
+          <p id="tRecMsg" class="t-msg" aria-live="polite"></p>
         </div>
-        <p class="t-sub">학생은 처음 정한 비밀번호 4자리로 어느 기기에서든 기록을 이어 해요. 잊었으면 여기서 다시 정해 주세요.</p>
-        <table class="t-table">
-          <thead><tr><th>닉네임</th><th>학년</th><th>티켓</th><th>마지막 저장</th><th></th></tr></thead>
-          <tbody id="tRecList"></tbody>
-        </table>
-        <p id="tRecEmpty" class="t-empty">아직 등록한 학생이 없어요.</p>
       </div>
 
       <div class="t-danger-zone owner-only">

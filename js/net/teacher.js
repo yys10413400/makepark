@@ -98,7 +98,7 @@
     S.code = code; S.players = {}; S.meta = null;
     show('room');
     $('tCode').textContent = code; $('tClassName').textContent = ''; msg('tMsg', '');
-    $('tRecList').textContent = ''; $('tRecCount').textContent = '';
+    $('tRecList').textContent = ''; $('tRecCount').textContent = ''; $('tRecBadge').textContent = ''; $('tRecModal').hidden = true;
     S.handle = NET.watch(code);
     S.handle.onMeta(function (meta) { S.meta = meta; renderState(); });
     S.handle.onPlayer(function (pid, data) {
@@ -196,6 +196,7 @@
     NET.listStudents(S.code).then(function (all) {
       var keys = Object.keys(all || {}).sort(function (a, b) { return (all[a].nick || '').localeCompare(all[b].nick || '', 'ko'); });
       $('tRecCount').textContent = keys.length + '명';
+      $('tRecBadge').textContent = keys.length + '명';
       $('tRecEmpty').hidden = keys.length > 0;
       var tb = $('tRecList'); tb.textContent = '';
       keys.forEach(function (key) {
@@ -209,14 +210,21 @@
         b.addEventListener('click', function () {
           var pin = prompt((st.nick || '학생') + ' 학생의 새 비밀번호(숫자 4자리)를 넣어 주세요.', '');
           if (pin == null) return;
-          if (!NET.validPin(pin)) { msg('tMsg', '비밀번호는 숫자 4자리예요.'); return; }
-          NET.resetPin(S.code, key, pin).then(function () { msg('tMsg', (st.nick || '학생') + ' 학생의 비밀번호를 ' + pin + '(으)로 바꿨어요.'); });
+          if (!NET.validPin(pin)) { msg('tRecMsg', '비밀번호는 숫자 4자리예요.'); return; }
+          NET.resetPin(S.code, key, pin).then(function () { msg('tRecMsg', (st.nick || '학생') + ' 학생의 비밀번호를 ' + pin + '(으)로 바꿨어요.'); });
         });
         td.appendChild(b); tr.appendChild(td); tb.appendChild(tr);
       });
     }, function (err) { msg('tMsg', '학생 기록을 불러오지 못했어요: ' + err.message); });
   }
   $('tRecRefresh').addEventListener('click', loadRecords);
+  // 학생 기록 창 열기·닫기 (바깥 어두운 곳을 누르거나 Esc 로도 닫힘)
+  function openRecords() { msg('tRecMsg', ''); $('tRecModal').hidden = false; loadRecords(); $('tRecClose').focus(); }
+  function closeRecords() { $('tRecModal').hidden = true; $('tRecOpen').focus(); }
+  $('tRecOpen').addEventListener('click', openRecords);
+  $('tRecClose').addEventListener('click', closeRecords);
+  $('tRecModal').addEventListener('click', function (e) { if (e.target === $('tRecModal')) closeRecords(); });
+  document.addEventListener('keydown', function (e) { if (e.key === 'Escape' && !$('tRecModal').hidden) closeRecords(); });
   $('tRecClear').addEventListener('click', function () {
     if (!confirm('이 반 학생들의 캐릭터·티켓·기록이 모두 지워져요. 되돌릴 수 없어요. 지울까요?')) return;
     if (!confirm('정말 지울까요? (학년이 끝났을 때만 권해요)')) return;
