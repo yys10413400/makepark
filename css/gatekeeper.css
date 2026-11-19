@@ -190,7 +190,28 @@ kbd { font-family: inherit; font-size: 0.75em; padding: 0 0.4em; border-radius: 
 .gk-quiz-opt:hover { background: #f3e8ff; border-color: #6a3d9a; }
 .gk-quiz-text { font-size: 1.2cqw; color: #6e4b2f; }
 
-/* 규칙 공개: 기록판이 보이게 오른쪽에 */
+/* 퀴즈·규칙 공개: 손님 기록판 바로 아래 '판정한 손님' 줄 위에 뜸(기록판은 그대로 보임) */
+.gk-modal.log { background: transparent; pointer-events: none; }
+.gk-modal.log .gk-card {
+  position: absolute; left: 1.2%; top: 46.4%; width: 47.8%; max-height: 52%; pointer-events: auto;
+  padding: 1cqw 1.4cqw 1.2cqw; border-radius: 1.6cqw; animation: gk-pop 0.25s ease-out;
+}
+.gk-modal.log .gk-card-title { font-size: 1.7cqw; margin-bottom: 0.6cqw; }
+.gk-modal.log .gk-quiz { grid-template-columns: repeat(3, 1fr); gap: 0.7cqw; margin: 0; }
+.gk-modal.log .gk-quiz-opt { padding: 0.7cqw 0.5cqw; gap: 0.5cqw; justify-content: center; }
+.gk-modal.log .gk-quiz .gk-formula { gap: 0.35cqw; }
+.gk-modal.log .gk-quiz .gk-fchip { min-width: 3.6cqw; padding: 0.3cqw 0.35cqw; }
+.gk-modal.log .gk-quiz .gk-fchip img, .gk-modal.log .gk-quiz .gk-fchip-x { height: 2.4cqw; }
+.gk-modal.log .gk-quiz .gk-fop { font-size: 1.3cqw; }
+.gk-modal.log .gk-quiz .gk-fres { font-size: 1.2cqw; padding: 0.3cqw 0.8cqw; }
+.gk-modal.log .gk-quiz .gk-fnote { display: none; }   /* 아래 문장에 '나머지는 모두 통과'가 이미 있음 */
+.gk-modal.log .gk-quiz-text { font-size: 1.1cqw; line-height: 1.35; }
+.gk-modal.log .gk-card-rule { font-size: 1.5cqw; padding: 0.6cqw 1cqw; margin-bottom: 0.6cqw; }
+.gk-modal.log .gk-card-line { font-size: 1.2cqw; }
+.gk-modal.log .gk-formula.big { margin: 0 0 0.6cqw; }
+.gk-modal.log .gk-card-btns { margin-top: 0.7cqw; }
+
+/* (예전) 오른쪽 아래 창 */
 .gk-modal.side { justify-content: flex-end; align-items: flex-end; padding: 0 2% 2.4%; background: rgba(25, 8, 40, 0.12); }
 .gk-modal.side .gk-card { width: 44%; }
 .gk-spot { animation: gk-spot 0.9s ease-in-out infinite; z-index: 3; }

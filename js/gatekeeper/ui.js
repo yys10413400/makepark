@@ -510,7 +510,7 @@
       b.appendChild(el('span', 'gk-quiz-text', G.describe(rule)));
       box.appendChild(b);
     });
-    showModal('내 규칙이 뭘까?', ['기록을 보면서 골라 봐!'], [], null, box, 'side');
+    showModal('내 규칙이 뭘까? 기록을 보면서 골라 봐!', [], [], null, box, 'log');
   }
   function answerQuiz(rule) {
     if (S.quizDone) return;
@@ -531,7 +531,7 @@
     else btns.push({ text: '결과 보기', main: true, fn: function () { hideModal(); finishRound(); } });
     var f = formula(R.rule); f.classList.add('big');
     var title = S.mode === 'friend' ? (S.friend.maker === 1 ? '친구 1이' : '친구 2가') + ' 만든 비밀 규칙' : '비밀 규칙!';
-    showModal(title, lines, btns, R.text, f, 'side');
+    showModal(title, lines, btns, R.text, f, 'log');
   }
   // 규칙에 쓰인 배지·소품을 기록 카드에서 반짝이게
   function spotlight(rule) {
@@ -606,9 +606,10 @@
     ui.modal.className = 'gk-modal' + (variant ? ' ' + variant : '');
     var h = el('h2', 'gk-card-title', title); h.id = 'gkModalTitle'; c.setAttribute('aria-labelledby', 'gkModalTitle');
     c.appendChild(h);
-    if (extra && variant === 'side') c.appendChild(extra);
+    var top = variant === 'side' || variant === 'log';
+    if (extra && top) c.appendChild(extra);
     if (ruleText) c.appendChild(el('p', 'gk-card-rule', ruleText));
-    if (extra && variant !== 'side') c.appendChild(extra);
+    if (extra && !top) c.appendChild(extra);
     lines.forEach(function (l) { c.appendChild(el('p', 'gk-card-line', l)); });
     var first = null;
     if (btns.length) {
