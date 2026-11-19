@@ -68,7 +68,8 @@
         box.appendChild(card);
         Promise.all([NET.getRoom(code), NET.countStudents(code)]).then(function (r) {
           var meta = r[0];
-          st.textContent = !meta ? '없어진 반' : (meta.open ? '🟢 열림' : '🔴 닫힘') + ' · 학생 ' + r[1] + '명';
+          st.textContent = !meta ? '없어진 반' : (meta.open ? '● 열림' : '● 닫힘') + ' · 학생 ' + r[1] + '명';
+          st.className = 't-roomcard-state' + (!meta ? '' : meta.open ? ' on' : ' off');
         });
       });
     }, function (err) { box.textContent = '반 목록을 불러오지 못했어요: ' + err.message; });
@@ -114,8 +115,10 @@
     document.querySelectorAll('#tRoom .owner-only').forEach(function (e) { e.hidden = !S.owner; });
     $('tRename').hidden = !S.owner;
     $('tClassName').textContent = m ? (m.name || '이름 없는 반') : '없어진 반';
-    $('tState').textContent = !m ? '이 공원은 없어요' : m.open ? '🟢 열려 있어요 · ' + (m.teacher || '') : '🔴 닫혀 있어요 (학생이 들어올 수 없어요)';
-    $('tToggle').textContent = m && m.open ? '공원 닫기' : '공원 다시 열기';
+    $('tState').textContent = !m ? '이 공원은 없어요' : m.open ? '● 열려 있어요 · ' + (m.teacher || '') : '● 닫혀 있어요 · 학생이 들어올 수 없어요';
+    $('tState').className = 't-state' + (!m ? '' : m.open ? ' on' : ' off');
+    $('tToggle').textContent = m && m.open ? '🔒 공원 닫기' : '🔓 공원 다시 열기';
+    $('tToggle').className = 't-btn owner-only' + (m && !m.open ? ' go' : '');
     if (S.owner && !S.recLoaded) { S.recLoaded = true; loadRecords(); }
   }
   $('tBack').addEventListener('click', function () { S.recLoaded = false; openHome(); });
