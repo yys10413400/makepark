@@ -24,6 +24,7 @@
 | `js/character.js` | 임시 캐릭터(도형). 새 캐릭터 그림을 게임에 넣기 전까지 씁니다. |
 | `js/characters.js` | 캐릭터 목록(무료·건물 보상·티켓 가게), 그리기, 아장아장 걷기 |
 | `assets/characters/`, `js/data/character-sprites.js` | 게임용 캐릭터 그림(앞·뒤·옆 3칸)과 칸 위치·발 기준점. `python tools/build_characters.py`로 만듦 |
+| `tools/clear_arm_gaps.py` | 팔·손과 몸 사이에 갇힌 흰 배경 지우기(기본 남녀 F1·F2). `build_characters.py`·`build_walk.py`로 그림을 다시 만들면 이어서 실행 |
 | `assets/characters-src/` | 캐릭터 원본 그림(제미나이 3칸 시트). 목록·요청서는 `docs/character-art/gemini-prompts.md` |
 | `js/game.js` | 화면, 카메라, 입력, 시설 안내, 저장, 놀이기구 연결 창구(`MP_API`) |
 | `js/coaster/missions.js` | 코스터 익스프레스 미션 데이터(레일 배치·공개 블록·제한·정답 예시). 설계표는 `docs/coaster-missions.md` |

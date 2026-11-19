@@ -1451,4 +1451,4 @@ window.MP_CHAR_SPRITES = {
   }
  }
 };
-window.MP_CHAR_VER = '20261119183926';
+window.MP_CHAR_VER = '20261119184727';
