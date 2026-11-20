@@ -155,7 +155,7 @@
   function onEnter() {
     leave();
     if (!S.code) { setChip(); return; }
-    S.pid = NET.myId(); S.others = {}; S.joinedAt = Date.now();   // 같은 컴퓨터라도 탭마다 다른 사람
+    S.pid = NET.myId(); S.others = {}; S.joinedAt = Date.now(); S.lastCmd = null;   // 같은 컴퓨터라도 탭마다 다른 사람
     S.handle = NET.join(S.code, S.pid, snapshot(true));
     S.last = snapshot(true); S.lastSend = performance.now();
     S.handle.onPlayer(function (pid, data) {
@@ -171,6 +171,15 @@
       setChip();
     });
     S.handle.onCommand(onCommand);
+    // 선생님이 목록에서 나를 지우면(내보내기) 첫 화면으로
+    // (인터넷이 잠깐 끊겨도 서버가 내 기록을 지우므로, 마지막 명령이 '나를 내보내기'일 때만 나감. 아니면 다시 들어감)
+    S.handle.onRemovedMe = function () {
+      if (!S.handle) return;
+      var c = S.lastCmd;
+      if (!S.isTeacher && c && c.type === 'kick' && c.target === S.pid) { api().closeRide && api().closeRide(); kickOut('선생님이 공원에서 내보냈어요.'); return; }
+      if (S.handle.rejoin) S.handle.rejoin();
+      S.last = {}; S.lastSend = 0;   // 다음 tick 에 전체 정보를 다시 보냄
+    };
     S.handle.onMeta(function (meta) {
       if (!S.handle) return;
       if (!meta || !meta.open) kickOut('선생님이 공원을 닫았어요. 다음에 또 만나요!');
@@ -196,7 +205,9 @@
     if (api().toTitle) api().toTitle(msg);
   }
   function onCommand(cmd, initial) {
-    if (initial || !S.handle) return;   // 들어오기 전부터 있던 명령은 무시
+    // 들어오기 전부터 있던 명령은 무시(lastCmd 에도 넣지 않음 — 예전 내보내기로 다시 쫓겨나지 않게)
+    if (initial || !S.handle) return;
+    S.lastCmd = cmd;
     if (cmd.type === 'gather') {
       api().closeRide && api().closeRide();
       var a = Math.random() * Math.PI * 2, r = 30 + Math.random() * 50;

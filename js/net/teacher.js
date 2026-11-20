@@ -174,7 +174,11 @@
         b.type = 'button'; b.className = 't-kick'; b.textContent = '내보내기';
         b.addEventListener('click', function () {
           if (!confirm((d.n || '이 학생') + ' 학생을 공원에서 내보낼까요?')) return;
-          NET.command(S.code, { type: 'kick', target: pid }).then(function () { msg('tMsg', (d.n || '학생') + ' 학생을 내보냈어요.'); });
+          // 1) 학생 기기에 '나가요' 명령 2) 공원 목록에서 바로 지움(기기가 잠들었거나 창이 닫혀 남은 기록도 사라짐)
+          NET.command(S.code, { type: 'kick', target: pid })
+            .then(function () { return NET.removePlayer(S.code, pid); })
+            .then(function () { msg('tMsg', (d.n || '학생') + ' 학생을 내보냈어요.'); },
+              function (err) { msg('tMsg', '내보내지 못했어요: ' + ((err && (err.code || err.message)) || '다시 눌러 주세요')); console.error(err); });
         });
         td.appendChild(b);
       }

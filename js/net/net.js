@@ -95,7 +95,10 @@
         var pr = fbRef(base + '/players');
         on(pr, 'child_added', function (s) { if (s.key !== pid) fn(s.key, s.val()); });
         on(pr, 'child_changed', function (s) { if (s.key !== pid) fn(s.key, s.val()); });
-        on(pr, 'child_removed', function (s) { if (s.key !== pid) fn(s.key, null); });
+        on(pr, 'child_removed', function (s) {
+          if (s.key !== pid) fn(s.key, null);
+          else if (h.onRemovedMe) h.onRemovedMe();   // 선생님이 내 기록을 지움(내보내기)
+        });
       },
       // fn(cmd, initial): 처음 한 번은 '들어오기 전부터 있던 명령'(initial=true) — 학생은 무시함
       onCommand: function (fn) {
@@ -108,6 +111,8 @@
         data.t = window.firebase.database.ServerValue.TIMESTAMP;
         me.update(data);
       },
+      // 연결이 잠깐 끊겨 서버가 내 기록을 지웠을 때: 다시 '끊기면 지우기'를 걸고 다음에 전체 정보를 보냄
+      rejoin: function () { if (me) me.onDisconnect().remove(); },
       leave: function () {
         listeners.forEach(function (l) { l[0].off(l[1], l[2]); });
         listeners = [];
@@ -226,6 +231,13 @@
     return ready().then(function () {
       if (mode === 'local') { var r = rooms(); if (r[code]) { r[code].cmd = cmd; saveRooms(r); roomChanged(); } return; }
       return fbRef('rooms/' + code + '/cmd').set(cmd);
+    });
+  }
+  // 선생님: 학생을 공원 목록에서 바로 지움(학생 기기가 잠들었거나 창이 이미 닫혔어도 사라지게)
+  function removePlayer(code, pid) {
+    return ready().then(function () {
+      if (mode === 'local') return;
+      return fbRef('rooms/' + code + '/players/' + pid).remove();
     });
   }
   function setOpen(code, open) {
@@ -417,7 +429,7 @@
 
   window.MPNet = {
     mode: mode, ready: ready, myId: myId, createRoom: createRoom, getRoom: getRoom, join: join, watch: watch,
-    command: command, setOpen: setOpen, newId: newId, validCode: validCode,
+    command: command, removePlayer: removePlayer, setOpen: setOpen, newId: newId, validCode: validCode,
     studentKey: studentKey, studentExists: studentExists, studentLogin: studentLogin, studentSave: studentSave,
     listStudents: listStudents, resetPin: resetPin, clearStudents: clearStudents, validPin: validPin,
     teacher: teacher, myRooms: myRooms, deleteRoom: deleteRoom, renameRoom: renameRoom, countStudents: countStudents,
