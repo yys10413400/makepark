@@ -13,7 +13,13 @@ window.MP_PARK = {
   // (이전 지도와 개별 장식은 assets/legacy 에 보관만 합니다.)
   defaultSeason: 'christmas',
   seasons: {
-    christmas: { label: '크리스마스', map: 'assets/maps/makepark-christmas.webp' },
+    christmas: {
+      label: '크리스마스', map: 'assets/maps/makepark-christmas.webp',
+      // 이 계절 지도에만 있는 물체(길가 크리스마스트리)는 이 계절에서만 막음. 형식은 아래 walkEdits 와 같음
+      walkEdits: [
+        { op: 'remove', ellipse: { cx: 1042, cy: 312, rx: 18, ry: 20 }, note: '스타 페스티벌 왼쪽 길가 트리' }
+      ]
+    },
     normal: { label: '일반', map: 'assets/maps/makepark-normal.webp' }
   },
 

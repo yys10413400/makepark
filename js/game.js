@@ -7,7 +7,13 @@
   // 지금 쓰는 저장 칸: 기본은 이 기기 기록. 반 공원에 들어가면 그 학생의 반 기록 칸(서버와 함께 저장)으로 바뀜
   var saveKey = SAVE_KEY, saveHook = null;
 
-  var grid = new WalkGrid(window.MP_WALKMASK, PARK);
+  // 걸을 수 있는 영역: 계절마다 따로(공통 walkEdits + 그 계절 지도에만 있는 물체의 walkEdits). 지금 계절 것을 grid 로 씀
+  var grids = {};
+  Object.keys(PARK.seasons).forEach(function (id) {
+    var edits = (PARK.walkEdits || []).concat(PARK.seasons[id].walkEdits || []);
+    grids[id] = new WalkGrid(window.MP_WALKMASK, Object.assign({}, PARK, { walkEdits: edits }));
+  });
+  var grid = grids[PARK.defaultSeason];
   // 캐릭터: 고른 완성형 캐릭터(js/characters.js)로 그리고, 그림을 불러오기 전에는 임시 캐릭터로 그림
   var placeholder = createCharacter(window.MP_CHARACTER);
   var character = window.MPChars ? new MPChars.Walker(Object.assign({ fallback: placeholder }, charSave(readSave()))) : placeholder;
@@ -106,6 +112,14 @@
     if (id === state.season) return;
     fade.from = animate ? state.season : null; fade.t = animate ? 0 : 1;
     state.season = id;
+    grid = grids[id];
+    // 바뀐 계절에서 막힌 자리(예: 트리)에 서 있으면 가장 가까운 길로 옮기고, 예전 경로는 버림
+    var p = state.player;
+    if (!grid.isWalkable(p.x, p.y)) {
+      var t = grid.nearestWalkable(p.x, p.y);
+      if (t) { p.x = t.x; p.y = t.y; }
+    }
+    stopMoving();
     ui.seasonLabel.textContent = PARK.seasons[id].label;
     ui.seasonToggle.setAttribute('aria-label', '계절 바꾸기 (지금: ' + PARK.seasons[id].label + ')');
     // 계절만 저장: 위치·학년·진행 기록은 그대로 둠
@@ -934,7 +948,7 @@
 
   // 개발·검증용 핸들 (게임 동작에는 쓰이지 않음)
   window.MP_DEV = {
-    state: state, cam: cam, grid: grid, park: PARK, character: character,
+    state: state, cam: cam, get grid() { return grid; }, grids: grids, park: PARK, character: character,
     screenToWorld: screenToWorld, worldToScreen: worldToScreen,
     reachAll: function () {
       return PARK.facilities.map(function (f) {
