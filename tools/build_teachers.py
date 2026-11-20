@@ -17,7 +17,7 @@ from PIL import Image, ImageEnhance, ImageFilter
 from scipy import ndimage
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-from build_characters import remove_bg, split3, foot_x  # noqa: E402
+from build_characters import remove_bg, split3  # noqa: E402
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 SRC = os.path.join(ROOT, 'assets', 'teachers-src')
@@ -67,21 +67,27 @@ def enhance(im):
     return out
 
 
-def hip_y(p, side=False):
-    """다리가 시작하는 높이(칸 위에서부터 px). 앞·뒤: 두 다리 사이 틈이 처음 생기는 줄. 옆: 몸 키의 비율로."""
+def body_x(p):
+    """몸 가운데 x: 꼬리가 옆으로 나온 캐릭터(여우·너구리)도 몸통(키의 45~75% 높이) 가운데를 씀."""
     a = p[..., 3] > 100
-    h, w = a.shape
-    if side:
-        return None
-    cx = int(foot_x(p))
+    h = a.shape[0]
+    ys, xs = np.where(a[int(h * 0.45):int(h * 0.75)])
+    return float(np.median(xs)) if len(xs) else p.shape[1] / 2
+
+
+def hip_y(p, cx):
+    """다리가 시작하는 높이(칸 위에서부터 px): 몸 가운데에서 두 다리 사이 틈이 처음 생기는 줄."""
+    a = p[..., 3] > 100
+    h = a.shape[0]
+    c = int(round(cx))
     top = h
     for y in range(h - 1, int(h * 0.55), -1):
-        row = a[y, max(0, cx - 3):cx + 4]
+        row = a[y, max(0, c - 2):c + 3]
         if row.size and not row.any():
             top = y
         elif top < h:
             break
-    return top if top < h else int(h * 0.82)
+    return top if top < h - 4 else int(h * 0.82)
 
 
 def main():
@@ -104,9 +110,9 @@ def main():
         for v, p in zip(VIEWS, panels):
             im = Image.fromarray(p).resize((max(1, round(p.shape[1] * s)), max(1, round(p.shape[0] * s))), Image.LANCZOS)
             arr = np.array(im)
-            fx = foot_x(arr)
+            fx = body_x(arr)
             ims.append(im)
-            hips[v] = hip_y(arr, side=(v == 'right'))
+            hips[v] = hip_y(arr, fx)
             rects[v] = [x + PAD, PAD, im.width, im.height, round(fx, 1), im.height]
             x += im.width + PAD * 2
         # 옆모습은 다리 틈이 없으니 앞모습의 비율을 씀

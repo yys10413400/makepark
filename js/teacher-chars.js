@@ -39,28 +39,41 @@
     var sx = r[0], sy = r[1], w = r[2], hh = r[3], fx = r[4], fy = r[5], hip = r[6] || Math.round(hh * 0.85);
     var legH = hh - hip, img = e.img;
     var a = step == null ? 0 : Math.sin(step * Math.PI * 2);
-    var lift = 9, swing = 10;                     // 그림(300px 키) 기준 px
+    var lift = 7, swing = 7;                      // 그림(300px 키) 기준 px
     var lA = Math.max(0, a) * lift, rA = Math.max(0, -a) * lift;   // 왼발·오른발 들기
-    var bob = step == null ? 0 : Math.abs(a) * 4; // 한 발을 들 때 몸이 살짝 올라감
+    var bob = step == null ? 0 : Math.abs(a) * 2.5; // 한 발을 들 때 몸 전체가 살짝 올라감
     var side = view === 'right';
     ctx.save();
-    ctx.translate(x, y);
+    ctx.translate(x, y - bob * s);                  // 몸과 다리를 함께 올려 엉덩이에 틈이 생기지 않게
     ctx.scale((flip ? -1 : 1) * s, s * (breathe || 1));
-    var cut = Math.round(fx);
-    // 1) 다리 (몸보다 먼저 그려서 이음매를 몸이 덮음)
+    // 1) 몸·머리·손: 그대로
+    ctx.drawImage(img, sx, sy, w, hip, -fx, -fy, w, hip);
+    // 2) 다리: 작은 칸으로 나눠, 칸마다 조금씩 다르게 옮겨 그려 부드럽게 휘게 함 (잘린 자국이 생기지 않게)
+    //    - 위아래: 엉덩이(hip)에서는 0, 발로 갈수록 크게 움직임
+    //    - 좌우: 두 다리 사이(fx)에서는 0, 다리 가운데로 갈수록 커짐 → 가운데에 끊긴 줄이 생기지 않음
     if (legH > 2) {
-      if (side) {
-        // 옆모습: 뒤쪽 다리(왼쪽 절반)와 앞쪽 다리(오른쪽 절반)를 서로 반대로 앞뒤로 내딛음
-        var dx = a * swing;
-        ctx.drawImage(img, sx, sy + hip, cut, legH, -fx - dx, -fy + hip - rA, cut, legH);
-        ctx.drawImage(img, sx + cut, sy + hip, w - cut, legH, -fx + cut + dx, -fy + hip - lA, w - cut, legH);
-      } else {
-        ctx.drawImage(img, sx, sy + hip, cut, legH, -fx, -fy + hip - lA, cut, legH);
-        ctx.drawImage(img, sx + cut, sy + hip, w - cut, legH, -fx + cut, -fy + hip - rA, w - cut, legH);
+      var CW = 4, CH = 4, half = Math.max(8, Math.min(fx, w - fx) * 0.55);
+      for (var yy = 0; yy < legH; yy += CH) {
+        var ch = Math.min(CH, legH - yy), t = (yy + ch / 2) / legH;
+        var wy = t * t * (3 - 2 * t);               // 부드럽게 0 → 1
+        for (var xx = 0; xx < w; xx += CW) {
+          var cw = Math.min(CW, w - xx), d = (xx + cw / 2 - fx) / half;
+          var k = Math.min(1, Math.abs(d)); k = k * k * (3 - 2 * k);
+          var ox = 0, oy;
+          if (side) {
+            // 옆모습: 뒤쪽(왼쪽)·앞쪽(오른쪽) 다리를 서로 반대로 앞뒤로 내딛고, 앞으로 나가는 발을 살짝 듦
+            var sg = d < 0 ? -1 : 1;
+            ox = sg * a * swing * wy * k;
+            oy = -(sg * a > 0 ? Math.abs(a) * lift * 0.6 : 0) * wy * k;
+          } else {
+            oy = -(d < 0 ? lA : rA) * wy * k;
+          }
+          // 이웃 칸 그림을 2px 더 가져와 겹쳐 그려(늘이지 않고) 칸 사이 틈이 보이지 않게
+          var gw = Math.min(cw + 2, w - xx), gh = Math.min(ch + 2, legH - yy);
+          ctx.drawImage(img, sx + xx, sy + hip + yy, gw, gh, -fx + xx + ox, -fy + hip + yy + oy, gw, gh);
+        }
       }
     }
-    // 2) 몸·머리·손 (그대로, 걸음마다 아주 살짝 들썩)
-    ctx.drawImage(img, sx, sy, w, hip + 1, -fx, -fy - bob, w, hip + 1);
     ctx.restore();
     return true;
   }
