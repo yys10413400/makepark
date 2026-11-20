@@ -382,7 +382,9 @@
     o.globalCompositeOperation = 'source-over'; o.filter = 'none';
     o.clearRect(0, 0, ow, oh);
     o.filter = 'saturate(0.82) brightness(0.92)';
-    if (!MPChars.drawSprite(o, sid, fx, fy, me.dir, h, opt)) { opt = { bob: opt.bob }; MPChars.drawSprite(o, sid, fx, fy, me.dir, h, opt); }
+    // 움직이는 걷기 GIF 프레임이 있으면 그것으로, 없으면 걷는 자세 그림으로
+    if (!(me.moving && MPChars.drawAnim && MPChars.drawAnim(o, sid, fx, fy, me.dir, h, t)) &&
+        !MPChars.drawSprite(o, sid, fx, fy, me.dir, h, opt)) { opt = { bob: opt.bob }; MPChars.drawSprite(o, sid, fx, fy, me.dir, h, opt); }
     o.filter = 'none';
     // 그림이 있는 곳에만(source-atop) 보랏빛과 촛불빛을 얹음 — 투명한 가장자리·팔 사이에는 색이 번지지 않음
     o.globalCompositeOperation = 'source-atop';

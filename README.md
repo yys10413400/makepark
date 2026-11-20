@@ -24,6 +24,7 @@
 | `js/character.js` | 임시 캐릭터(도형). 새 캐릭터 그림을 게임에 넣기 전까지 씁니다. |
 | `js/characters.js` | 캐릭터 목록(무료·건물 보상·티켓 가게), 그리기, 아장아장 걷기 |
 | `assets/characters/`, `js/data/character-sprites.js` | 게임용 캐릭터 그림(앞·뒤·옆 3칸)과 칸 위치·발 기준점. `python tools/build_characters.py`로 만듦 |
+| `tools/build_char_anim.py` | 캐릭터 걷기 GIF → 걷기 프레임 시트(`<id>-anim.webp`) |
 | `tools/clear_arm_gaps.py` | 팔·손과 몸 사이에 갇힌 흰 배경 지우기(기본 남녀 F1·F2). `build_characters.py`·`build_walk.py`로 그림을 다시 만들면 이어서 실행 |
 | `assets/characters-src/` | 캐릭터 원본 그림(제미나이 3칸 시트). 목록·요청서는 `docs/character-art/gemini-prompts.md` |
 | `js/game.js` | 화면, 카메라, 입력, 시설 안내, 저장, 놀이기구 연결 창구(`MP_API`) |
@@ -48,6 +49,7 @@
 - 시험: `characters-test.html`에서 26명이 네 방향으로 걷는 모습을 한 번에 봅니다. 게임은 `index.html?test=1`로 열면 모든 캐릭터를 티켓·건물 통과 없이 골라 볼 수 있습니다(티켓·보상 기록은 그대로).
 - 그림: 원본(`assets/characters-src/*.png`)에서 `python tools/build_characters.py`가 배경을 지우고 앞·뒤·옆 3칸으로 잘라 몸 키를 맞춥니다(모자 높이 보정 `HAT`, 왼쪽을 보는 옆모습은 `SIDE_FACES_LEFT`로 뒤집음). 왼쪽으로 걸을 때는 게임에서 옆모습을 뒤집어 그립니다.
 - 걷기: 걷기 칸 그림 없이 걸음마다 살짝 위아래로 움직이고, 옆모습은 가는 쪽으로 조금 숙여 걷습니다(`js/characters.js`의 `Walker.draw`). 지도 위 몸 키는 `DRAW_H`(60px).
+- 걷기 GIF: 기본 남녀(F1·F2)와 건물 보상 R1~R5(남녀)는 제미나이 걷기 GIF(`assets/characters-src/gif/<id>-walk.gif`)에서 끝과 시작이 이어지는 한 걸음(12~17장)을 뽑아 그대로 재생합니다. `python tools/build_char_anim.py`가 `assets/characters/<id>-anim.webp`를 만들고(앞모습 키를 서 있는 그림에 맞춤, 절반 크기 저장), GIF가 없는 캐릭터는 아래 걷는 자세 그림으로 걷습니다.
 - 걷는 자세 그림: 24명(기본 남녀·건물 보상·티켓 가게, `build_walk.py`의 `LEGS`)은 걷는 자세가 있어 [걷는 자세, 서 있기, 반대 발, 서 있기]로 걷습니다. 옆모습은 서 있는 그림을 제미나이에 올려 '다리·팔만 걷는 자세로' 고쳐 받은 원본(`assets/characters-src/walk/<id>_side.png`)을 쓰고, 앞·뒤는 서 있는 그림에서 한쪽 종아리를 살짝 들어 올려 만듭니다(제미나이 그림은 안짱다리처럼 나와서). `python tools/build_walk.py`로 `assets/characters/<id>-walk.webp`를 만들고, 앞·뒤 반대 발은 좌우로 뒤집어 씁니다. 천에 다리가 가려진 꼬마 유령만 걷는 자세 없이 코드로만 걷고, 마법사·공주님은 옷자락 아래 신발만 들어 올립니다(`LEG_BY`).
 
 ## 좌표계

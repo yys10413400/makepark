@@ -1,6 +1,39 @@
 // tools/build_characters.py 가 만듦. 칸: [x, y, 너비, 높이, 발x(칸 안), 발y(칸 안)], 몸 키 300px 기준
 window.MP_CHAR_SPRITES = {
  "F1": {
+  "anim": {
+   "frames": 12,
+   "k": 0.5,
+   "ms": 100,
+   "rowH": 161,
+   "src": "assets/characters/F1-anim.webp",
+   "views": {
+    "down": [
+     4,
+     4,
+     71,
+     153,
+     35.0,
+     153
+    ],
+    "right": [
+     160,
+     4,
+     67,
+     150,
+     34.0,
+     150
+    ],
+    "up": [
+     83,
+     4,
+     69,
+     153,
+     35.0,
+     153
+    ]
+   }
+  },
   "src": "assets/characters/F1.webp",
   "views": {
    "down": [
@@ -59,6 +92,39 @@ window.MP_CHAR_SPRITES = {
   }
  },
  "F2": {
+  "anim": {
+   "frames": 12,
+   "k": 0.5,
+   "ms": 100,
+   "rowH": 161,
+   "src": "assets/characters/F2-anim.webp",
+   "views": {
+    "down": [
+     4,
+     4,
+     70,
+     151,
+     34.0,
+     151
+    ],
+    "right": [
+     159,
+     4,
+     67,
+     151,
+     34.0,
+     151
+    ],
+    "up": [
+     82,
+     4,
+     69,
+     153,
+     34.0,
+     153
+    ]
+   }
+  },
   "src": "assets/characters/F2.webp",
   "views": {
    "down": [
@@ -117,6 +183,39 @@ window.MP_CHAR_SPRITES = {
   }
  },
  "R1b": {
+  "anim": {
+   "frames": 12,
+   "k": 0.5,
+   "ms": 100,
+   "rowH": 169,
+   "src": "assets/characters/R1b-anim.webp",
+   "views": {
+    "down": [
+     4,
+     4,
+     68,
+     161,
+     34.0,
+     161
+    ],
+    "right": [
+     156,
+     4,
+     71,
+     158,
+     36.0,
+     158
+    ],
+    "up": [
+     80,
+     4,
+     68,
+     159,
+     34.0,
+     159
+    ]
+   }
+  },
   "src": "assets/characters/R1b.webp",
   "views": {
    "down": [
@@ -175,6 +274,39 @@ window.MP_CHAR_SPRITES = {
   }
  },
  "R1g": {
+  "anim": {
+   "frames": 13,
+   "k": 0.5,
+   "ms": 100,
+   "rowH": 167,
+   "src": "assets/characters/R1g-anim.webp",
+   "views": {
+    "down": [
+     4,
+     4,
+     68,
+     159,
+     34.0,
+     159
+    ],
+    "right": [
+     157,
+     4,
+     73,
+     158,
+     39.0,
+     158
+    ],
+    "up": [
+     80,
+     4,
+     69,
+     159,
+     33.0,
+     159
+    ]
+   }
+  },
   "src": "assets/characters/R1g.webp",
   "views": {
    "down": [
@@ -233,6 +365,39 @@ window.MP_CHAR_SPRITES = {
   }
  },
  "R2b": {
+  "anim": {
+   "frames": 13,
+   "k": 0.5,
+   "ms": 100,
+   "rowH": 201,
+   "src": "assets/characters/R2b-anim.webp",
+   "views": {
+    "down": [
+     4,
+     4,
+     82,
+     193,
+     39.0,
+     193
+    ],
+    "right": [
+     182,
+     4,
+     82,
+     192,
+     38.0,
+     192
+    ],
+    "up": [
+     94,
+     4,
+     80,
+     193,
+     37.0,
+     193
+    ]
+   }
+  },
   "src": "assets/characters/R2b.webp",
   "views": {
    "down": [
@@ -291,6 +456,39 @@ window.MP_CHAR_SPRITES = {
   }
  },
  "R2g": {
+  "anim": {
+   "frames": 12,
+   "k": 0.5,
+   "ms": 100,
+   "rowH": 202,
+   "src": "assets/characters/R2g-anim.webp",
+   "views": {
+    "down": [
+     4,
+     4,
+     81,
+     193,
+     42.0,
+     193
+    ],
+    "right": [
+     176,
+     4,
+     96,
+     194,
+     39.0,
+     194
+    ],
+    "up": [
+     93,
+     4,
+     75,
+     192,
+     38.0,
+     192
+    ]
+   }
+  },
   "src": "assets/characters/R2g.webp",
   "views": {
    "down": [
@@ -349,6 +547,39 @@ window.MP_CHAR_SPRITES = {
   }
  },
  "R3b": {
+  "anim": {
+   "frames": 14,
+   "k": 0.5,
+   "ms": 100,
+   "rowH": 160,
+   "src": "assets/characters/R3b-anim.webp",
+   "views": {
+    "down": [
+     4,
+     4,
+     68,
+     152,
+     36.0,
+     152
+    ],
+    "right": [
+     157,
+     4,
+     68,
+     150,
+     37.5,
+     150
+    ],
+    "up": [
+     80,
+     4,
+     69,
+     152,
+     33.0,
+     152
+    ]
+   }
+  },
   "src": "assets/characters/R3b.webp",
   "views": {
    "down": [
@@ -407,6 +638,39 @@ window.MP_CHAR_SPRITES = {
   }
  },
  "R3g": {
+  "anim": {
+   "frames": 13,
+   "k": 0.5,
+   "ms": 100,
+   "rowH": 164,
+   "src": "assets/characters/R3g-anim.webp",
+   "views": {
+    "down": [
+     4,
+     4,
+     89,
+     156,
+     43.0,
+     156
+    ],
+    "right": [
+     199,
+     4,
+     71,
+     153,
+     41.0,
+     153
+    ],
+    "up": [
+     101,
+     4,
+     90,
+     156,
+     41.0,
+     156
+    ]
+   }
+  },
   "src": "assets/characters/R3g.webp",
   "views": {
    "down": [
@@ -465,6 +729,39 @@ window.MP_CHAR_SPRITES = {
   }
  },
  "R4b": {
+  "anim": {
+   "frames": 13,
+   "k": 0.5,
+   "ms": 100,
+   "rowH": 161,
+   "src": "assets/characters/R4b-anim.webp",
+   "views": {
+    "down": [
+     4,
+     4,
+     109,
+     152,
+     38.0,
+     152
+    ],
+    "right": [
+     239,
+     4,
+     90,
+     151,
+     50.0,
+     151
+    ],
+    "up": [
+     121,
+     4,
+     110,
+     153,
+     71.0,
+     153
+    ]
+   }
+  },
   "src": "assets/characters/R4b.webp",
   "views": {
    "down": [
@@ -523,6 +820,39 @@ window.MP_CHAR_SPRITES = {
   }
  },
  "R4g": {
+  "anim": {
+   "frames": 12,
+   "k": 0.5,
+   "ms": 100,
+   "rowH": 159,
+   "src": "assets/characters/R4g-anim.webp",
+   "views": {
+    "down": [
+     4,
+     4,
+     139,
+     151,
+     41.0,
+     151
+    ],
+    "right": [
+     240,
+     4,
+     87,
+     151,
+     48.0,
+     151
+    ],
+    "up": [
+     151,
+     4,
+     81,
+     151,
+     27.0,
+     151
+    ]
+   }
+  },
   "src": "assets/characters/R4g.webp",
   "views": {
    "down": [
@@ -581,6 +911,39 @@ window.MP_CHAR_SPRITES = {
   }
  },
  "R5b": {
+  "anim": {
+   "frames": 13,
+   "k": 0.5,
+   "ms": 100,
+   "rowH": 163,
+   "src": "assets/characters/R5b-anim.webp",
+   "views": {
+    "down": [
+     4,
+     4,
+     87,
+     152,
+     43.0,
+     152
+    ],
+    "right": [
+     195,
+     4,
+     83,
+     151,
+     39.0,
+     151
+    ],
+    "up": [
+     99,
+     4,
+     88,
+     155,
+     45.0,
+     155
+    ]
+   }
+  },
   "src": "assets/characters/R5b.webp",
   "views": {
    "down": [
@@ -610,6 +973,39 @@ window.MP_CHAR_SPRITES = {
   }
  },
  "R5g": {
+  "anim": {
+   "frames": 17,
+   "k": 0.5,
+   "ms": 100,
+   "rowH": 178,
+   "src": "assets/characters/R5g-anim.webp",
+   "views": {
+    "down": [
+     4,
+     4,
+     103,
+     168,
+     52.0,
+     168
+    ],
+    "right": [
+     228,
+     4,
+     89,
+     168,
+     47.0,
+     168
+    ],
+    "up": [
+     115,
+     4,
+     105,
+     170,
+     54.0,
+     170
+    ]
+   }
+  },
   "src": "assets/characters/R5g.webp",
   "views": {
    "down": [
@@ -1451,4 +1847,4 @@ window.MP_CHAR_SPRITES = {
   }
  }
 };
-window.MP_CHAR_VER = '20261119184727';
+window.MP_CHAR_VER = '20261120104529';

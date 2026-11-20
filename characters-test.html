@@ -54,10 +54,10 @@
       var sid = C.spriteId(it[0], it[1]);
       var card = document.createElement('div'); card.className = 'card';
       var h = document.createElement('h2');
-      var hasWalk = !!(SPR[sid] && SPR[sid].walk);
+      var hasAnim = !!(SPR[sid] && SPR[sid].anim), hasWalk = hasAnim || !!(SPR[sid] && SPR[sid].walk);
       h.innerHTML = '<span>' + sid + ' · ' + it[2] + '</span>';
       var tag = document.createElement('span'); tag.className = 'tag' + (hasWalk ? '' : ' no');
-      tag.textContent = hasWalk ? '걷는 자세 있음' : '코드로만 걷기';
+      tag.textContent = hasAnim ? 'GIF 걷기' : hasWalk ? '걷는 자세 있음' : '코드로만 걷기';
       h.appendChild(tag);
       var cv = document.createElement('canvas'); cv.width = 640; cv.height = 300;
       card.appendChild(h); card.appendChild(cv); grid.appendChild(card);

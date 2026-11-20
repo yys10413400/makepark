@@ -4,7 +4,8 @@
  * 그림: assets/characters/<id>.webp (tools/build_characters.py 가 제미나이 원본에서 만듦)
  *       칸 위치·발 기준점: js/data/character-sprites.js (window.MP_CHAR_SPRITES)
  * 방향: down(앞) up(뒤) right(옆) 세 칸. 왼쪽은 옆모습을 좌우로 뒤집어 그립니다.
- * 걷기: 걷기 칸 그림 없이, 걸음마다 살짝 위아래로 움직이고 옆모습은 가는 쪽으로 조금 숙여 걷습니다.
+ * 걷기(좋은 것부터): ① 움직이는 걷기 GIF 프레임(<id>-anim.webp) ② 걷는 자세 그림과 서 있기를 번갈아
+ *       ③ 그림이 없으면 걸음마다 살짝 위아래로 움직이고 옆모습은 가는 쪽으로 조금 숙여 걷습니다.
  *
  * 캐릭터 종류
  *  free   : 처음부터 고를 수 있음 (기본 남자아이 F1, 기본 여자아이 F2)
@@ -62,6 +63,34 @@
   }
   function hasWalk(sid) { return !!(SPR[sid] && SPR[sid].walk); }
 
+  // 움직이는 걷기 GIF 프레임(assets/characters/<id>-anim.webp, tools/build_char_anim.py 가 만듦)
+  // 시트: 줄 = 프레임, 칸 = down·up·right. 프레임은 작게(k배) 저장돼 있음. 왼쪽은 옆모습을 뒤집음
+  var anims = {};
+  function loadAnim(sid) {
+    var A = SPR[sid] && SPR[sid].anim;
+    if (!A) return null;
+    var e = anims[sid];
+    if (!e) {
+      e = anims[sid] = { img: new Image(), ok: false };
+      e.img.onload = function () { e.ok = true; };
+      e.img.src = A.src + (window.MP_CHAR_VER ? '?v=' + window.MP_CHAR_VER : '');
+    }
+    return e;
+  }
+  function drawAnim(ctx, sid, x, y, dir, h, t) {
+    var A = SPR[sid] && SPR[sid].anim, e = loadAnim(sid);
+    if (!A || !e || !e.ok) return false;
+    var k = Math.floor(t * 1000 / A.ms) % A.frames;
+    var view = dir === 'up' ? 'up' : dir === 'down' ? 'down' : 'right';
+    var r = A.views[view], s = h / (BODY_H * (A.k || 1));
+    ctx.save();
+    ctx.translate(x, y);
+    ctx.scale((dir === 'left' ? -1 : 1) * s, s);
+    ctx.drawImage(e.img, r[0], r[1] + k * A.rowH, r[2], r[3], -r[4], -r[5], r[2], r[3]);
+    ctx.restore();
+    return true;
+  }
+
   // (x, y) = 발 위치. h = 몸 키(px). 왼쪽은 옆모습을 뒤집음.
   // opt.walk: 걷는 자세 그림(<id>-walk.webp)을 씀, opt.mirror: 좌우를 한 번 더 뒤집음(앞·뒤 모습의 반대 발)
   function drawSprite(ctx, sid, x, y, dir, h, opt) {
@@ -91,12 +120,22 @@
     this.gender = gender === 'girl' ? 'girl' : 'boy';
     this.sid = spriteId(this.id, this.gender);
     load(this.sid);
+    loadAnim(this.sid);   // 걷기 GIF 프레임도 미리
   };
   Object.defineProperty(Walker.prototype, 'isPlaceholder', { get: function () { return !load(this.sid).ok; } });
   Walker.prototype.draw = function (ctx, x, y, dir, moving, t) {
     var e = load(this.sid);
     if (!e.ok) { if (this.fallback) this.fallback.draw(ctx, x, y, dir, moving, t); return; }
     var opt;
+    if (moving && SPR[this.sid] && SPR[this.sid].anim && loadAnim(this.sid).ok) {
+      // 움직이는 걷기 GIF 가 있으면 그 한 걸음 프레임을 GIF 빠르기대로 차례로 보여 줌
+      ctx.save();
+      ctx.fillStyle = 'rgba(30,40,60,0.25)';
+      ctx.beginPath(); ctx.ellipse(x, y - 1, 16, 5.2, 0, 0, Math.PI * 2); ctx.fill();
+      ctx.restore();
+      drawAnim(ctx, this.sid, x, y, dir, DRAW_H, t);
+      return;
+    }
     if (moving && hasWalk(this.sid)) {
       // 걷는 자세 그림이 있으면: [걷는 자세, 서 있기, 반대 발 걷는 자세, 서 있기] 를 돌려 걷기.
       // 앞·뒤 모습의 반대 발은 걷는 자세를 좌우로 뒤집어 씀(옆모습은 두 다리가 같아 보여 그대로).
@@ -128,6 +167,6 @@
 
   window.MPChars = {
     ROSTER: ROSTER, byId: function (id) { return BY_ID[id] || null; },
-    spriteId: spriteId, load: load, drawSprite: drawSprite, Walker: Walker, BODY_H: BODY_H, DRAW_H: DRAW_H
+    spriteId: spriteId, load: load, drawSprite: drawSprite, drawAnim: drawAnim, Walker: Walker, BODY_H: BODY_H, DRAW_H: DRAW_H
   };
 })();

@@ -163,7 +163,7 @@ def best_loop(frames, minlen=10):
     return best[1], best[2]
 
 
-def build_anim(base, path, meta):
+def build_anim(base, path, meta, out_dir=None, web='assets/teachers/', enh=None, by_height=False):
     """움직이는 GIF(앞·뒤·옆 3칸이 함께 걷는 그림) → 한 걸음 묶음을 프레임 시트로.
     시트: 줄 = 프레임, 칸 = down·up·right. 칸마다 모든 프레임에 같은 자르기 상자를 써서 흔들림이 없게 함."""
     from PIL import ImageSequence
@@ -200,6 +200,15 @@ def build_anim(base, path, meta):
     r = meta[base]['views']['down']
     y0, y1, x0, x1 = boxes[0]
     s = head_w(st[r[1]:r[1] + r[3], r[0]:r[0] + r[2]]) / head_w(rgbas[0][y0:y1, x0:x1])
+    if by_height:
+        # 키로 맞추기(학생 캐릭터): 머리 옆에 깃발·마이크가 있으면 머리 폭이 잘못 재어지므로,
+        # 앞모습의 키(프레임마다 잰 키 중 큰 쪽 = 다리를 모은 순간)를 서 있는 그림의 키와 같게
+        hs = []
+        for q in rgbas:
+            ys = np.where((q[y0:y1, x0:x1, 3] > 100).any(axis=1))[0]
+            if len(ys):
+                hs.append(ys.max() - ys.min() + 1)
+        s = r[3] / float(np.percentile(hs, 90))
     s *= ANIM_K      # 공원에서는 작게 그리므로 프레임은 절반 크기로 저장(용량 줄이기)
     cw = [max(1, round((b[3] - b[2]) * s)) for b in boxes]
     ch = [max(1, round((b[1] - b[0]) * s)) for b in boxes]
@@ -217,10 +226,10 @@ def build_anim(base, path, meta):
         for k in range(n):
             im = Image.fromarray(rgbas[k][y0:y1, x0:x1]).resize((cw[i], ch[i]), Image.LANCZOS)
             sheet.paste(im, (colX[i], PAD + k * rowH))
-    sheet = enhance(sheet)
+    sheet = (enh or enhance)(sheet)
     out = base + '-anim.webp'
-    sheet.save(os.path.join(OUT, out), 'WEBP', quality=88, method=6)
-    meta[base]['anim'] = {'src': 'assets/teachers/' + out, 'frames': n, 'ms': dur, 'rowH': rowH, 'k': ANIM_K, 'views': views}
+    sheet.save(os.path.join(out_dir or OUT, out), 'WEBP', quality=88, method=6)
+    meta[base]['anim'] = {'src': web + out, 'frames': n, 'ms': dur, 'rowH': rowH, 'k': ANIM_K, 'views': views}
     print(base, 'anim', i0, '~', i1 - 1, '프레임', n, dur, 'ms', sheet.size)
 
 
