@@ -21,7 +21,7 @@ window.MP_CHAR_SPRITES = {
      4,
      67,
      150,
-     34.0,
+     32.0,
      150
     ],
     "up": [
@@ -112,7 +112,7 @@ window.MP_CHAR_SPRITES = {
      4,
      67,
      151,
-     34.0,
+     32.0,
      151
     ],
     "up": [
@@ -203,7 +203,7 @@ window.MP_CHAR_SPRITES = {
      4,
      71,
      158,
-     36.0,
+     34.0,
      158
     ],
     "up": [
@@ -294,7 +294,7 @@ window.MP_CHAR_SPRITES = {
      4,
      73,
      158,
-     39.0,
+     33.0,
      158
     ],
     "up": [
@@ -385,7 +385,7 @@ window.MP_CHAR_SPRITES = {
      4,
      82,
      192,
-     38.0,
+     43.0,
      192
     ],
     "up": [
@@ -476,7 +476,7 @@ window.MP_CHAR_SPRITES = {
      4,
      96,
      194,
-     39.0,
+     56.0,
      194
     ],
     "up": [
@@ -749,7 +749,7 @@ window.MP_CHAR_SPRITES = {
      4,
      90,
      151,
-     50.0,
+     39.0,
      151
     ],
     "up": [
@@ -840,7 +840,7 @@ window.MP_CHAR_SPRITES = {
      4,
      87,
      151,
-     48.0,
+     38.0,
      151
     ],
     "up": [
@@ -931,7 +931,7 @@ window.MP_CHAR_SPRITES = {
      4,
      83,
      151,
-     39.0,
+     43.0,
      151
     ],
     "up": [
@@ -1847,4 +1847,4 @@ window.MP_CHAR_SPRITES = {
   }
  }
 };
-window.MP_CHAR_VER = '20261120104529';
+window.MP_CHAR_VER = '20261120131843';

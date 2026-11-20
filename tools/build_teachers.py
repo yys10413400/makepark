@@ -163,6 +163,31 @@ def best_loop(frames, minlen=10):
     return best[1], best[2]
 
 
+def face_side(im):
+    """옆모습이 보는 쪽: 머리(위 32%)에서 얼굴 피부색 픽셀의 가운데가 머리 가운데보다 오른쪽이면 +, 왼쪽이면 -.
+    (머리카락·모자는 뒤통수 쪽에 많고 얼굴 피부는 보는 쪽에 있음)"""
+    a = np.asarray(im.convert('RGBA')).astype(float)
+    ys = np.where((a[..., 3] > 100).any(axis=1))[0]
+    if not len(ys):
+        return 0.0
+    top = ys.min()
+    head = a[top:top + max(1, int((ys.max() - top) * 0.32))]
+    al = head[..., 3] > 100
+    r, g, b = head[..., 0], head[..., 1], head[..., 2]
+    skin = al & (r > 200) & (g > 150) & (b > 110) & (r - b > 30) & (r - g < 70)
+    xs, sx = np.where(al)[1], np.where(skin)[1]
+    if len(sx) < 20 or not len(xs):
+        return 0.0
+    return float((sx.mean() - xs.mean()) / (xs.max() - xs.min() + 1))
+
+
+def faces_other_way(im, st, r):
+    """걷기 옆모습(im)이 서 있는 옆모습(st 의 칸 r)과 반대쪽을 보는지(얼굴 피부색 위치로 판단)."""
+    ref = Image.fromarray(np.asarray(st)[r[1]:r[1] + r[3], r[0]:r[0] + r[2]])
+    a, b = face_side(im), face_side(ref)
+    return a * b < 0
+
+
 def build_anim(base, path, meta, out_dir=None, web='assets/teachers/', enh=None, by_height=False):
     """움직이는 GIF(앞·뒤·옆 3칸이 함께 걷는 그림) → 한 걸음 묶음을 프레임 시트로.
     시트: 줄 = 프레임, 칸 = down·up·right. 칸마다 모든 프레임에 같은 자르기 상자를 써서 흔들림이 없게 함."""
@@ -221,10 +246,18 @@ def build_anim(base, path, meta, out_dir=None, web='assets/teachers/', enh=None,
     for i, v in enumerate(VIEWS):
         y0, y1, x0, x1 = boxes[i]
         first = Image.fromarray(rgbas[0][y0:y1, x0:x1]).resize((cw[i], ch[i]), Image.LANCZOS)
+        # 옆모습 방향: 게임은 옆모습이 오른쪽을 본다고 보고 그림(왼쪽으로 갈 때 뒤집음).
+        # 제미나이 GIF 는 왼쪽을 보는 것도 있어서, 서 있는 그림의 옆모습과 견줘 반대면 좌우로 뒤집음
+        flip = v == 'right' and faces_other_way(first, st, meta[base]['views']['right'])
+        if flip:
+            first = first.transpose(Image.FLIP_LEFT_RIGHT)
+            print(base, '걷기 GIF 옆모습이 왼쪽을 봐서 뒤집음')
         fx = body_x(np.array(first))
         views[v] = [colX[i], PAD, cw[i], ch[i], round(fx, 1), ch[i]]
         for k in range(n):
             im = Image.fromarray(rgbas[k][y0:y1, x0:x1]).resize((cw[i], ch[i]), Image.LANCZOS)
+            if flip:
+                im = im.transpose(Image.FLIP_LEFT_RIGHT)
             sheet.paste(im, (colX[i], PAD + k * rowH))
     sheet = (enh or enhance)(sheet)
     out = base + '-anim.webp'
