@@ -52,11 +52,19 @@
       .then(function () { return loadScript(SDK + 'firebase-auth-compat.js'); })
       .then(function () { return loadScript(SDK + 'firebase-database-compat.js'); })
       .then(function () {
-        app = window.firebase.apps.length ? window.firebase.app() : window.firebase.initializeApp(CFG);
+        // 학생은 이름 붙인 따로 된 앱(로그인 저장 칸이 다름)으로 → 같은 브라우저의 선생님 구글 로그인을 건드리지 않음
+        var NAME = ROLE === 'teacher' ? '[DEFAULT]' : 'student';
+        app = window.firebase.apps.filter(function (a) { return a.name === NAME; })[0]
+          || (NAME === '[DEFAULT]' ? window.firebase.initializeApp(CFG) : window.firebase.initializeApp(CFG, NAME));
         fb = app.database();
-        var P = window.firebase.auth.Auth.Persistence;
-        return app.auth().setPersistence(ROLE === 'teacher' ? P.LOCAL : P.SESSION).then(function () { return app.auth(); });
+        var P = window.firebase.auth.Auth.Persistence, auth = app.auth();
+        // 일부 브라우저(앱 안 브라우저·저장 막힘)는 로그인 유지 방식을 못 바꿈 → 그래도 계속 진행
+        return auth.setPersistence(ROLE === 'teacher' ? P.LOCAL : P.SESSION)
+          .then(null, function (err) { console.warn('로그인 유지 방식을 바꾸지 못했어요', err); })
+          .then(function () { return auth; });
       });
+    // 실패하면(인터넷 끊김 등) 다음에 다시 시도할 수 있게 비움 — 그대로 두면 새로고침 전까지 계속 실패함
+    authP.then(null, function () { authP = null; });
     return authP;
   }
   function fbReady() {
@@ -69,9 +77,12 @@
       return readyP;
     }
     readyP = fbInit().then(function (auth) {
-      return (auth.currentUser || auth.signInAnonymously().then(function (c) { return c.user; }))
+      // 학생은 익명 로그인. 같은 브라우저에 선생님(구글)이 로그인돼 있어도 학생은 익명으로 들어감
+      var cur = auth.currentUser;
+      return (cur && cur.isAnonymous ? Promise.resolve(cur) : auth.signInAnonymously().then(function (c) { return c.user; }))
         .then(function (user) { uid = user.uid; return mode; });
     });
+    readyP.then(null, function () { readyP = null; });
     return readyP;
   }
   function fbRef(path) { return fb.ref(path); }

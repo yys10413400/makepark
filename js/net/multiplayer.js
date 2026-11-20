@@ -87,8 +87,10 @@
         return askPin(code, entry);
       }).then(null, function (err) {
         ui.go.disabled = false;
-        ui.err.textContent = '연결하지 못했어요. 인터넷을 확인하고 다시 눌러 주세요.';
-        console.error(err);
+        // 무엇 때문인지 알 수 있게 오류 이름을 작게 덧붙임(선생님이 알려 주기 쉽게)
+        var why = err && (err.code || err.message) ? ' (' + String(err.code || err.message).slice(0, 60) + ')' : '';
+        ui.err.textContent = '연결하지 못했어요. 인터넷을 확인하고 다시 눌러 주세요.' + why;
+        console.error('반 공원 입장 실패', err);
       });
     };
     ui.solo.onclick = function () { S.code = null; S.studentKey = null; api().setSaveSlot(null); ui.dlg.hidden = true; pending.proceed(); };
