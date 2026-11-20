@@ -43,7 +43,7 @@
     if (!e.ok) return false;
     var k = Math.floor(time * 1000 / A.ms) % A.frames;
     var view = dir === 'up' ? 'up' : dir === 'down' ? 'down' : 'right';
-    var r = A.views[view], s = h / BODY_H;
+    var r = A.views[view], s = h / (BODY_H * (A.k || 1));   // 프레임은 작게(k배) 저장돼 있음
     ctx.save();
     ctx.translate(x, y);
     ctx.scale((dir === 'left' ? -1 : 1) * s, s);

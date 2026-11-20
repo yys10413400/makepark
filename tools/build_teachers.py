@@ -129,6 +129,7 @@ def hip_y(p, cx):
 
 
 GIF_DIR = os.path.join(SRC, 'gif')
+ANIM_K = 0.5          # 걷기 프레임 크기: 서 있는 그림(몸 키 300px)의 절반. 공원에서 그리는 크기(약 60~80px)엔 충분
 
 
 def cycle_len(frames):
@@ -180,6 +181,7 @@ def build_anim(base, path, meta):
     r = meta[base]['views']['down']
     y0, y1, x0, x1 = boxes[0]
     s = head_w(st[r[1]:r[1] + r[3], r[0]:r[0] + r[2]]) / head_w(rgbas[0][y0:y1, x0:x1])
+    s *= ANIM_K      # 공원에서는 작게 그리므로 프레임은 절반 크기로 저장(용량 줄이기)
     cw = [max(1, round((b[3] - b[2]) * s)) for b in boxes]
     ch = [max(1, round((b[1] - b[0]) * s)) for b in boxes]
     rowH = max(ch) + PAD * 2
@@ -199,7 +201,7 @@ def build_anim(base, path, meta):
     sheet = enhance(sheet)
     out = base + '-anim.webp'
     sheet.save(os.path.join(OUT, out), 'WEBP', quality=88, method=6)
-    meta[base]['anim'] = {'src': 'assets/teachers/' + out, 'frames': n, 'ms': dur, 'rowH': rowH, 'views': views}
+    meta[base]['anim'] = {'src': 'assets/teachers/' + out, 'frames': n, 'ms': dur, 'rowH': rowH, 'k': ANIM_K, 'views': views}
     print(base, 'anim', n, '프레임', dur, 'ms', sheet.size)
 
 

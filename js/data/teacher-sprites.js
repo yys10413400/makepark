@@ -1,6 +1,39 @@
 // tools/build_teachers.py 가 만듦. 칸: [x, y, 너비, 높이, 발x, 발y, 다리 시작 y(칸 안), 두 다리 사이 틈 있음(1/0)], 몸 키 300px 기준
 window.MP_TEACHER_SPRITES = {
  "bear": {
+  "anim": {
+   "frames": 13,
+   "k": 0.5,
+   "ms": 100,
+   "rowH": 170,
+   "src": "assets/teachers/bear-anim.webp",
+   "views": {
+    "down": [
+     4,
+     4,
+     90,
+     162,
+     44.0,
+     162
+    ],
+    "right": [
+     200,
+     4,
+     78,
+     162,
+     38.0,
+     162
+    ],
+    "up": [
+     102,
+     4,
+     90,
+     162,
+     45.0,
+     162
+    ]
+   }
+  },
   "name": "곰 선생님",
   "src": "assets/teachers/bear.webp",
   "views": {
@@ -37,6 +70,39 @@ window.MP_TEACHER_SPRITES = {
   }
  },
  "fox": {
+  "anim": {
+   "frames": 30,
+   "k": 0.5,
+   "ms": 100,
+   "rowH": 165,
+   "src": "assets/teachers/fox-anim.webp",
+   "views": {
+    "down": [
+     4,
+     4,
+     97,
+     157,
+     48.0,
+     157
+    ],
+    "right": [
+     232,
+     4,
+     100,
+     156,
+     58.0,
+     156
+    ],
+    "up": [
+     109,
+     4,
+     115,
+     155,
+     60.0,
+     155
+    ]
+   }
+  },
   "name": "여우 선생님",
   "src": "assets/teachers/fox.webp",
   "views": {
@@ -73,6 +139,39 @@ window.MP_TEACHER_SPRITES = {
   }
  },
  "hedgehog": {
+  "anim": {
+   "frames": 30,
+   "k": 0.5,
+   "ms": 100,
+   "rowH": 163,
+   "src": "assets/teachers/hedgehog-anim.webp",
+   "views": {
+    "down": [
+     4,
+     4,
+     94,
+     155,
+     46.0,
+     155
+    ],
+    "right": [
+     209,
+     4,
+     99,
+     155,
+     43.0,
+     155
+    ],
+    "up": [
+     106,
+     4,
+     95,
+     155,
+     47.0,
+     155
+    ]
+   }
+  },
   "name": "고슴도치 선생님",
   "src": "assets/teachers/hedgehog.webp",
   "views": {
@@ -109,6 +208,39 @@ window.MP_TEACHER_SPRITES = {
   }
  },
  "rabbit": {
+  "anim": {
+   "frames": 30,
+   "k": 0.5,
+   "ms": 100,
+   "rowH": 164,
+   "src": "assets/teachers/rabbit-anim.webp",
+   "views": {
+    "down": [
+     4,
+     4,
+     80,
+     154,
+     38.5,
+     154
+    ],
+    "right": [
+     182,
+     4,
+     64,
+     156,
+     33.0,
+     156
+    ],
+    "up": [
+     92,
+     4,
+     82,
+     154,
+     38.0,
+     154
+    ]
+   }
+  },
   "name": "토끼 선생님",
   "src": "assets/teachers/rabbit.webp",
   "views": {
@@ -147,33 +279,34 @@ window.MP_TEACHER_SPRITES = {
  "raccoon": {
   "anim": {
    "frames": 13,
+   "k": 0.5,
    "ms": 100,
-   "rowH": 330,
+   "rowH": 169,
    "src": "assets/teachers/raccoon-anim.webp",
    "views": {
     "down": [
      4,
      4,
-     196,
-     320,
-     95.0,
-     320
+     98,
+     160,
+     47.0,
+     160
     ],
     "right": [
-     417,
+     219,
      4,
-     226,
-     322,
-     149.0,
-     322
+     113,
+     161,
+     74.0,
+     161
     ],
     "up": [
-     208,
+     110,
      4,
-     201,
-     320,
-     105.0,
-     320
+     101,
+     160,
+     53.0,
+     160
     ]
    }
   },
@@ -248,6 +381,39 @@ window.MP_TEACHER_SPRITES = {
   }
  },
  "sheep": {
+  "anim": {
+   "frames": 13,
+   "k": 0.5,
+   "ms": 100,
+   "rowH": 168,
+   "src": "assets/teachers/sheep-anim.webp",
+   "views": {
+    "down": [
+     4,
+     4,
+     94,
+     160,
+     47.0,
+     160
+    ],
+    "right": [
+     207,
+     4,
+     78,
+     160,
+     38.0,
+     160
+    ],
+    "up": [
+     106,
+     4,
+     93,
+     160,
+     46.0,
+     160
+    ]
+   }
+  },
   "name": "양 선생님",
   "src": "assets/teachers/sheep.webp",
   "views": {
@@ -284,4 +450,4 @@ window.MP_TEACHER_SPRITES = {
   }
  }
 };
-window.MP_TEACHER_VER = '20261120093920';
+window.MP_TEACHER_VER = '20261120095542';
