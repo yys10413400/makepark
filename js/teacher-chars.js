@@ -4,7 +4,9 @@
  * 그림: assets/teachers/<id>.webp (tools/build_teachers.py 가 제미나이 원본에서 만듦)
  *       칸 위치·발 기준점·다리 시작 높이(hip): js/data/teacher-sprites.js (window.MP_TEACHER_SPRITES)
  * 방향: down(앞) up(뒤) right(옆) 세 칸. 왼쪽은 옆모습을 좌우로 뒤집어 그립니다.
- * 걷기: 선생님들은 손에 물건을 들고 있어서 몸·팔은 그대로 두고 '다리만' 움직입니다.
+ * 걷기(좋은 것부터): ① 움직이는 걷기 GIF 프레임(assets/teachers/<id>-anim.webp)
+ *       ② 걷는 자세 그림 한 장(<id>-walk.webp)과 서 있기를 번갈아 ③ 그림이 없으면 아래처럼 다리만 움직임
+ * 다리만 움직이기: 선생님들은 손에 물건을 들고 있어서 몸·팔은 그대로 두고 '다리만' 움직입니다.
  *       hip 아래를 발 가운데에서 왼쪽·오른쪽 다리로 나눠, 번갈아 살짝 들어 올리고(앞·뒤)
  *       옆모습은 앞뒤로 조금씩 내딛습니다. 몸은 걸음마다 아주 살짝만 들썩입니다.
  */
@@ -30,7 +32,24 @@
   function load(id) {
     if (!SPR[id]) return { ok: false };
     if (SPR[id].walk) loadSrc(SPR[id].walk.src);   // 걷는 자세 그림도 미리
+    if (SPR[id].anim) loadSrc(SPR[id].anim.src);   // 움직이는 걷기(GIF 에서 뽑은 프레임)도 미리
     return loadSrc(SPR[id].src);
+  }
+
+  // 움직이는 걷기 GIF 가 있는 선생님(<동물>-anim): GIF 의 한 걸음 프레임을 그 빠르기대로 차례로 보여 줌
+  // 시트: 줄 = 프레임, 칸 = down·up·right (왼쪽은 옆모습을 뒤집음)
+  function drawAnim(ctx, id, x, y, dir, h, time) {
+    var A = SPR[id].anim, e = loadSrc(A.src);
+    if (!e.ok) return false;
+    var k = Math.floor(time * 1000 / A.ms) % A.frames;
+    var view = dir === 'up' ? 'up' : dir === 'down' ? 'down' : 'right';
+    var r = A.views[view], s = h / BODY_H;
+    ctx.save();
+    ctx.translate(x, y);
+    ctx.scale((dir === 'left' ? -1 : 1) * s, s);
+    ctx.drawImage(e.img, r[0], r[1] + k * A.rowH, r[2], r[3], -r[4], -r[5], r[2], r[3]);
+    ctx.restore();
+    return true;
   }
   function valid(id) { return !!SPR[id]; }
   function first() { return LIST.length ? LIST[0].id : null; }
@@ -59,9 +78,10 @@
   }
 
   // (x, y) = 발 위치. h = 화면에서의 몸 키. step: 0~1 걸음 위치(걷지 않으면 null)
-  function drawTeacher(ctx, id, x, y, dir, h, step, breathe) {
+  function drawTeacher(ctx, id, x, y, dir, h, step, breathe, time) {
     var e = load(id), m = SPR[id];
     if (!e.ok || !m) return false;
+    if (step != null && m.anim && drawAnim(ctx, id, x, y, dir, h, time || 0)) return true;
     if (step != null && m.walk && drawWithWalkPose(ctx, id, x, y, dir, h, step)) return true;
     var view = dir === 'up' ? 'up' : dir === 'down' ? 'down' : 'right';
     var r = m.views[view], s = h / BODY_H, flip = dir === 'left';
@@ -123,7 +143,7 @@
     ctx.fillStyle = 'rgba(30,40,60,0.25)';
     ctx.beginPath(); ctx.ellipse(x, y - 1, 17 * sh, 5.4 * sh, 0, 0, Math.PI * 2); ctx.fill();
     ctx.restore();
-    drawTeacher(ctx, this.id, x, y, dir, DRAW_H, step, moving ? 1 : 1 + Math.sin(t * 2.4) * 0.015);
+    drawTeacher(ctx, this.id, x, y, dir, DRAW_H, step, moving ? 1 : 1 + Math.sin(t * 2.4) * 0.015, t);
   };
 
   // 선생님 화면의 캐릭터 고르기 그림: canvas 에 앞모습을 꽉 차게 그림

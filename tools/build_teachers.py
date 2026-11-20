@@ -128,6 +128,81 @@ def hip_y(p, cx):
     return (top, 1) if top < h - 4 else (int(h * 0.82), 0)
 
 
+GIF_DIR = os.path.join(SRC, 'gif')
+
+
+def cycle_len(frames):
+    """GIF 가 같은 걸음을 되풀이하면, 첫 장과 가장 닮은 장(6장 이후)까지가 한 걸음 묶음."""
+    g = [np.asarray(f.convert('L'), dtype=float) for f in frames]
+    diffs = [np.abs(x - g[0]).mean() for x in g]
+    if len(g) < 8:
+        return len(g)
+    lim = np.median(diffs) * 0.7
+    for k in range(6, len(g) - 1):   # 가장 먼저 첫 장과 다시 닮아지는 곳(골짜기)
+        if diffs[k] < lim and diffs[k] <= diffs[k - 1] and diffs[k] <= diffs[k + 1]:
+            return k
+    return len(g)
+
+
+def build_anim(base, path, meta):
+    """움직이는 GIF(앞·뒤·옆 3칸이 함께 걷는 그림) → 한 걸음 묶음을 프레임 시트로.
+    시트: 줄 = 프레임, 칸 = down·up·right. 칸마다 모든 프레임에 같은 자르기 상자를 써서 흔들림이 없게 함."""
+    from PIL import ImageSequence
+    gif = Image.open(path)
+    frames = [f.convert('RGB') for f in ImageSequence.Iterator(gif)]
+    dur = gif.info.get('duration') or 100
+    n = cycle_len(frames)
+    frames = frames[:n]
+    up = 2   # 작은 GIF 는 2배로 키운 뒤 다듬어야 가장자리가 매끈함
+    rgbas = []
+    for f in frames:
+        rgb = np.array(f.resize((f.width * up, f.height * up), Image.LANCZOS)).astype(float)
+        rgbas.append(remove_bg(clear_floor(rgb)))
+    # 3칸의 경계: 첫 장을 3칸으로 나눈 가운데들 사이
+    a0 = rgbas[0][..., 3] > 40
+    lab, cnt = ndimage.label(a0)
+    sizes = ndimage.sum(a0, lab, range(1, cnt + 1))
+    objs = ndimage.find_objects(lab)
+    big = sorted(np.argsort(sizes)[-3:], key=lambda i: objs[i][1].start)
+    cx = [(objs[i][1].start + objs[i][1].stop) / 2 for i in big]
+    W = a0.shape[1]
+    bounds = [0, (cx[0] + cx[1]) / 2, (cx[1] + cx[2]) / 2, W]
+    union = np.zeros_like(a0)
+    for r in rgbas:
+        union |= r[..., 3] > 40
+    boxes = []
+    for i in range(3):
+        x0, x1 = int(bounds[i]), int(bounds[i + 1])
+        ys, xs = np.where(union[:, x0:x1])
+        boxes.append((ys.min(), ys.max() + 1, x0 + xs.min(), x0 + xs.max() + 1))
+    # 크기: 머리 폭을 서 있는 그림의 앞모습과 같게
+    st = np.array(Image.open(os.path.join(ROOT, meta[base]['src'])))
+    r = meta[base]['views']['down']
+    y0, y1, x0, x1 = boxes[0]
+    s = head_w(st[r[1]:r[1] + r[3], r[0]:r[0] + r[2]]) / head_w(rgbas[0][y0:y1, x0:x1])
+    cw = [max(1, round((b[3] - b[2]) * s)) for b in boxes]
+    ch = [max(1, round((b[1] - b[0]) * s)) for b in boxes]
+    rowH = max(ch) + PAD * 2
+    colX, x = [], 0
+    for w in cw:
+        colX.append(x + PAD); x += w + PAD * 2
+    sheet = Image.new('RGBA', (x, rowH * n), (0, 0, 0, 0))
+    views = {}
+    for i, v in enumerate(VIEWS):
+        y0, y1, x0, x1 = boxes[i]
+        first = Image.fromarray(rgbas[0][y0:y1, x0:x1]).resize((cw[i], ch[i]), Image.LANCZOS)
+        fx = body_x(np.array(first))
+        views[v] = [colX[i], PAD, cw[i], ch[i], round(fx, 1), ch[i]]
+        for k in range(n):
+            im = Image.fromarray(rgbas[k][y0:y1, x0:x1]).resize((cw[i], ch[i]), Image.LANCZOS)
+            sheet.paste(im, (colX[i], PAD + k * rowH))
+    sheet = enhance(sheet)
+    out = base + '-anim.webp'
+    sheet.save(os.path.join(OUT, out), 'WEBP', quality=88, method=6)
+    meta[base]['anim'] = {'src': 'assets/teachers/' + out, 'frames': n, 'ms': dur, 'rowH': rowH, 'views': views}
+    print(base, 'anim', n, '프레임', dur, 'ms', sheet.size)
+
+
 def main():
     os.makedirs(OUT, exist_ok=True)
     ids = sorted(f[:-4] for f in os.listdir(SRC) if f.endswith('.png'))
@@ -174,6 +249,12 @@ def main():
         else:
             meta[tid] = dict(meta.get(tid, {}), src='assets/teachers/' + tid + '.webp', name=NAMES.get(tid, tid), views=rects)
         print(tid, sheet.size, {v: rects[v][2:] for v in VIEWS})
+    # 움직이는 걷기 GIF: assets/teachers-src/gif/<동물>-walk.gif
+    if os.path.isdir(GIF_DIR):
+        for f in sorted(os.listdir(GIF_DIR)):
+            base = f[:-9] if f.endswith('-walk.gif') else None
+            if base and base in meta and (not only or base in only or f[:-4] in only):
+                build_anim(base, os.path.join(GIF_DIR, f), meta)
     with open(JS, 'w', encoding='utf-8') as f:
         f.write('// tools/build_teachers.py 가 만듦. 칸: [x, y, 너비, 높이, 발x, 발y, 다리 시작 y(칸 안), 두 다리 사이 틈 있음(1/0)], 몸 키 ' + str(BODY_H) + 'px 기준\n')
         f.write('window.MP_TEACHER_SPRITES = ' + json.dumps(meta, ensure_ascii=False, indent=1, sort_keys=True) + ';\n')

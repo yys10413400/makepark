@@ -145,6 +145,38 @@ window.MP_TEACHER_SPRITES = {
   }
  },
  "raccoon": {
+  "anim": {
+   "frames": 13,
+   "ms": 100,
+   "rowH": 330,
+   "src": "assets/teachers/raccoon-anim.webp",
+   "views": {
+    "down": [
+     4,
+     4,
+     196,
+     320,
+     95.0,
+     320
+    ],
+    "right": [
+     417,
+     4,
+     226,
+     322,
+     149.0,
+     322
+    ],
+    "up": [
+     208,
+     4,
+     201,
+     320,
+     105.0,
+     320
+    ]
+   }
+  },
   "name": "너구리 선생님",
   "src": "assets/teachers/raccoon.webp",
   "views": {
@@ -252,4 +284,4 @@ window.MP_TEACHER_SPRITES = {
   }
  }
 };
-window.MP_TEACHER_VER = '20261120093313';
+window.MP_TEACHER_VER = '20261120093920';
