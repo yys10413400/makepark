@@ -240,25 +240,29 @@
       o.walker.draw(ctx, o.x, o.y, d.d || 'down', moving, time);
     });
   }
-  function nameTag(ctx, text, x, y, mine, teacher) {
+  // 이름표: 모두 같은 모양(흰 바탕 + 얇은 갈색 글씨), 선생님은 이름 앞에 'GM'
+  function nameTag(ctx, text, x, y) {
     ctx.save();
-    ctx.font = '600 11px Jua, "Malgun Gothic", sans-serif';
+    ctx.font = '400 10.5px "Malgun Gothic", "Apple SD Gothic Neo", "Noto Sans KR", sans-serif';
     ctx.textAlign = 'center'; ctx.textBaseline = 'bottom';
-    var w = ctx.measureText(text).width + 10;
-    ctx.fillStyle = teacher ? 'rgba(196,120,10,0.95)' : mine ? 'rgba(18,131,122,0.92)' : 'rgba(40,24,70,0.82)';
-    var r = 6, bx = x - w / 2, by = y - 15;
-    ctx.beginPath(); ctx.moveTo(bx + r, by); ctx.arcTo(bx + w, by, bx + w, by + 15, r); ctx.arcTo(bx + w, by + 15, bx, by + 15, r);
-    ctx.arcTo(bx, by + 15, bx, by, r); ctx.arcTo(bx, by, bx + w, by, r); ctx.fill();
-    ctx.fillStyle = '#fff8e8'; ctx.fillText(text, x, y - 1.5);
+    var w = ctx.measureText(text).width + 10, hgt = 15;
+    var r = 7, bx = x - w / 2, by = y - hgt;
+    ctx.beginPath(); ctx.moveTo(bx + r, by); ctx.arcTo(bx + w, by, bx + w, by + hgt, r); ctx.arcTo(bx + w, by + hgt, bx, by + hgt, r);
+    ctx.arcTo(bx, by + hgt, bx, by, r); ctx.arcTo(bx, by, bx + w, by, r); ctx.closePath();
+    ctx.shadowColor = 'rgba(60,40,20,0.18)'; ctx.shadowBlur = 2; ctx.shadowOffsetY = 1;
+    ctx.fillStyle = 'rgba(255,255,255,0.95)'; ctx.fill();
+    ctx.shadowColor = 'transparent';
+    ctx.lineWidth = 0.8; ctx.strokeStyle = 'rgba(120,85,50,0.3)'; ctx.stroke();
+    ctx.fillStyle = '#6b4423'; ctx.fillText(text, x, y - 2.5);
     ctx.restore();
   }
   function drawNames(ctx, me) {
     if (!S.handle) return;
     Object.keys(S.others).forEach(function (pid) {
       var o = S.others[pid], d = o.data;
-      if (d && d.w === 'park') nameTag(ctx, (d.tc ? '★ ' : '') + (d.n || '친구'), o.x, o.y - 64, false, !!d.tc);
+      if (d && d.w === 'park') nameTag(ctx, (d.tc ? 'GM ' : '') + (d.n || '친구'), o.x, o.y - 64);
     });
-    if (me) nameTag(ctx, (S.isTeacher ? '★ ' : '') + me.nickname, me.x, me.y - 64, true, S.isTeacher);
+    if (me) nameTag(ctx, (S.isTeacher ? 'GM ' : '') + me.nickname, me.x, me.y - 64);
   }
 
   // ---------- 위쪽 반 표시 ----------
@@ -270,7 +274,7 @@
     var all = every.filter(function (d) { return !d.tc; }), teacherIn = every.length > all.length;
     var inRide = all.filter(function (d) { return d.w !== 'park'; }).length;
     chip.hidden = false;
-    chip.textContent = '🏫 ' + (S.className || S.code + '반') + ' · ' + (S.isTeacher ? '학생 ' : '친구 ') + all.length + '명' + (inRide ? ' (놀이기구 ' + inRide + ')' : '') + (teacherIn ? ' · ★ 선생님' : '');
+    chip.textContent = '🏫 ' + (S.className || S.code + '반') + ' · ' + (S.isTeacher ? '학생 ' : '친구 ') + all.length + '명' + (inRide ? ' (놀이기구 ' + inRide + ')' : '') + (teacherIn ? ' · GM 선생님' : '');
     chip.title = all.map(function (d) { return d.n + (d.w !== 'park' ? ' — ' + (WHERE[d.w] || d.w) : ''); }).join('\n');
   }
 
