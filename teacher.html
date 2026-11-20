@@ -172,12 +172,12 @@
     </section>
   </main>
 
-  <script src="js/pwa.js"></script>
-  <script src="js/data/park-data.js"></script>
+  <script>document.write('<script src="js/pwa.js?t=' + Date.now() + '"><' + '/script>');</script>
+  <script>document.write('<script src="js/data/park-data.js?t=' + Date.now() + '"><' + '/script>');</script>
   <script>window.MP_NET_ROLE = 'teacher';   // 선생님 화면: 구글 로그인(어느 컴퓨터에서든 같은 선생님)</script>
   <script>document.write('<script src="js/data/teacher-sprites.js?t=' + Date.now() + '"><\/script>');</script>
-  <script src="js/teacher-chars.js"></script>
-  <script src="js/net/firebase-config.js"></script>
+  <script>document.write('<script src="js/teacher-chars.js?t=' + Date.now() + '"><' + '/script>');</script>
+  <script>document.write('<script src="js/net/firebase-config.js?t=' + Date.now() + '"><' + '/script>');</script>
   <script>document.write('<script src="js/net/net.js?t=' + Date.now() + '"><\/script>');</script>
   <script>document.write('<script src="js/net/teacher.js?t=' + Date.now() + '"><\/script>');</script>
 </body>

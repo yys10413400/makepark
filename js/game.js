@@ -330,11 +330,11 @@
   function facilityName(fid) { var f = PARK.facilities.filter(function (x) { return x.id === fid; })[0]; return f ? f.name : fid; }
   // 시험 모드(주소 뒤에 ?test=1): 모든 캐릭터를 티켓·건물 통과 없이 골라 볼 수 있음(저장된 티켓·보상은 그대로)
   var CHAR_TEST = /[?&]test=1/.test(location.search);
-  // 테스터: 이름에 '테스'(테스터·테스트)가 들어간 반에 들어온 이 닉네임은 모든 캐릭터를 쓸 수 있음
+  // 테스터: 이 닉네임은 어느 반에서든(혼자 둘러보기도) 모든 캐릭터를 쓸 수 있음
   var TESTERS = ['양퐁'];
   function isTester() {
-    var M = window.MPMulti && window.MPMulti._state, s = readSave() || {};
-    return !!(M && M.code && /테스/.test(M.className || '') && TESTERS.indexOf(String(s.nickname || '').trim()) >= 0);
+    var s = readSave() || {}, nick = String(s.nickname || (ui.nickname && ui.nickname.value) || '').trim();
+    return TESTERS.indexOf(nick) >= 0;
   }
   function charUnlocked(d, cs) {
     return CHAR_TEST || isTester() || d.kind === 'free' || (d.kind === 'reward' && facilityCleared(d.facility)) || (d.kind === 'shop' && cs.owned.indexOf(d.id) >= 0);
@@ -347,7 +347,7 @@
     if (CHAR_TEST || isTester()) ui.charTickets.textContent = (CHAR_TEST ? '시험 모드' : '테스터') + ': 모든 캐릭터를 골라 볼 수 있어요 (보상 캐릭터는 기본 남자/여자를 먼저 골라 성별을 바꿔요)';
     ui.charList.textContent = '';
     CHAR_SECTIONS.forEach(function (sec) {
-      if (charMode === 'create' && sec[0] !== 'free') return;
+      if (charMode === 'create' && sec[0] !== 'free' && !CHAR_TEST && !isTester()) return;
       var h = document.createElement('h3'); h.className = 'char-sec';
       h.textContent = sec[1] + ' ';
       var sm = document.createElement('small'); sm.textContent = sec[2]; h.appendChild(sm);

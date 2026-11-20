@@ -188,25 +188,25 @@
     <pre id="debugPanel" hidden></pre>
   </div>
 
-  <script src="js/pwa.js"></script>
-  <script src="js/data/park-data.js"></script>
-  <script src="js/data/walkmask.js"></script>
-  <script src="js/walkgrid.js"></script>
-  <script src="js/character.js"></script>
+  <script>document.write('<script src="js/pwa.js?t=' + Date.now() + '"><' + '/script>');</script>
+  <script>document.write('<script src="js/data/park-data.js?t=' + Date.now() + '"><' + '/script>');</script>
+  <script>document.write('<script src="js/data/walkmask.js?t=' + Date.now() + '"><' + '/script>');</script>
+  <script>document.write('<script src="js/walkgrid.js?t=' + Date.now() + '"><' + '/script>');</script>
+  <script>document.write('<script src="js/character.js?t=' + Date.now() + '"><' + '/script>');</script>
   <script>document.write('<script src="js/data/character-sprites.js?t=' + Date.now() + '"><\/script>');</script>
   <script>document.write('<script src="js/characters.js?t=' + Date.now() + '"><\/script>');</script>
-  <script src="js/game.js"></script>
-  <script src="js/coaster/missions.js"></script>
-  <script src="js/coaster/logic.js"></script>
-  <script src="js/coaster/ui.js"></script>
-  <script src="js/gatekeeper/rules.js"></script>
-  <script src="js/gatekeeper/sprites.js"></script>
-  <script src="js/gatekeeper/ui.js"></script>
+  <script>document.write('<script src="js/game.js?t=' + Date.now() + '"><' + '/script>');</script>
+  <script>document.write('<script src="js/coaster/missions.js?t=' + Date.now() + '"><' + '/script>');</script>
+  <script>document.write('<script src="js/coaster/logic.js?t=' + Date.now() + '"><' + '/script>');</script>
+  <script>document.write('<script src="js/coaster/ui.js?t=' + Date.now() + '"><' + '/script>');</script>
+  <script>document.write('<script src="js/gatekeeper/rules.js?t=' + Date.now() + '"><' + '/script>');</script>
+  <script>document.write('<script src="js/gatekeeper/sprites.js?t=' + Date.now() + '"><' + '/script>');</script>
+  <script>document.write('<script src="js/gatekeeper/ui.js?t=' + Date.now() + '"><' + '/script>');</script>
   <script>document.write('<script src="js/data/teacher-sprites.js?t=' + Date.now() + '"><\/script>');</script>
-  <script src="js/teacher-chars.js"></script>
+  <script>document.write('<script src="js/teacher-chars.js?t=' + Date.now() + '"><' + '/script>');</script>
   <!-- 선생님 모드(?teacher=반코드): 선생님 구글 계정으로 연결 -->
   <script>if (/[?&]teacher=\d{5}/.test(location.search)) window.MP_NET_ROLE = 'teacher';</script>
-  <script src="js/net/firebase-config.js"></script>
+  <script>document.write('<script src="js/net/firebase-config.js?t=' + Date.now() + '"><' + '/script>');</script>
   <script>document.write('<script src="js/net/net.js?t=' + Date.now() + '"><\/script>');</script>
   <script>document.write('<script src="js/net/multiplayer.js?t=' + Date.now() + '"><\/script>');</script>
 </body>
