@@ -163,6 +163,53 @@ def best_loop(frames, minlen=10):
     return best[1], best[2]
 
 
+def leg_seeds(a):
+    """세 사람의 다리 부분: 그림 아래 35% 줄에서, 옆으로 조금 넓혀 두 다리를 한 덩어리로 묶은 뒤 가장 큰 셋.
+    → [(가운데 x, 그 다리 마스크)]"""
+    ys = np.where(a.any(axis=1))[0]
+    band = np.zeros_like(a)
+    y0 = int(ys.max() - (ys.max() - ys.min()) * 0.35)
+    band[y0:] = a[y0:]
+    lab, n = ndimage.label(ndimage.binary_dilation(band, structure=np.ones((1, 31))))
+    if not n:
+        return []
+    sizes = ndimage.sum(band, lab, range(1, n + 1))
+    out = []
+    for j in np.argsort(sizes)[::-1][:3]:
+        m = (lab == j + 1) & band
+        out.append((float(np.nonzero(m)[1].mean()), m))
+    return out
+
+
+def split_views(a, cx):
+    """한 장의 그림(불투명 마스크 a)을 앞·뒤·옆 세 칸으로 나눔. 칸마다 다리(leg_seeds)에서 시작해,
+    그림 안을 따라 한 칸씩 넓혀 감 → 서로 맞닿은 깃발도
+    자기 몸에서 이어진 쪽으로 나뉨. 어느 몸통과도 이어지지 않은 조각은 가장 가까운 칸(아주 작은 점은 버림)."""
+    h, w = a.shape
+    L = np.zeros((h, w), np.int16)
+    for c, m in leg_seeds(a):
+        L[m] = int(np.argmin([abs(c - x) for x in cx])) + 1
+    for _ in range(400):
+        grown = ndimage.grey_dilation(L, size=(3, 3))
+        add = (L == 0) & a & (grown > 0)
+        if not add.any():
+            break
+        L[add] = grown[add]
+    own = L.astype(int) - 1
+    rest = a & (own < 0)
+    if rest.any():
+        cols = np.arange(w)
+        near = np.argmin(np.abs(cols[None, :] - np.array(cx)[:, None]), axis=0)
+        lab2, n2 = ndimage.label(rest, structure=np.ones((3, 3)))
+        for j, sl in enumerate(ndimage.find_objects(lab2), 1):
+            m = lab2[sl] == j
+            if m.sum() < 80:      # 떨어진 작은 점(반짝이·얼룩)은 버림
+                continue
+            xs = np.nonzero(m)[1] + sl[1].start
+            own[sl][m] = near[int(xs.mean())]
+    return own
+
+
 def clear_pockets(rgb, rgba, shadow=False):
     """제미나이 GIF 의 회색 배경 중, 팔과 몸 사이처럼 사방이 막혀 바깥 배경 지우기에 안 걸린 틈을 지움.
     배경색과 아주 비슷하고(색 차이 < 12) 색이 고른 덩어리만 → 흰 옷·회색 옷은 배경과 색이 달라 남음.
@@ -236,31 +283,13 @@ def build_anim(base, path, meta, out_dir=None, web='assets/teachers/', enh=None,
         rgbas.append(clear_pockets(rgb, q, shadow=pockets) if by_height and holes else q)
     # 3칸의 경계: 첫 장을 3칸으로 나눈 가운데들 사이
     a0 = rgbas[0][..., 3] > 40
-    lab, cnt = ndimage.label(a0)
-    sizes = ndimage.sum(a0, lab, range(1, cnt + 1))
-    objs = ndimage.find_objects(lab)
-    big = sorted(np.argsort(sizes)[-3:], key=lambda i: objs[i][1].start)
-    cx = [(objs[i][1].start + objs[i][1].stop) / 2 for i in big]
+    # 가운데 위치는 다리(아래쪽)로 잡음: 위쪽은 깃발처럼 옆 사람과 맞닿을 수 있지만 다리는 셋이 확실히 떨어져 있음
+    cx = sorted(c for c, _ in leg_seeds(a0))
     # 프레임마다 그림 덩어리를 가장 가까운 칸(앞·뒤·옆)에 나눠 줌 → 깃발처럼 옆 칸 쪽으로 길게 나온 것도 제 칸에 남음
     # (두 칸의 덩어리가 맞붙으면 그 덩어리만 가운데 선으로 나눔)
     vr = [[], [], []]
     for q in rgbas:
-        a = q[..., 3] > 40
-        lab, cnt = ndimage.label(ndimage.binary_dilation(a, iterations=1), structure=np.ones((3, 3)))
-        own = np.full(a.shape, -1)
-        cols = np.arange(a.shape[1])
-        near = np.argmin(np.abs(cols[None, :] - np.array(cx)[:, None]), axis=0)   # 열마다 가장 가까운 칸
-        for j, sl in enumerate(ndimage.find_objects(lab), 1):
-            if sl is None:
-                continue
-            m = lab[sl] == j
-            x0, x1 = sl[1].start, sl[1].stop
-            inside = [i for i in range(3) if x0 <= cx[i] < x1]
-            if len(inside) > 1:
-                own[sl][m] = np.broadcast_to(near[x0:x1], m.shape)[m]
-            else:
-                ys, xs = np.nonzero(m)
-                own[sl][m] = int(np.argmin([abs(xs.mean() + x0 - c) for c in cx]))
+        own = split_views(q[..., 3] > 40, cx)
         for i in range(3):
             v = q.copy()
             v[..., 3] = np.where(own == i, v[..., 3], 0)

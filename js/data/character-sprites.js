@@ -102,7 +102,7 @@ window.MP_CHAR_SPRITES = {
    "idle": {
     "down": 5,
     "right": 6,
-    "up": 6
+    "up": 3
    },
    "k": 0.5,
    "ms": 100,
@@ -321,9 +321,9 @@ window.MP_CHAR_SPRITES = {
      80,
      4,
      69,
-     159,
+     158,
      33.0,
-     159
+     158
     ]
    }
   },
@@ -484,7 +484,7 @@ window.MP_CHAR_SPRITES = {
   "anim": {
    "frames": 12,
    "idle": {
-    "down": 6,
+    "down": 0,
     "right": 5,
     "up": 6
    },
@@ -792,9 +792,9 @@ window.MP_CHAR_SPRITES = {
     "right": [
      239,
      4,
-     90,
+     89,
      151,
-     39.0,
+     38.0,
      151
     ],
     "up": [
@@ -870,7 +870,7 @@ window.MP_CHAR_SPRITES = {
    "idle": {
     "down": 3,
     "right": 5,
-    "up": 6
+    "up": 9
    },
    "k": 0.5,
    "ms": 100,
@@ -880,26 +880,26 @@ window.MP_CHAR_SPRITES = {
     "down": [
      4,
      4,
-     132,
+     104,
      153,
-     39.0,
+     38.0,
      153
     ],
     "right": [
-     223,
+     226,
      4,
      92,
-     153,
+     151,
      39.0,
-     153
+     151
     ],
     "up": [
-     144,
+     116,
      4,
-     71,
-     152,
-     34.0,
-     152
+     102,
+     153,
+     64.0,
+     153
     ]
    }
   },
@@ -1033,20 +1033,20 @@ window.MP_CHAR_SPRITES = {
    "idle": {
     "down": 7,
     "right": 9,
-    "up": 5
+    "up": 11
    },
    "k": 0.5,
    "ms": 100,
-   "rowH": 178,
+   "rowH": 177,
    "src": "assets/characters/R5g-anim.webp",
    "views": {
     "down": [
      4,
      4,
      103,
-     168,
+     167,
      52.0,
-     168
+     167
     ],
     "right": [
      228,
@@ -1060,9 +1060,9 @@ window.MP_CHAR_SPRITES = {
      115,
      4,
      105,
-     170,
+     169,
      54.0,
-     170
+     169
     ]
    }
   },
@@ -1907,4 +1907,4 @@ window.MP_CHAR_SPRITES = {
   }
  }
 };
-window.MP_CHAR_VER = '20261120133338';
+window.MP_CHAR_VER = '20261120142410';
