@@ -379,9 +379,11 @@
       g.filter = 'none';
       return ok;
     }
-    if (paint()) return;
+    // 걷기 GIF 그림이 있으면 그것까지 받아진 뒤 다시 그림(처음엔 예전 그림이 잠깐 보일 수 있음)
+    var ae = MPChars.loadAnim ? MPChars.loadAnim(sid) : null;
+    if (paint() && (!ae || ae.ok)) return;
     var e = MPChars.load(sid), tries = 0;
-    (function wait() { if (e.done || tries++ > 100) paint(); else setTimeout(wait, 60); })();
+    (function wait() { if ((ae ? ae.ok : e.done) || tries++ > 100) paint(); else setTimeout(wait, 60); })();
   }
   function selectChar(d, cs) {
     var gender = d.kind === 'free' ? d.gender : cs.gender;

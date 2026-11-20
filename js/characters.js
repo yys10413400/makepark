@@ -95,6 +95,20 @@
   // opt.walk: 걷는 자세 그림(<id>-walk.webp)을 씀, opt.mirror: 좌우를 한 번 더 뒤집음(앞·뒤 모습의 반대 발)
   function drawSprite(ctx, sid, x, y, dir, h, opt) {
     opt = opt || {};
+    // 걷기 GIF 가 있는 캐릭터는 서 있을 때도 GIF 그림(두 발이 가장 모인 장)을 씀 → 걷기와 서 있기 그림이 같음
+    var A = SPR[sid] && SPR[sid].anim, ae = A && !opt.walk && loadAnim(sid);
+    if (ae && ae.ok) {
+      var av = dir === 'up' ? 'up' : dir === 'down' ? 'down' : 'right';
+      var ar = A.views[av], as = h / (BODY_H * (A.k || 1)), ak = (A.idle && A.idle[av]) || 0;
+      var aflip = (dir === 'left') !== !!opt.mirror;
+      ctx.save();
+      ctx.translate(x, y - (opt.bob || 0));
+      if (opt.tilt) ctx.rotate(opt.tilt);
+      ctx.scale((aflip ? -1 : 1) * as * (opt.sx || 1), as * (opt.sy || 1));
+      ctx.drawImage(ae.img, ar[0], ar[1] + ak * A.rowH, ar[2], ar[3], -ar[4], -ar[5], ar[2], ar[3]);
+      ctx.restore();
+      return true;
+    }
     var useWalk = opt.walk && hasWalk(sid);
     var e = load(useWalk ? sid + '-walk' : sid), m = SPR[sid] && (useWalk ? SPR[sid].walk : SPR[sid]);
     if (!e.ok || !m) return false;
@@ -167,6 +181,6 @@
 
   window.MPChars = {
     ROSTER: ROSTER, byId: function (id) { return BY_ID[id] || null; },
-    spriteId: spriteId, load: load, drawSprite: drawSprite, drawAnim: drawAnim, Walker: Walker, BODY_H: BODY_H, DRAW_H: DRAW_H
+    spriteId: spriteId, load: load, loadAnim: loadAnim, drawSprite: drawSprite, drawAnim: drawAnim, Walker: Walker, BODY_H: BODY_H, DRAW_H: DRAW_H
   };
 })();

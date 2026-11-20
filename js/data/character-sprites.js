@@ -3,6 +3,11 @@ window.MP_CHAR_SPRITES = {
  "F1": {
   "anim": {
    "frames": 12,
+   "idle": {
+    "down": 1,
+    "right": 3,
+    "up": 9
+   },
    "k": 0.5,
    "ms": 100,
    "rowH": 161,
@@ -94,6 +99,11 @@ window.MP_CHAR_SPRITES = {
  "F2": {
   "anim": {
    "frames": 12,
+   "idle": {
+    "down": 5,
+    "right": 6,
+    "up": 6
+   },
    "k": 0.5,
    "ms": 100,
    "rowH": 161,
@@ -185,6 +195,11 @@ window.MP_CHAR_SPRITES = {
  "R1b": {
   "anim": {
    "frames": 12,
+   "idle": {
+    "down": 5,
+    "right": 3,
+    "up": 5
+   },
    "k": 0.5,
    "ms": 100,
    "rowH": 169,
@@ -276,6 +291,11 @@ window.MP_CHAR_SPRITES = {
  "R1g": {
   "anim": {
    "frames": 13,
+   "idle": {
+    "down": 5,
+    "right": 9,
+    "up": 5
+   },
    "k": 0.5,
    "ms": 100,
    "rowH": 167,
@@ -367,6 +387,11 @@ window.MP_CHAR_SPRITES = {
  "R2b": {
   "anim": {
    "frames": 13,
+   "idle": {
+    "down": 2,
+    "right": 9,
+    "up": 2
+   },
    "k": 0.5,
    "ms": 100,
    "rowH": 201,
@@ -458,6 +483,11 @@ window.MP_CHAR_SPRITES = {
  "R2g": {
   "anim": {
    "frames": 12,
+   "idle": {
+    "down": 6,
+    "right": 5,
+    "up": 6
+   },
    "k": 0.5,
    "ms": 100,
    "rowH": 202,
@@ -549,6 +579,11 @@ window.MP_CHAR_SPRITES = {
  "R3b": {
   "anim": {
    "frames": 14,
+   "idle": {
+    "down": 5,
+    "right": 7,
+    "up": 0
+   },
    "k": 0.5,
    "ms": 100,
    "rowH": 160,
@@ -640,6 +675,11 @@ window.MP_CHAR_SPRITES = {
  "R3g": {
   "anim": {
    "frames": 13,
+   "idle": {
+    "down": 6,
+    "right": 8,
+    "up": 11
+   },
    "k": 0.5,
    "ms": 100,
    "rowH": 164,
@@ -731,6 +771,11 @@ window.MP_CHAR_SPRITES = {
  "R4b": {
   "anim": {
    "frames": 13,
+   "idle": {
+    "down": 6,
+    "right": 1,
+    "up": 6
+   },
    "k": 0.5,
    "ms": 100,
    "rowH": 161,
@@ -822,6 +867,11 @@ window.MP_CHAR_SPRITES = {
  "R4g": {
   "anim": {
    "frames": 12,
+   "idle": {
+    "down": 11,
+    "right": 11,
+    "up": 11
+   },
    "k": 0.5,
    "ms": 100,
    "rowH": 159,
@@ -913,6 +963,11 @@ window.MP_CHAR_SPRITES = {
  "R5b": {
   "anim": {
    "frames": 13,
+   "idle": {
+    "down": 12,
+    "right": 0,
+    "up": 5
+   },
    "k": 0.5,
    "ms": 100,
    "rowH": 163,
@@ -975,6 +1030,11 @@ window.MP_CHAR_SPRITES = {
  "R5g": {
   "anim": {
    "frames": 17,
+   "idle": {
+    "down": 7,
+    "right": 9,
+    "up": 5
+   },
    "k": 0.5,
    "ms": 100,
    "rowH": 178,
@@ -1847,4 +1907,4 @@ window.MP_CHAR_SPRITES = {
   }
  }
 };
-window.MP_CHAR_VER = '20261120131843';
+window.MP_CHAR_VER = '20261120132421';

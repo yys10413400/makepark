@@ -262,7 +262,24 @@ def build_anim(base, path, meta, out_dir=None, web='assets/teachers/', enh=None,
     sheet = (enh or enhance)(sheet)
     out = base + '-anim.webp'
     sheet.save(os.path.join(out_dir or OUT, out), 'WEBP', quality=88, method=6)
-    meta[base]['anim'] = {'src': web + out, 'frames': n, 'ms': dur, 'rowH': rowH, 'k': ANIM_K, 'views': views}
+    # 서 있을 때 쓸 프레임(칸마다): 두 발이 가장 모인 장 = 발 쪽(아래 12%) 폭이 가장 좁고, 그다음 키가 가장 큰 장
+    arr = np.asarray(sheet)
+    idle = {}
+    for v in VIEWS:
+        r = views[v]
+        best = None
+        for k in range(n):
+            a = arr[r[1] + k * rowH:r[1] + k * rowH + r[3], r[0]:r[0] + r[2], 3] > 100
+            ys = np.where(a.any(axis=1))[0]
+            if not len(ys):
+                continue
+            foot = a[ys.max() - max(2, int(r[3] * 0.12)):ys.max() + 1]
+            xs = np.where(foot.any(axis=0))[0]
+            sc = (xs.max() - xs.min(), -(ys.max() - ys.min()))
+            if best is None or sc < best[0]:
+                best = (sc, k)
+        idle[v] = best[1] if best else 0
+    meta[base]['anim'] = {'src': web + out, 'frames': n, 'ms': dur, 'rowH': rowH, 'k': ANIM_K, 'views': views, 'idle': idle}
     print(base, 'anim', i0, '~', i1 - 1, '프레임', n, dur, 'ms', sheet.size)
 
 
