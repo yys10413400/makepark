@@ -26,7 +26,7 @@ window.MP_CHAR_SPRITES = {
      4,
      67,
      150,
-     32.0,
+     33.0,
      150
     ],
     "up": [
@@ -306,7 +306,7 @@ window.MP_CHAR_SPRITES = {
      4,
      68,
      159,
-     34.0,
+     33.0,
      159
     ],
     "right": [
@@ -602,7 +602,7 @@ window.MP_CHAR_SPRITES = {
      4,
      68,
      150,
-     37.5,
+     37.0,
      150
     ],
     "up": [
@@ -698,7 +698,7 @@ window.MP_CHAR_SPRITES = {
      4,
      71,
      153,
-     41.0,
+     40.0,
      153
     ],
     "up": [
@@ -868,38 +868,38 @@ window.MP_CHAR_SPRITES = {
   "anim": {
    "frames": 12,
    "idle": {
-    "down": 11,
-    "right": 11,
-    "up": 11
+    "down": 3,
+    "right": 5,
+    "up": 6
    },
    "k": 0.5,
    "ms": 100,
-   "rowH": 159,
+   "rowH": 161,
    "src": "assets/characters/R4g-anim.webp",
    "views": {
     "down": [
      4,
      4,
-     139,
-     151,
-     41.0,
-     151
+     132,
+     153,
+     39.0,
+     153
     ],
     "right": [
-     240,
+     223,
      4,
-     87,
-     151,
-     38.0,
-     151
+     92,
+     153,
+     39.0,
+     153
     ],
     "up": [
-     151,
+     144,
      4,
-     81,
-     151,
-     27.0,
-     151
+     71,
+     152,
+     34.0,
+     152
     ]
    }
   },
@@ -1907,4 +1907,4 @@ window.MP_CHAR_SPRITES = {
   }
  }
 };
-window.MP_CHAR_VER = '20261120132421';
+window.MP_CHAR_VER = '20261120133338';

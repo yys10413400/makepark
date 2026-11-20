@@ -163,6 +163,35 @@ def best_loop(frames, minlen=10):
     return best[1], best[2]
 
 
+def clear_pockets(rgb, rgba, shadow=False):
+    """제미나이 GIF 의 회색 배경 중, 팔과 몸 사이처럼 사방이 막혀 바깥 배경 지우기에 안 걸린 틈을 지움.
+    배경색과 아주 비슷하고(색 차이 < 12) 색이 고른 덩어리만 → 흰 옷·회색 옷은 배경과 색이 달라 남음.
+    shadow: 발밑의 회색 그림자(색이 거의 없고 배경보다 조금 어두운 점, 그림 아래 7%)도 지움."""
+    h, w, _ = rgb.shape
+    bg = np.median(np.concatenate([rgb[0], rgb[-1], rgb[:, 0], rgb[:, -1]]), axis=0)
+    dist = np.sqrt(((rgb - bg) ** 2).sum(axis=2))
+    out = rgba.copy()
+    a = out[..., 3] > 0
+    like = (dist < 12) & a
+    lab, n = ndimage.label(like)
+    if n:
+        sizes = ndimage.sum(like, lab, range(1, n + 1))
+        kill = np.zeros(n + 1, bool)
+        kill[1:] = sizes >= 30
+        m = kill[lab]
+        m = ndimage.binary_dilation(m, iterations=1) & (dist < 30)   # 가장자리 번짐도
+        out[..., 3][m] = 0
+    if shadow:
+        ys = np.where(out[..., 3].any(axis=1))[0]
+        if len(ys):
+            y0 = ys.max() - int((ys.max() - ys.min()) * 0.07)
+            band = out[y0:]
+            c = rgb[y0:]
+            gray = (c.max(axis=2) - c.min(axis=2) < 16) & (c.mean(axis=2) > 120) & (c.mean(axis=2) < bg.mean() + 4)
+            band[..., 3][gray] = 0
+    return out
+
+
 def face_side(im):
     """옆모습이 보는 쪽: 머리(위 32%)에서 얼굴 피부색 픽셀의 가운데가 머리 가운데보다 오른쪽이면 +, 왼쪽이면 -.
     (머리카락·모자는 뒤통수 쪽에 많고 얼굴 피부는 보는 쪽에 있음)"""
@@ -188,7 +217,7 @@ def faces_other_way(im, st, r):
     return a * b < 0
 
 
-def build_anim(base, path, meta, out_dir=None, web='assets/teachers/', enh=None, by_height=False):
+def build_anim(base, path, meta, out_dir=None, web='assets/teachers/', enh=None, by_height=False, pockets=False, holes=True):
     """움직이는 GIF(앞·뒤·옆 3칸이 함께 걷는 그림) → 한 걸음 묶음을 프레임 시트로.
     시트: 줄 = 프레임, 칸 = down·up·right. 칸마다 모든 프레임에 같은 자르기 상자를 써서 흔들림이 없게 함."""
     from PIL import ImageSequence
@@ -202,7 +231,9 @@ def build_anim(base, path, meta, out_dir=None, web='assets/teachers/', enh=None,
     rgbas = []
     for f in frames:
         rgb = np.array(f.resize((f.width * up, f.height * up), Image.LANCZOS)).astype(float)
-        rgbas.append(remove_bg(clear_floor(rgb)))
+        q = remove_bg(clear_floor(rgb))
+        # 학생 캐릭터(by_height)만: 막힌 틈의 회색 배경 지우기(회색 털 동물 선생님·흰 망토 유령은 옷까지 지워질 수 있어 뺌)
+        rgbas.append(clear_pockets(rgb, q, shadow=pockets) if by_height and holes else q)
     # 3칸의 경계: 첫 장을 3칸으로 나눈 가운데들 사이
     a0 = rgbas[0][..., 3] > 40
     lab, cnt = ndimage.label(a0)
@@ -210,26 +241,47 @@ def build_anim(base, path, meta, out_dir=None, web='assets/teachers/', enh=None,
     objs = ndimage.find_objects(lab)
     big = sorted(np.argsort(sizes)[-3:], key=lambda i: objs[i][1].start)
     cx = [(objs[i][1].start + objs[i][1].stop) / 2 for i in big]
-    W = a0.shape[1]
-    bounds = [0, (cx[0] + cx[1]) / 2, (cx[1] + cx[2]) / 2, W]
-    union = np.zeros_like(a0)
-    for r in rgbas:
-        union |= r[..., 3] > 40
+    # 프레임마다 그림 덩어리를 가장 가까운 칸(앞·뒤·옆)에 나눠 줌 → 깃발처럼 옆 칸 쪽으로 길게 나온 것도 제 칸에 남음
+    # (두 칸의 덩어리가 맞붙으면 그 덩어리만 가운데 선으로 나눔)
+    vr = [[], [], []]
+    for q in rgbas:
+        a = q[..., 3] > 40
+        lab, cnt = ndimage.label(ndimage.binary_dilation(a, iterations=1), structure=np.ones((3, 3)))
+        own = np.full(a.shape, -1)
+        cols = np.arange(a.shape[1])
+        near = np.argmin(np.abs(cols[None, :] - np.array(cx)[:, None]), axis=0)   # 열마다 가장 가까운 칸
+        for j, sl in enumerate(ndimage.find_objects(lab), 1):
+            if sl is None:
+                continue
+            m = lab[sl] == j
+            x0, x1 = sl[1].start, sl[1].stop
+            inside = [i for i in range(3) if x0 <= cx[i] < x1]
+            if len(inside) > 1:
+                own[sl][m] = np.broadcast_to(near[x0:x1], m.shape)[m]
+            else:
+                ys, xs = np.nonzero(m)
+                own[sl][m] = int(np.argmin([abs(xs.mean() + x0 - c) for c in cx]))
+        for i in range(3):
+            v = q.copy()
+            v[..., 3] = np.where(own == i, v[..., 3], 0)
+            vr[i].append(v)
     boxes = []
     for i in range(3):
-        x0, x1 = int(bounds[i]), int(bounds[i + 1])
-        ys, xs = np.where(union[:, x0:x1])
-        boxes.append((ys.min(), ys.max() + 1, x0 + xs.min(), x0 + xs.max() + 1))
+        union = np.zeros(a0.shape, bool)
+        for v in vr[i]:
+            union |= v[..., 3] > 40
+        ys, xs = np.where(union)
+        boxes.append((ys.min(), ys.max() + 1, xs.min(), xs.max() + 1))
     # 크기: 머리 폭을 서 있는 그림의 앞모습과 같게
     st = np.array(Image.open(os.path.join(ROOT, meta[base]['src'])))
     r = meta[base]['views']['down']
     y0, y1, x0, x1 = boxes[0]
-    s = head_w(st[r[1]:r[1] + r[3], r[0]:r[0] + r[2]]) / head_w(rgbas[0][y0:y1, x0:x1])
+    s = head_w(st[r[1]:r[1] + r[3], r[0]:r[0] + r[2]]) / head_w(vr[0][0][y0:y1, x0:x1])
     if by_height:
         # 키로 맞추기(학생 캐릭터): 머리 옆에 깃발·마이크가 있으면 머리 폭이 잘못 재어지므로,
         # 앞모습의 키(프레임마다 잰 키 중 큰 쪽 = 다리를 모은 순간)를 서 있는 그림의 키와 같게
         hs = []
-        for q in rgbas:
+        for q in vr[0]:
             ys = np.where((q[y0:y1, x0:x1, 3] > 100).any(axis=1))[0]
             if len(ys):
                 hs.append(ys.max() - ys.min() + 1)
@@ -245,7 +297,7 @@ def build_anim(base, path, meta, out_dir=None, web='assets/teachers/', enh=None,
     views = {}
     for i, v in enumerate(VIEWS):
         y0, y1, x0, x1 = boxes[i]
-        first = Image.fromarray(rgbas[0][y0:y1, x0:x1]).resize((cw[i], ch[i]), Image.LANCZOS)
+        first = Image.fromarray(vr[i][0][y0:y1, x0:x1]).resize((cw[i], ch[i]), Image.LANCZOS)
         # 옆모습 방향: 게임은 옆모습이 오른쪽을 본다고 보고 그림(왼쪽으로 갈 때 뒤집음).
         # 제미나이 GIF 는 왼쪽을 보는 것도 있어서, 서 있는 그림의 옆모습과 견줘 반대면 좌우로 뒤집음
         flip = v == 'right' and faces_other_way(first, st, meta[base]['views']['right'])
@@ -255,7 +307,7 @@ def build_anim(base, path, meta, out_dir=None, web='assets/teachers/', enh=None,
         fx = body_x(np.array(first))
         views[v] = [colX[i], PAD, cw[i], ch[i], round(fx, 1), ch[i]]
         for k in range(n):
-            im = Image.fromarray(rgbas[k][y0:y1, x0:x1]).resize((cw[i], ch[i]), Image.LANCZOS)
+            im = Image.fromarray(vr[i][k][y0:y1, x0:x1]).resize((cw[i], ch[i]), Image.LANCZOS)
             if flip:
                 im = im.transpose(Image.FLIP_LEFT_RIGHT)
             sheet.paste(im, (colX[i], PAD + k * rowH))

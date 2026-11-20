@@ -18,6 +18,10 @@ from build_teachers import build_anim  # noqa: E402
 from build_characters import enhance  # noqa: E402
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+# 발밑에 회색 그림자가 그려진 GIF
+SHADOW = {'R4g'}
+# 흰 망토의 그늘이 배경 회색과 같아서 막힌 틈 지우기를 하면 망토에 구멍이 나는 캐릭터
+NO_HOLES = {'R5b', 'R5g'}
 GIF_DIR = os.path.join(ROOT, 'assets', 'characters-src', 'gif')
 OUT = os.path.join(ROOT, 'assets', 'characters')
 JS = os.path.join(ROOT, 'js', 'data', 'character-sprites.js')
@@ -34,7 +38,7 @@ def main():
         cid = f[:-9]
         if cid not in meta or (only and cid not in only):
             continue
-        build_anim(cid, os.path.join(GIF_DIR, f), meta, out_dir=OUT, web='assets/characters/', enh=enhance, by_height=True)
+        build_anim(cid, os.path.join(GIF_DIR, f), meta, out_dir=OUT, web='assets/characters/', enh=enhance, by_height=True, pockets=cid in SHADOW, holes=cid not in NO_HOLES)
     with open(JS, 'w', encoding='utf-8') as fo:
         fo.write(head + 'window.MP_CHAR_SPRITES = ' + json.dumps(meta, ensure_ascii=False, indent=1, sort_keys=True) + ';\n'
                  + "window.MP_CHAR_VER = '" + time.strftime('%Y%m%d%H%M%S') + "';\n")
