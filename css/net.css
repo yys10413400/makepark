@@ -67,3 +67,12 @@ html.teacher-mode .install-app { display: none; }
 .teacher-chip .chip-edit { display: none; }
 .teacher-chip .chip-grade { color: #b46d08; }
 .teacher-back { background: #fff3d6; }
+
+/* 세로로 든 휴대폰: 위쪽 막대가 한 줄에 다 안 들어가므로 두 줄로
+   1줄: 내 이름 · 우리 반 표시 / 2줄(오른쪽 정렬): 선생님 화면·캐릭터·계절·전체 지도 버튼 */
+@media (max-width: 600px) and (orientation: portrait) {
+  #hud { flex-wrap: wrap; row-gap: 6px; justify-content: flex-start; }
+  #hud .chip { flex: 0 1 auto; max-width: calc(50% - 4px); }
+  #hud .room-chip { margin: 0 0 0 auto; max-width: calc(50% - 4px); font-size: 13px; }
+  #hud .hud-right { order: 3; width: 100%; justify-content: flex-end; flex-wrap: wrap; }
+}
