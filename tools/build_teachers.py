@@ -132,17 +132,27 @@ GIF_DIR = os.path.join(SRC, 'gif')
 ANIM_K = 0.5          # 걷기 프레임 크기: 서 있는 그림(몸 키 300px)의 절반. 공원에서 그리는 크기(약 60~80px)엔 충분
 
 
-def cycle_len(frames):
-    """GIF 가 같은 걸음을 되풀이하면, 첫 장과 가장 닮은 장(6장 이후)까지가 한 걸음 묶음."""
-    g = [np.asarray(f.convert('L'), dtype=float) for f in frames]
-    diffs = [np.abs(x - g[0]).mean() for x in g]
-    if len(g) < 8:
-        return len(g)
-    lim = np.median(diffs) * 0.7
-    for k in range(6, len(g) - 1):   # 가장 먼저 첫 장과 다시 닮아지는 곳(골짜기)
-        if diffs[k] < lim and diffs[k] <= diffs[k - 1] and diffs[k] <= diffs[k + 1]:
-            return k
-    return len(g)
+def best_loop(frames, minlen=10):
+    """멈칫하지 않는 반복 구간 찾기: 제미나이 GIF 는 마지막 장이 첫 장과 달라 처음으로 돌아갈 때 '툭' 튐.
+    캐릭터 윤곽만 비교해(GIF 색 얼룩은 무시) 끝 장이 시작 장과 가장 닮은 구간 [i, j) 를 고름.
+    점수 = (j 장과 i 장의 차이) / (이웃한 두 장의 보통 차이) — 1 보다 작으면 이어 붙여도 보통 한 걸음보다 매끄러움."""
+    ms = []
+    for f in frames:
+        a = np.asarray(f.convert('RGB'), dtype=float)
+        bg = np.median(np.concatenate([a[0], a[-1]]), axis=0)
+        ms.append(np.sqrt(((a - bg) ** 2).sum(axis=2)) > 30)
+    n = len(ms)
+    if n < minlen + 1:
+        return 0, n
+    d = lambda x, y: float((x ^ y).mean())
+    step = float(np.median([d(ms[k], ms[k + 1]) for k in range(n - 1)])) or 1.0
+    best = None
+    for i in range(n):
+        for j in range(i + minlen, n):
+            sc = (d(ms[j], ms[i]) / step, -(j - i))
+            if best is None or sc < best[0]:
+                best = (sc, i, j)
+    return best[1], best[2]
 
 
 def build_anim(base, path, meta):
@@ -152,8 +162,9 @@ def build_anim(base, path, meta):
     gif = Image.open(path)
     frames = [f.convert('RGB') for f in ImageSequence.Iterator(gif)]
     dur = gif.info.get('duration') or 100
-    n = cycle_len(frames)
-    frames = frames[:n]
+    i0, i1 = best_loop(frames)
+    frames = frames[i0:i1]
+    n = len(frames)
     up = 2   # 작은 GIF 는 2배로 키운 뒤 다듬어야 가장자리가 매끈함
     rgbas = []
     for f in frames:
@@ -202,7 +213,7 @@ def build_anim(base, path, meta):
     out = base + '-anim.webp'
     sheet.save(os.path.join(OUT, out), 'WEBP', quality=88, method=6)
     meta[base]['anim'] = {'src': 'assets/teachers/' + out, 'frames': n, 'ms': dur, 'rowH': rowH, 'k': ANIM_K, 'views': views}
-    print(base, 'anim', n, '프레임', dur, 'ms', sheet.size)
+    print(base, 'anim', i0, '~', i1 - 1, '프레임', n, dur, 'ms', sheet.size)
 
 
 def main():
