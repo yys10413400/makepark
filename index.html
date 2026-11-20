@@ -207,7 +207,7 @@
   <!-- 선생님 모드(?teacher=반코드): 선생님 구글 계정으로 연결 -->
   <script>if (/[?&]teacher=\d{5}/.test(location.search)) window.MP_NET_ROLE = 'teacher';</script>
   <script src="js/net/firebase-config.js"></script>
-  <script src="js/net/net.js"></script>
-  <script src="js/net/multiplayer.js"></script>
+  <script>document.write('<script src="js/net/net.js?t=' + Date.now() + '"><\/script>');</script>
+  <script>document.write('<script src="js/net/multiplayer.js?t=' + Date.now() + '"><\/script>');</script>
 </body>
 </html>

@@ -175,10 +175,19 @@
         b.addEventListener('click', function () {
           if (!confirm((d.n || '이 학생') + ' 학생을 공원에서 내보낼까요?')) return;
           // 1) 학생 기기에 '나가요' 명령 2) 공원 목록에서 바로 지움(기기가 잠들었거나 창이 닫혀 남은 기록도 사라짐)
+          // 결과는 버튼 자리에 바로 보여 줌(위쪽 안내 줄은 아래로 내려 보면 안 보여서)
+          b.disabled = true; b.textContent = '내보내는 중…';
+          var step = '명령';
           NET.command(S.code, { type: 'kick', target: pid })
-            .then(function () { return NET.removePlayer(S.code, pid); })
-            .then(function () { msg('tMsg', (d.n || '학생') + ' 학생을 내보냈어요.'); },
-              function (err) { msg('tMsg', '내보내지 못했어요: ' + ((err && (err.code || err.message)) || '다시 눌러 주세요')); console.error(err); });
+            .then(function () { step = '목록에서 지우기'; return NET.removePlayer(S.code, pid); })
+            .then(function () { msg('tMsg', (d.n || '학생') + ' 학생을 내보냈어요.'); b.textContent = '내보냈어요'; },
+              function (err) {
+                var why = (err && (err.code || err.message)) || '알 수 없음';
+                console.error('내보내기 실패', step, err);
+                b.disabled = false; b.textContent = '내보내기';
+                msg('tMsg', '내보내지 못했어요(' + step + '): ' + why);
+                alert('내보내지 못했어요.' + String.fromCharCode(10) + '단계: ' + step + String.fromCharCode(10) + '이유: ' + why);
+              });
         });
         td.appendChild(b);
       }
