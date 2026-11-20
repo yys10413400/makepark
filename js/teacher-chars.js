@@ -38,16 +38,22 @@
     var r = m.views[view], s = h / BODY_H, flip = dir === 'left';
     var sx = r[0], sy = r[1], w = r[2], hh = r[3], fx = r[4], fy = r[5], hip = r[6] || Math.round(hh * 0.85);
     var legH = hh - hip, img = e.img;
-    var a = step == null ? 0 : Math.sin(step * Math.PI * 2);
-    var lift = 7, swing = 7;                      // 그림(300px 키) 기준 px
+    var walking = step != null;
+    var a = walking ? Math.sin(step * Math.PI * 2) : 0;   // +: 왼발을 듦, -: 오른발을 듦
+    var up = Math.abs(a), land = walking ? 1 - up : 0;    // land: 두 발이 땅에 닿는 순간 1
+    var lift = 12, swing = 13;                    // 그림(300px 키) 기준 px
     var lA = Math.max(0, a) * lift, rA = Math.max(0, -a) * lift;   // 왼발·오른발 들기
-    var bob = step == null ? 0 : Math.abs(a) * 2.5; // 한 발을 들 때 몸 전체가 살짝 올라감
     var side = view === 'right';
+    // 몸 전체 움직임 (학생 캐릭터처럼 통통 튀게)
+    var bob = up * 7;                              // 발을 들 때 몸이 위로
+    var sqY = 1 - land * 0.045, sqX = 1 + land * 0.03;   // 발이 닿을 때 살짝 납작
+    var tilt = side ? (walking ? 0.07 + up * 0.03 : 0)    // 옆모습: 가는 쪽으로 앞으로 숙임
+                    : a * 0.05;                          // 앞·뒤: 디딘 발 쪽으로 좌우로 흔들
+    var twist = side ? 0 : a * 0.05;               // 앞·뒤: 엉덩이를 축으로 몸통이 뒤뚱뒤뚱
     ctx.save();
     ctx.translate(x, y - bob * s);                  // 몸과 다리를 함께 올려 엉덩이에 틈이 생기지 않게
-    ctx.scale((flip ? -1 : 1) * s, s * (breathe || 1));
-    // 1) 몸·머리·손: 그대로
-    ctx.drawImage(img, sx, sy, w, hip, -fx, -fy, w, hip);
+    if (tilt) ctx.rotate(flip ? -tilt : tilt);
+    ctx.scale((flip ? -1 : 1) * s * sqX, s * sqY * (breathe || 1));
     // 2) 다리: 작은 칸으로 나눠, 칸마다 조금씩 다르게 옮겨 그려 부드럽게 휘게 함 (잘린 자국이 생기지 않게)
     //    - 위아래: 엉덩이(hip)에서는 0, 발로 갈수록 크게 움직임
     //    - 좌우: 두 다리 사이(fx)에서는 0, 다리 가운데로 갈수록 커짐 → 가운데에 끊긴 줄이 생기지 않음
@@ -74,6 +80,11 @@
         }
       }
     }
+    // 1) 몸·머리·손: 다리 위에 그려 엉덩이 이음매를 덮음. 앞·뒤 모습은 엉덩이를 축으로 살짝 뒤뚱
+    ctx.save();
+    if (twist) { ctx.translate(0, -fy + hip); ctx.rotate(twist); ctx.translate(0, fy - hip); }
+    ctx.drawImage(img, sx, sy, w, hip + 1, -fx, -fy, w, hip + 1);
+    ctx.restore();
     ctx.restore();
     return true;
   }
@@ -83,12 +94,13 @@
   Walker.prototype.set = function (id) { this.id = valid(id) ? id : first(); this.sid = 'T:' + this.id; if (this.id) load(this.id); };
   Walker.prototype.draw = function (ctx, x, y, dir, moving, t) {
     if (!this.id) return;
+    var step = moving ? (t * 2) % 1 : null;     // 1초에 두 걸음씩 두 번(학생 캐릭터와 비슷한 빠르기)
+    var sh = moving ? 1 - Math.abs(Math.sin(step * Math.PI * 2)) * 0.15 : 1;
     ctx.save();
     ctx.fillStyle = 'rgba(30,40,60,0.25)';
-    ctx.beginPath(); ctx.ellipse(x, y - 1, 17, 5.4, 0, 0, Math.PI * 2); ctx.fill();
+    ctx.beginPath(); ctx.ellipse(x, y - 1, 17 * sh, 5.4 * sh, 0, 0, Math.PI * 2); ctx.fill();
     ctx.restore();
-    var step = moving ? (t * 2.2) % 1 : null;
-    drawTeacher(ctx, this.id, x, y, dir, DRAW_H, step, moving ? 1 : 1 + Math.sin(t * 2.4) * 0.01);
+    drawTeacher(ctx, this.id, x, y, dir, DRAW_H, step, moving ? 1 : 1 + Math.sin(t * 2.4) * 0.015);
   };
 
   // 선생님 화면의 캐릭터 고르기 그림: canvas 에 앞모습을 꽉 차게 그림
