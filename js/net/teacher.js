@@ -13,6 +13,43 @@
   var S = { user: null, code: null, meta: null, handle: null, players: {}, owner: false };
   var WHERE = { park: '공원', coaster: '코스터 익스프레스', ghost: '유령의 집' };
   function msg(id, text) { $(id).textContent = text || ''; }
+
+  // 화면 안 확인창: 브라우저의 confirm·prompt·alert 는 '이 페이지의 대화상자 막기'를 한 번 체크하면
+  // 아무것도 안 뜨고 곧바로 '취소'가 돼서 내보내기·반 없애기가 조용히 안 되던 문제가 있었음.
+  // ask(문구, { input: 처음 값(있으면 입력칸), ok: 버튼 글자, danger: 빨간 버튼, alone: 확인 버튼만 })
+  //  → Promise: 확인이면 true(입력칸이 있으면 넣은 글자), 취소면 null
+  function ask(text, o) {
+    o = o || {};
+    return new Promise(function (done) {
+      var wrap = document.createElement('div'); wrap.className = 't-modal t-ask';
+      var card = document.createElement('div'); card.className = 't-card t-askcard';
+      card.setAttribute('role', 'dialog'); card.setAttribute('aria-modal', 'true');
+      var p = document.createElement('p'); p.className = 't-ask-text'; p.textContent = text; card.appendChild(p);
+      var inp = null;
+      if (o.input != null) {
+        inp = document.createElement('input'); inp.className = 't-ask-input'; inp.value = o.input;
+        if (o.inputmode) inp.inputMode = o.inputmode;
+        if (o.maxlength) inp.maxLength = o.maxlength;
+        card.appendChild(inp);
+      }
+      var row = document.createElement('div'); row.className = 't-ask-btns';
+      var no = document.createElement('button'); no.type = 'button'; no.className = 't-btn ghost'; no.textContent = '취소';
+      var yes = document.createElement('button'); yes.type = 'button'; yes.className = 't-btn ' + (o.danger ? 'danger' : 'primary'); yes.textContent = o.ok || '확인';
+      if (!o.alone) row.appendChild(no);
+      row.appendChild(yes); card.appendChild(row); wrap.appendChild(card);
+      document.body.appendChild(wrap);
+      function end(v) { document.removeEventListener('keydown', key, true); wrap.remove(); done(v); }
+      function key(e) {
+        if (e.key === 'Escape') { e.stopPropagation(); end(null); }
+        else if (e.key === 'Enter' && inp) { e.preventDefault(); end(inp.value); }
+      }
+      document.addEventListener('keydown', key, true);
+      no.onclick = function () { end(null); };
+      yes.onclick = function () { end(inp ? inp.value : true); };
+      wrap.onclick = function (e) { if (e.target === wrap) end(null); };
+      setTimeout(function () { (inp || yes).focus(); if (inp) inp.select(); }, 20);
+    });
+  }
   function show(view) { $('tLogin').hidden = view !== 'login'; $('tHome').hidden = view !== 'home'; $('tRoom').hidden = view !== 'room'; }
 
   if (NET.mode === 'local') {
@@ -126,9 +163,11 @@
   }
   $('tBack').addEventListener('click', function () { S.recLoaded = false; openHome(); });
   $('tRename').addEventListener('click', function () {
-    var nm = prompt('새 반 이름을 적어 주세요.', (S.meta && S.meta.name) || '');
-    if (nm == null || !nm.trim()) return;
-    NET.renameRoom(S.code, nm.trim().slice(0, 30)).then(function () { msg('tMsg', '반 이름을 바꿨어요.'); });
+    ask('새 반 이름을 적어 주세요.', { input: (S.meta && S.meta.name) || '', maxlength: 30, ok: '바꾸기' }).then(function (nm) {
+      if (nm == null || !nm.trim()) return;
+      NET.renameRoom(S.code, nm.trim().slice(0, 30)).then(function () { msg('tMsg', '반 이름을 바꿨어요.'); },
+        function (err) { ask('반 이름을 바꾸지 못했어요: ' + (err.code || err.message), { alone: true }); });
+    });
   });
   $('tCopy').addEventListener('click', function () {
     var t = S.code;
@@ -139,14 +178,22 @@
   });
   $('tToggle').addEventListener('click', function () {
     var willOpen = !(S.meta && S.meta.open);
-    if (!willOpen && !confirm('공원을 닫을까요? 들어와 있는 학생은 모두 첫 화면으로 돌아가요. (학생 기록은 그대로예요)')) return;
-    NET.setOpen(S.code, willOpen).then(function () { msg('tMsg', willOpen ? '공원을 다시 열었어요.' : '공원을 닫았어요.'); });
+    (willOpen ? Promise.resolve(true) : ask('공원을 닫을까요? 들어와 있는 학생은 모두 첫 화면으로 돌아가요. (학생 기록은 그대로예요)', { ok: '닫기', danger: true }))
+      .then(function (yes) {
+        if (!yes) return;
+        NET.setOpen(S.code, willOpen).then(function () { msg('tMsg', willOpen ? '공원을 다시 열었어요.' : '공원을 닫았어요.'); },
+          function (err) { ask('바꾸지 못했어요: ' + (err.code || err.message), { alone: true }); });
+      });
   });
   $('tDelete').addEventListener('click', function () {
     var nm = (S.meta && S.meta.name) || S.code;
-    if (!confirm('"' + nm + '" 반을 없앨까요? 반 코드와 학생 기록이 모두 지워지고 되돌릴 수 없어요.')) return;
-    if (!confirm('정말 없앨까요?')) return;
-    NET.deleteRoom(S.code).then(function () { S.recLoaded = false; openHome(); }, function (err) { msg('tMsg', '없애지 못했어요: ' + err.message); });
+    ask('"' + nm + '" 반을 없앨까요? 반 코드와 학생 기록이 모두 지워지고 되돌릴 수 없어요.', { ok: '없애기', danger: true })
+      .then(function (yes) { return yes && ask('정말 없앨까요?', { ok: '정말 없애기', danger: true }); })
+      .then(function (yes) {
+        if (!yes) return;
+        NET.deleteRoom(S.code).then(function () { S.recLoaded = false; openHome(); },
+          function (err) { ask('반을 없애지 못했어요: ' + (err.code || err.message), { alone: true }); });
+      });
   });
 
   // ---------- 지도·지금 들어온 학생 ----------
@@ -173,7 +220,8 @@
         var b = document.createElement('button');
         b.type = 'button'; b.className = 't-kick'; b.textContent = '내보내기';
         b.addEventListener('click', function () {
-          if (!confirm((d.n || '이 학생') + ' 학생을 공원에서 내보낼까요?')) return;
+          ask((d.n || '이 학생') + ' 학생을 공원에서 내보낼까요?', { ok: '내보내기', danger: true }).then(function (yes) {
+          if (!yes) return;
           // 1) 학생 기기에 '나가요' 명령 2) 공원 목록에서 바로 지움(기기가 잠들었거나 창이 닫혀 남은 기록도 사라짐)
           // 결과는 버튼 자리에 바로 보여 줌(위쪽 안내 줄은 아래로 내려 보면 안 보여서)
           b.disabled = true; b.textContent = '내보내는 중…';
@@ -186,8 +234,9 @@
                 console.error('내보내기 실패', step, err);
                 b.disabled = false; b.textContent = '내보내기';
                 msg('tMsg', '내보내지 못했어요(' + step + '): ' + why);
-                alert('내보내지 못했어요.' + String.fromCharCode(10) + '단계: ' + step + String.fromCharCode(10) + '이유: ' + why);
+                ask('내보내지 못했어요. (단계: ' + step + ', 이유: ' + why + ')', { alone: true });
               });
+          });
         });
         td.appendChild(b);
       }
@@ -225,10 +274,12 @@
         var td = document.createElement('td'), b = document.createElement('button');
         b.type = 'button'; b.className = 't-kick'; b.textContent = '비밀번호 다시 정하기';
         b.addEventListener('click', function () {
-          var pin = prompt((st.nick || '학생') + ' 학생의 새 비밀번호(숫자 4자리)를 넣어 주세요.', '');
-          if (pin == null) return;
-          if (!NET.validPin(pin)) { msg('tRecMsg', '비밀번호는 숫자 4자리예요.'); return; }
-          NET.resetPin(S.code, key, pin).then(function () { msg('tRecMsg', (st.nick || '학생') + ' 학생의 비밀번호를 ' + pin + '(으)로 바꿨어요.'); });
+          ask((st.nick || '학생') + ' 학생의 새 비밀번호(숫자 4자리)를 넣어 주세요.', { input: '', inputmode: 'numeric', maxlength: 4, ok: '바꾸기' }).then(function (pin) {
+            if (pin == null) return;
+            if (!NET.validPin(pin)) { msg('tRecMsg', '비밀번호는 숫자 4자리예요.'); return; }
+            NET.resetPin(S.code, key, pin).then(function () { msg('tRecMsg', (st.nick || '학생') + ' 학생의 비밀번호를 ' + pin + '(으)로 바꿨어요.'); },
+              function (err) { msg('tRecMsg', '비밀번호를 바꾸지 못했어요: ' + (err.code || err.message)); });
+          });
         });
         td.appendChild(b); tr.appendChild(td); tb.appendChild(tr);
       });
@@ -284,9 +335,13 @@
   $('tRecModal').addEventListener('click', function (e) { if (e.target === $('tRecModal')) closeRecords(); });
   document.addEventListener('keydown', function (e) { if (e.key === 'Escape' && !$('tRecModal').hidden) closeRecords(); });
   $('tRecClear').addEventListener('click', function () {
-    if (!confirm('이 반 학생들의 캐릭터·티켓·기록이 모두 지워져요. 되돌릴 수 없어요. 지울까요?')) return;
-    if (!confirm('정말 지울까요? (학년이 끝났을 때만 권해요)')) return;
-    NET.clearStudents(S.code).then(function () { msg('tMsg', '이 반 학생 기록을 모두 지웠어요.'); loadRecords(); });
+    ask('이 반 학생들의 캐릭터·티켓·기록이 모두 지워져요. 되돌릴 수 없어요. 지울까요?', { ok: '지우기', danger: true })
+      .then(function (yes) { return yes && ask('정말 지울까요? (학년이 끝났을 때만 권해요)', { ok: '정말 지우기', danger: true }); })
+      .then(function (yes) {
+        if (!yes) return;
+        NET.clearStudents(S.code).then(function () { msg('tMsg', '이 반 학생 기록을 모두 지웠어요.'); loadRecords(); },
+          function (err) { ask('지우지 못했어요: ' + (err.code || err.message), { alone: true }); });
+      });
   });
   setInterval(function () { if (S.code && S.owner && !document.hidden) loadRecords(); }, 15000);
 })();

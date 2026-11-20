@@ -216,3 +216,10 @@ body.teacher [hidden] { display: none !important; }
 .t-walk-btns .t-btn { min-height: 48px; padding: 0 26px; }
 .t-dot.is-teacher { background: rgba(196, 120, 10, 0.96); font-weight: 700; z-index: 2; }
 .t-dot.is-teacher::after { border-top-color: rgba(196, 120, 10, 0.96); }
+
+/* 화면 안 확인창(ask): 브라우저 확인창 대신 */
+.t-ask { z-index: 80; }
+.t-askcard { width: min(420px, 100%); padding: 22px 22px 18px; }
+.t-ask-text { margin: 0 0 14px; font-size: 16px; line-height: 1.5; word-break: keep-all; }
+.t-ask-input { width: 100%; box-sizing: border-box; margin: 0 0 14px; padding: 10px 12px; font: inherit; font-size: 16px; border: 1px solid var(--t-line); border-radius: 10px; }
+.t-ask-btns { display: flex; justify-content: flex-end; gap: 8px; }
