@@ -50,9 +50,24 @@ def clear_floor(rgb):
     # 바닥 선: 한 줄이 끊김 없이 그림 폭의 70% 넘게 이어짐(캐릭터는 칸 사이가 비어 있어 이렇게 길지 않음)
     line = [y for y in range(int(h * 0.55), h) if dark[y].mean() > 0.5 and longest_run(dark[y]) > w * 0.7]
     if line:
-        y0 = min(line) - 2
+        # 캐릭터는 이 선을 밟고 서 있음: 선 아래(칸 이름 글자)는 모두 지우되,
+        # 선 자체는 바로 위가 배경인 곳만 지움 → 발바닥(선에 닿은 부분)은 잘리지 않음
+        y0, y1 = min(line), max(line)
         rgb = rgb.copy()
-        rgb[y0:] = bg
+        rgb[y1 + 3:] = bg
+        above = np.sqrt(((rgb[max(0, y0 - 4)] - bg) ** 2).sum(axis=1)) < 22
+        band = slice(max(0, y0 - 2), y1 + 3)
+        # 선의 색: 위가 배경인 곳의 선 픽셀 평균
+        line_px = rgb[y0:y1 + 1][:, above].reshape(-1, 3)
+        line_px = line_px[np.sqrt(((line_px - bg) ** 2).sum(axis=1)) > 18]
+        rgb[band, above] = bg
+        # 발 밑에 남은 선 조각: 선 색과 거의 같은 점만 배경으로 (발 외곽선·회색 꼬리 줄무늬는 남음)
+        if len(line_px):
+            lc = np.median(line_px, axis=0)
+            seg = rgb[band]
+            same = np.sqrt(((seg - lc) ** 2).sum(axis=2)) < 14
+            seg[same] = bg
+            rgb[band] = seg
     return rgb
 
 
