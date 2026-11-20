@@ -61,11 +61,11 @@ def clear_floor(rgb):
             line += group
         group = [y] if y is not None else []
     if line:
-        # 캐릭터는 이 선을 밟고 서 있음: 선 아래(칸 이름 글자)는 모두 지우되,
-        # 선 자체는 바로 위가 배경인 곳만 지움 → 발바닥(선에 닿은 부분)은 잘리지 않음
+        # 캐릭터는 이 선을 밟고 서 있음(걷는 GIF 에서는 발이 선 아래로 내려가기도 함).
+        # 선 자체는 바로 위가 배경인 곳만 지우고, 선 아래는 '캐릭터와 이어지지 않은 것'(칸 이름 글자·반짝이)만 지움
+        # → 발바닥은 선에 닿든 선 아래로 내려가든 잘리지 않음
         y0, y1 = min(line), max(line)
         rgb = rgb.copy()
-        rgb[y1 + 3:] = bg
         above = np.sqrt(((rgb[max(0, y0 - 4)] - bg) ** 2).sum(axis=1)) < 22
         band = slice(max(0, y0 - 2), y1 + 3)
         # 선의 색: 위가 배경인 곳의 선 픽셀 평균
@@ -79,6 +79,14 @@ def clear_floor(rgb):
             same = np.sqrt(((seg - lc) ** 2).sum(axis=2)) < 14
             seg[same] = bg
             rgb[band] = seg
+        # 선 아래에만 있는 조각(글자·반짝이·남은 선)은 지우고, 위쪽 캐릭터와 이어진 조각(발)은 남김
+        ink = np.sqrt(((rgb - bg) ** 2).sum(axis=2)) > 18
+        lab, cnt = ndimage.label(ink, structure=np.ones((3, 3)))
+        if cnt:
+            tops = ndimage.minimum(np.arange(h)[:, None].repeat(w, 1), lab, range(1, cnt + 1))
+            below = np.zeros(cnt + 1, bool)
+            below[1:] = np.asarray(tops) > y1
+            rgb[below[lab]] = bg
     return rgb
 
 
