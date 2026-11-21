@@ -7,7 +7,7 @@
 const fs = require('fs'), vm = require('vm'), path = require('path');
 const root = path.join(__dirname, '..');
 const ctx = { window: {} }; vm.createContext(ctx);
-for (const f of ['js/coaster/missions.js', 'js/coaster/logic.js']) vm.runInContext(fs.readFileSync(path.join(root, f), 'utf8'), ctx);
+for (const f of ['js/coaster/missions.js', 'js/coaster/logic.js', 'js/coaster/generate.js']) vm.runInContext(fs.readFileSync(path.join(root, f), 'utf8'), ctx);
 const M = ctx.window.MP_COASTER_MISSIONS, LG = ctx.window.MP_COASTER_LOGIC;
 let fails = 0;
 function ok(cond, msg) { console.log((cond ? '  통과 ' : '  실패 ') + msg); if (!cond) fails++; }
@@ -90,6 +90,23 @@ ok(r.reason === 'flower' && r.last.flower === 'sunflower', `6학년 튤립만 �
   ok(seen.tulip >= 1 && seen.sunflower >= 1, `6학년 대표 풀이는 튤립(오른쪽)·해바라기(왼쪽)를 모두 만남 (${JSON.stringify(seen)})`);
 }
 ok(LG.pieceOf({ E: true, S: true }) === 'se' && LG.pieceOf({ W: true, N: true }) === 'nw' && LG.pieceOf({ E: true, W: true }) === 'h', '레일 조각 이름: 이어진 두 방향');
+
+console.log('[새 꽃밭(무작위 판)]');
+const GEN = ctx.window.MP_COASTER_GEN;
+for (let g = 1; g <= 6; g++) {
+  let fallback = 0, bad = 0; const sigs = new Set();
+  for (let seed = 1; seed <= 200; seed++) {
+    const m = GEN.make(g, seed);
+    if (!m.random) { fallback++; continue; }
+    sigs.add(m.sig);
+    if (!GEN.check(m) || m.layouts.some(L => L.cols > 8 || L.rows > 5)) bad++;
+    const pal = new Set(m.palette.map(sig));
+    if (![...sigs_(m.answer)].every(x => pal.has(x))) bad++;
+  }
+  ok(bad === 0 && fallback === 0 && sigs.size >= 150, `${g}학년: 200판 모두 풀이 성공·오답 실패·격자 8×5 안 (서로 다른 판 ${sigs.size}개, 대체 ${fallback})`);
+}
+function sigs_(list) { return sigs(list); }
+{ const a = GEN.make(3, 7), b = GEN.make(3, 7, a.sig); ok(a.sig !== b.sig, '바로 전 판과 같은 판은 다시 나오지 않음'); }
 
 console.log(fails ? `\n실패 ${fails}개` : '\n모두 통과');
 process.exit(fails ? 1 : 0);

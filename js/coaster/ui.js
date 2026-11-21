@@ -107,7 +107,7 @@
     body.appendChild(gr);
     ui.gradeNote = el('p', 'cs-grade-note'); body.appendChild(ui.gradeNote);
     var acts = el('div', 'cs-dialog-acts');
-    ui.goBtn = btn('cs-choice', '선로 만들러 가기', function () { closeDialog(); openGame(MS.byGrade(S.grade)); });
+    ui.goBtn = btn('cs-choice', '선로 만들러 가기', function () { closeDialog(); openGame(pickMission(S.grade)); });
     acts.appendChild(ui.goBtn);
     acts.appendChild(btn('cs-choice light', '나중에 할래', closeDialog));
     body.appendChild(acts);
@@ -135,8 +135,8 @@
   function setGrade(g) {
     S.grade = g;
     ui.gradeBtns.forEach(function (b, i) { b.setAttribute('aria-checked', String(i + 1 === g)); b.classList.toggle('on', i + 1 === g); });
-    var park = api().profile().grade || null, m = MS.byGrade(g);
-    ui.gradeNote.textContent = '첫 미션: ‘' + m.title + '’ · ' + (park ? '공원 학년은 ' + park + '학년이에요. ' : '') +
+    var park = api().profile().grade || null, m = MS.byGrade(g), done = (buildSave().done || {})['g' + g];
+    ui.gradeNote.textContent = (done ? '이번엔 새 꽃밭이 나와요(‘' + m.title + '’ 연습은 끝!) · ' : '첫 미션: ‘' + m.title + '’ · ') + (park ? '공원 학년은 ' + park + '학년이에요. ' : '') +
       (park && park !== g ? '바꾼 학년은 이번 놀이에만 써요.' : '다른 학년도 골라 볼 수 있어요.');
   }
   function openDialog() {
@@ -668,7 +668,7 @@
     var L = layout(), fr = ui.field.getBoundingClientRect(), sr = ui.say.getBoundingClientRect();
     // 왼쪽 역장 말풍선과 겹치지 않게: 말풍선 오른쪽부터 남은 너비 안에서 가운데
     var left0 = sr.right - fr.left + 14, availW = fr.width - left0 - 14;
-    var cell = Math.floor(Math.min((fr.height * 0.84) / L.rows, availW / L.cols, 132));
+    var cell = Math.floor(Math.min((fr.height * 0.84) / L.rows, availW / L.cols, 150));
     S.cell = cell;
     ui.grid.style.width = cell * L.cols + 'px'; ui.grid.style.height = cell * L.rows + 'px';
     ui.grid.style.left = Math.max(left0, (fr.width - cell * L.cols) / 2) + 'px';
@@ -781,7 +781,7 @@
   function openGame(m) {
     S.mission = m; S.program = []; S.cursor = { list: 'root', i: 0 }; S.started = false; S.ranOnce = false; S.layoutOk = null;
     showScene('game');
-    ui.title.textContent = m.grade + '학년 · ' + m.title;
+    ui.title.textContent = titleOf(m);
     renderPalette(); renderCode(); resetWorld(0);
     say(m.say);
     setRunState(false);
@@ -909,30 +909,50 @@
     }
     await wait(500, token);
   }
+  /* 티켓(추천안 A): 학년마다 처음 성공 3장, 그 뒤 '새 꽃밭'을 처음 성공할 때마다 1장 — 하루 최대 DAY_MAX장.
+     같은 판을 '다시 만들기'로 또 성공하면 주지 않음 */
+  var DAY_MAX = 5;
+  function today() { var d = new Date(); return d.getFullYear() + '-' + (d.getMonth() + 1) + '-' + d.getDate(); }
   function succeed() {
-    var m = S.mission, first = false, cleared = false, before = ticketCount();
+    var m = S.mission, gid = 'g' + m.grade, kind = 'none', gain = 0, cleared = false, before = ticketCount();
     var saved = patchBuild(function (b) {
       var extra = {};
-      if (!b.done[m.id]) { b.done[m.id] = true; first = true; extra.tickets = (save().tickets || 0) + MS.tickets; }
+      if (!b.day || b.day.date !== today()) b.day = { date: today(), n: 0 };
+      if (!b.done[gid]) { b.done[gid] = true; kind = 'first'; gain = MS.tickets; }
+      else if (m.random && !m.paid) { if (b.day.n < DAY_MAX) { b.day.n++; kind = 'new'; gain = 1; } else kind = 'daymax'; }
+      else kind = 'again';
+      m.paid = true;
+      if (gain) extra.tickets = (save().tickets || 0) + gain;
       if (!b.cleared) { b.cleared = true; cleared = true; }
       return extra;
     });
-    if (first) showTickets(before);
-    var idx = MS.list.indexOf(m), next = MS.list[idx + 1];
+    if (gain) showTickets(before);
     var lines = [];
     lines.push(m.layouts.length > 1 ? '꽃과 역 자리가 달라져도 같은 코드로 두 꽃밭 모두 성공했어요!' : '쌓은 블록 ' + LG.countBlocks(S.program) + '개로 선로를 완성했어요!');
-    lines.push(first ? '🎟 티켓 ' + MS.tickets + '장을 받았어요!' : '이 미션 티켓은 이미 받았어요.');
+    lines.push(kind === 'first' ? '🎟 티켓 ' + gain + '장을 받았어요!' :
+      kind === 'new' ? '🎟 새 꽃밭 티켓 1장을 받았어요! (오늘 ' + buildSave().day.n + ' / ' + DAY_MAX + ')' :
+      kind === 'daymax' ? '오늘 받을 수 있는 새 꽃밭 티켓(' + DAY_MAX + '장)은 다 받았어요. 내일 또 받아요!' :
+      '이 꽃밭 티켓은 이미 받았어요. ‘새 꽃밭’을 성공하면 더 받을 수 있어요.');
     if (cleared) lines.push('★ ‘꼬마 기관사’ 캐릭터를 받았어요! 공원 위쪽 ‘캐릭터’에서 골라 봐요.');
     if (!saved) lines.push('이 기기에는 저장되지 않았어요. 기록은 이번에만 남아요.');
-    var btns = [];
-    if (next) btns.push({ text: '다음 미션 (' + next.grade + '학년)', main: true, fn: function () { hideModal(); openNext(next); } });
-    btns.push({ text: '다시 만들기', main: !next, fn: function () { hideModal(); openGameAgain(); } });
+    var btns = [{ text: '🎲 새 꽃밭', main: true, fn: function () { hideModal(); openNext(pickMission(m.grade, true)); } }];
+    if (m.grade < 6) btns.push({ text: '다음 학년 (' + (m.grade + 1) + '학년)', fn: function () { hideModal(); openNext(pickMission(m.grade + 1)); } });
+    btns.push({ text: '다시 만들기', fn: function () { hideModal(); openGameAgain(); } });
     btns.push({ text: '역으로 돌아가기', fn: toLobby });
     showModal('선로 완성!', lines, btns, null, 'done');
   }
+  /* 학년 미션 고르기: 그 학년을 처음 하면 고정 미션(연습), 그다음부터는 무작위 새 꽃밭(바로 전 판과 다르게) */
+  S.lastSig = {};
+  function pickMission(g, fresh) {
+    if (!fresh && !(buildSave().done || {})['g' + g]) return MS.byGrade(g);
+    var m = window.MP_COASTER_GEN ? MP_COASTER_GEN.make(g, null, S.lastSig[g]) : MS.byGrade(g);
+    if (m.sig) S.lastSig[g] = m.sig;
+    return m;
+  }
+  function titleOf(m) { return m.grade + '학년 · ' + m.title + (m.random ? ' · 🎲 새 꽃밭' : ''); }
   function openNext(m) {
     S.mission = m; S.program = []; S.cursor = { list: 'root', i: 0 }; S.ranOnce = false; S.layoutOk = null; S.started = true;
-    ui.title.textContent = m.grade + '학년 · ' + m.title;
+    ui.title.textContent = titleOf(m);
     renderPalette(); renderCode(); resetWorld(0); setRunState(false);
     say(m.say);
   }
