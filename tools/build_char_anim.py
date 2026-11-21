@@ -20,8 +20,8 @@ from build_characters import enhance  # noqa: E402
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 # 발밑에 회색 그림자가 그려진 GIF
 SHADOW = {'R4g'}
-# 흰 망토의 그늘이 배경 회색과 같아서 막힌 틈 지우기를 하면 망토에 구멍이 나는 캐릭터
-NO_HOLES = {'R5b', 'R5g'}
+# 흰 망토·흰 옷·은빛 갑옷의 그늘이 배경 회색과 같아서 막힌 틈 지우기를 하면 옷에 구멍이 나는 캐릭터(유령·요리사·우주 비행사·기사)
+NO_HOLES = {'R5b', 'R5g', 'S2', 'S7', 'S9'}
 GIF_DIR = os.path.join(ROOT, 'assets', 'characters-src', 'gif')
 OUT = os.path.join(ROOT, 'assets', 'characters')
 JS = os.path.join(ROOT, 'js', 'data', 'character-sprites.js')

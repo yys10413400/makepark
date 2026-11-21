@@ -1095,6 +1095,44 @@ window.MP_CHAR_SPRITES = {
   }
  },
  "R6b": {
+  "anim": {
+   "frames": 17,
+   "idle": {
+    "down": 16,
+    "right": 4,
+    "up": 9
+   },
+   "k": 0.5,
+   "ms": 100,
+   "rowH": 160,
+   "src": "assets/characters/R6b-anim.webp",
+   "views": {
+    "down": [
+     4,
+     4,
+     72,
+     152,
+     36.0,
+     152
+    ],
+    "right": [
+     163,
+     4,
+     71,
+     150,
+     36.0,
+     150
+    ],
+    "up": [
+     84,
+     4,
+     71,
+     152,
+     35.0,
+     152
+    ]
+   }
+  },
   "src": "assets/characters/R6b.webp",
   "views": {
    "down": [
@@ -1153,6 +1191,44 @@ window.MP_CHAR_SPRITES = {
   }
  },
  "R6g": {
+  "anim": {
+   "frames": 18,
+   "idle": {
+    "down": 1,
+    "right": 3,
+    "up": 1
+   },
+   "k": 0.5,
+   "ms": 100,
+   "rowH": 167,
+   "src": "assets/characters/R6g-anim.webp",
+   "views": {
+    "down": [
+     4,
+     4,
+     65,
+     158,
+     32.0,
+     158
+    ],
+    "right": [
+     149,
+     4,
+     67,
+     158,
+     34.0,
+     158
+    ],
+    "up": [
+     77,
+     4,
+     64,
+     159,
+     32.0,
+     159
+    ]
+   }
+  },
   "src": "assets/characters/R6g.webp",
   "views": {
    "down": [
@@ -1211,6 +1287,44 @@ window.MP_CHAR_SPRITES = {
   }
  },
  "R7b": {
+  "anim": {
+   "frames": 13,
+   "idle": {
+    "down": 3,
+    "right": 3,
+    "up": 9
+   },
+   "k": 0.5,
+   "ms": 100,
+   "rowH": 159,
+   "src": "assets/characters/R7b-anim.webp",
+   "views": {
+    "down": [
+     4,
+     4,
+     86,
+     151,
+     45.0,
+     151
+    ],
+    "right": [
+     186,
+     4,
+     76,
+     150,
+     33.0,
+     150
+    ],
+    "up": [
+     98,
+     4,
+     80,
+     151,
+     40.0,
+     151
+    ]
+   }
+  },
   "src": "assets/characters/R7b.webp",
   "views": {
    "down": [
@@ -1269,6 +1383,44 @@ window.MP_CHAR_SPRITES = {
   }
  },
  "R7g": {
+  "anim": {
+   "frames": 19,
+   "idle": {
+    "down": 3,
+    "right": 17,
+    "up": 0
+   },
+   "k": 0.5,
+   "ms": 100,
+   "rowH": 165,
+   "src": "assets/characters/R7g-anim.webp",
+   "views": {
+    "down": [
+     4,
+     4,
+     95,
+     157,
+     50.0,
+     157
+    ],
+    "right": [
+     207,
+     4,
+     80,
+     155,
+     38.0,
+     155
+    ],
+    "up": [
+     107,
+     4,
+     92,
+     155,
+     42.0,
+     155
+    ]
+   }
+  },
   "src": "assets/characters/R7g.webp",
   "views": {
    "down": [
@@ -1327,6 +1479,44 @@ window.MP_CHAR_SPRITES = {
   }
  },
  "S1": {
+  "anim": {
+   "frames": 12,
+   "idle": {
+    "down": 10,
+    "right": 6,
+    "up": 7
+   },
+   "k": 0.5,
+   "ms": 100,
+   "rowH": 173,
+   "src": "assets/characters/S1-anim.webp",
+   "views": {
+    "down": [
+     4,
+     4,
+     81,
+     164,
+     40.0,
+     164
+    ],
+    "right": [
+     182,
+     4,
+     79,
+     163,
+     38.0,
+     163
+    ],
+    "up": [
+     93,
+     4,
+     81,
+     165,
+     40.0,
+     165
+    ]
+   }
+  },
   "src": "assets/characters/S1.webp",
   "views": {
    "down": [
@@ -1385,6 +1575,44 @@ window.MP_CHAR_SPRITES = {
   }
  },
  "S10": {
+  "anim": {
+   "frames": 15,
+   "idle": {
+    "down": 0,
+    "right": 0,
+    "up": 0
+   },
+   "k": 0.5,
+   "ms": 100,
+   "rowH": 167,
+   "src": "assets/characters/S10-anim.webp",
+   "views": {
+    "down": [
+     4,
+     4,
+     116,
+     157,
+     58.0,
+     157
+    ],
+    "right": [
+     253,
+     4,
+     93,
+     155,
+     49.0,
+     155
+    ],
+    "up": [
+     128,
+     4,
+     117,
+     159,
+     58.0,
+     159
+    ]
+   }
+  },
   "src": "assets/characters/S10.webp",
   "views": {
    "down": [
@@ -1443,6 +1671,44 @@ window.MP_CHAR_SPRITES = {
   }
  },
  "S2": {
+  "anim": {
+   "frames": 14,
+   "idle": {
+    "down": 8,
+    "right": 11,
+    "up": 4
+   },
+   "k": 0.5,
+   "ms": 100,
+   "rowH": 192,
+   "src": "assets/characters/S2-anim.webp",
+   "views": {
+    "down": [
+     4,
+     4,
+     76,
+     184,
+     39.0,
+     184
+    ],
+    "right": [
+     172,
+     4,
+     81,
+     181,
+     40.0,
+     181
+    ],
+    "up": [
+     88,
+     4,
+     76,
+     184,
+     38.0,
+     184
+    ]
+   }
+  },
   "src": "assets/characters/S2.webp",
   "views": {
    "down": [
@@ -1501,6 +1767,44 @@ window.MP_CHAR_SPRITES = {
   }
  },
  "S3": {
+  "anim": {
+   "frames": 12,
+   "idle": {
+    "down": 7,
+    "right": 7,
+    "up": 6
+   },
+   "k": 0.5,
+   "ms": 100,
+   "rowH": 161,
+   "src": "assets/characters/S3-anim.webp",
+   "views": {
+    "down": [
+     4,
+     4,
+     86,
+     151,
+     40.0,
+     151
+    ],
+    "right": [
+     171,
+     4,
+     94,
+     148,
+     45.0,
+     148
+    ],
+    "up": [
+     98,
+     4,
+     65,
+     153,
+     33.0,
+     153
+    ]
+   }
+  },
   "src": "assets/characters/S3.webp",
   "views": {
    "down": [
@@ -1559,6 +1863,44 @@ window.MP_CHAR_SPRITES = {
   }
  },
  "S4": {
+  "anim": {
+   "frames": 13,
+   "idle": {
+    "down": 12,
+    "right": 1,
+    "up": 0
+   },
+   "k": 0.5,
+   "ms": 100,
+   "rowH": 161,
+   "src": "assets/characters/S4-anim.webp",
+   "views": {
+    "down": [
+     4,
+     4,
+     70,
+     153,
+     35.0,
+     153
+    ],
+    "right": [
+     159,
+     4,
+     75,
+     148,
+     37.0,
+     148
+    ],
+    "up": [
+     82,
+     4,
+     69,
+     152,
+     35.0,
+     152
+    ]
+   }
+  },
   "src": "assets/characters/S4.webp",
   "views": {
    "down": [
@@ -1617,6 +1959,44 @@ window.MP_CHAR_SPRITES = {
   }
  },
  "S5": {
+  "anim": {
+   "frames": 26,
+   "idle": {
+    "down": 24,
+    "right": 1,
+    "up": 8
+   },
+   "k": 0.5,
+   "ms": 100,
+   "rowH": 170,
+   "src": "assets/characters/S5-anim.webp",
+   "views": {
+    "down": [
+     4,
+     4,
+     105,
+     162,
+     47.0,
+     162
+    ],
+    "right": [
+     215,
+     4,
+     99,
+     160,
+     49.0,
+     160
+    ],
+    "up": [
+     117,
+     4,
+     90,
+     162,
+     45.0,
+     162
+    ]
+   }
+  },
   "src": "assets/characters/S5.webp",
   "views": {
    "down": [
@@ -1675,6 +2055,44 @@ window.MP_CHAR_SPRITES = {
   }
  },
  "S6": {
+  "anim": {
+   "frames": 15,
+   "idle": {
+    "down": 4,
+    "right": 6,
+    "up": 7
+   },
+   "k": 0.5,
+   "ms": 100,
+   "rowH": 194,
+   "src": "assets/characters/S6-anim.webp",
+   "views": {
+    "down": [
+     4,
+     4,
+     109,
+     186,
+     55.0,
+     186
+    ],
+    "right": [
+     236,
+     4,
+     103,
+     183,
+     53.0,
+     183
+    ],
+    "up": [
+     121,
+     4,
+     107,
+     185,
+     52.0,
+     185
+    ]
+   }
+  },
   "src": "assets/characters/S6.webp",
   "views": {
    "down": [
@@ -1733,6 +2151,44 @@ window.MP_CHAR_SPRITES = {
   }
  },
  "S7": {
+  "anim": {
+   "frames": 12,
+   "idle": {
+    "down": 2,
+    "right": 0,
+    "up": 0
+   },
+   "k": 0.5,
+   "ms": 100,
+   "rowH": 166,
+   "src": "assets/characters/S7-anim.webp",
+   "views": {
+    "down": [
+     4,
+     4,
+     78,
+     158,
+     39.0,
+     158
+    ],
+    "right": [
+     175,
+     4,
+     76,
+     156,
+     33.0,
+     156
+    ],
+    "up": [
+     90,
+     4,
+     77,
+     158,
+     38.0,
+     158
+    ]
+   }
+  },
   "src": "assets/characters/S7.webp",
   "views": {
    "down": [
@@ -1791,6 +2247,44 @@ window.MP_CHAR_SPRITES = {
   }
  },
  "S8": {
+  "anim": {
+   "frames": 23,
+   "idle": {
+    "down": 5,
+    "right": 20,
+    "up": 2
+   },
+   "k": 0.5,
+   "ms": 100,
+   "rowH": 162,
+   "src": "assets/characters/S8-anim.webp",
+   "views": {
+    "down": [
+     4,
+     4,
+     82,
+     154,
+     49.0,
+     154
+    ],
+    "right": [
+     183,
+     4,
+     85,
+     146,
+     51.0,
+     146
+    ],
+    "up": [
+     94,
+     4,
+     81,
+     154,
+     33.0,
+     154
+    ]
+   }
+  },
   "src": "assets/characters/S8.webp",
   "views": {
    "down": [
@@ -1849,6 +2343,44 @@ window.MP_CHAR_SPRITES = {
   }
  },
  "S9": {
+  "anim": {
+   "frames": 12,
+   "idle": {
+    "down": 9,
+    "right": 11,
+    "up": 8
+   },
+   "k": 0.5,
+   "ms": 100,
+   "rowH": 163,
+   "src": "assets/characters/S9-anim.webp",
+   "views": {
+    "down": [
+     4,
+     4,
+     88,
+     155,
+     43.0,
+     155
+    ],
+    "right": [
+     199,
+     4,
+     69,
+     150,
+     31.0,
+     150
+    ],
+    "up": [
+     100,
+     4,
+     91,
+     154,
+     48.0,
+     154
+    ]
+   }
+  },
   "src": "assets/characters/S9.webp",
   "views": {
    "down": [
@@ -1907,4 +2439,4 @@ window.MP_CHAR_SPRITES = {
   }
  }
 };
-window.MP_CHAR_VER = '20261120142410';
+window.MP_CHAR_VER = '20261121114343';
