@@ -757,8 +757,11 @@
     node.style.left = c * 100 / L.cols + '%'; node.style.top = r * 100 / L.rows + '%';
     node.style.width = 100 / L.cols + '%'; node.style.height = 100 / L.rows + '%';
   }
-  function drawRail(k) {
-    var L = layout(), piece = LG.pieceOf(S.world.track[k]);
+  /* look: 거북이가 지금 바라보는 방향 — 들어온 쪽만 이어진 칸이면 그쪽으로도 이어진 모양(돌면 바로 커브)으로 미리 그림 */
+  function drawRail(k, look) {
+    var conn = S.world.track[k];
+    if (look && conn && !conn[look] && Object.keys(conn).length === 1) { conn = Object.assign({}, conn); conn[look] = true; }
+    var L = layout(), piece = LG.pieceOf(conn);
     if (!piece) return;
     var e = ui.railEls[k];
     if (!e) { e = ui.railEls[k] = el('img', 'cs-rail'); e.alt = ''; e.draggable = false; var p = k.split(',').map(Number); place(e, p[0], p[1], L); ui.rails.appendChild(e); }
@@ -863,9 +866,10 @@
       if (e.type === 'block') { markRunning(e.id); ok = await wait(T.block, token); }
       else if (e.type === 'turn') {
         placeTurtle(false); ui.turtle.classList.remove('spin'); void ui.turtle.offsetWidth; ui.turtle.classList.add('spin');
+        drawRail(LG.key(S.world.c, S.world.r), S.world.dir);   // 도는 순간 지금 칸 레일이 커브로
         ok = await wait(T.turn, token);
       } else if (e.type === 'move') {
-        // 떠나는 칸과 들어가는 칸의 선로를 새로 그림(회전 뒤면 떠나는 칸이 커브로 바뀜)
+        // 떠나는 칸과 들어가는 칸의 선로를 새로 그림(떠나는 칸 커브는 돌 때 이미 그려 둠)
         drawRail(LG.key(e.from[0], e.from[1])); drawRail(LG.key(e.to[0], e.to[1]));
         if (ui.hint) { ui.hint.remove(); ui.hint = null; }
         placeTurtle(false);
