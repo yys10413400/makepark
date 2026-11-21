@@ -59,77 +59,57 @@
   // 모든 시즌 지도를 미리 불러 두고, 바꿀 때는 부드럽게 겹쳐 전환합니다.
   var seasonImgs = {};
   Object.keys(PARK.seasons).forEach(function (id) {
-    var img = new Image();
-    img.onload = function () {
+    var img = new Image(), ground = null, groundDone = !PARK.seasons[id].ground;
+    function ready() { // 지도와 땅 지도(있으면)를 모두 받은 뒤 가림 레이어를 만듦
+      if (!img.complete || !img.naturalWidth || !groundDone) return;
       // 비율 유지: 지도 좌표계(W×H) 안에 원본 비율 그대로 맞춤
       var k = Math.min(W / img.naturalWidth, H / img.naturalHeight), w = img.naturalWidth * k, h = img.naturalHeight * k;
-      seasonImgs[id] = { img: img, rect: { x: (W - w) / 2, y: (H - h) / 2, w: w, h: h }, occ: buildOccluders(img) };
-    };
+      seasonImgs[id] = { img: img, rect: { x: (W - w) / 2, y: (H - h) / 2, w: w, h: h }, occ: buildOccluders(img, ground) };
+    }
+    img.onload = ready;
     img.onerror = function () { console.error('지도 이미지를 불러오지 못했습니다: ' + PARK.seasons[id].map); };
+    if (PARK.seasons[id].ground) {
+      var gi = new Image();
+      gi.onload = function () { ground = gi; groundDone = true; ready(); };
+      gi.onerror = function () { console.error('땅 지도를 불러오지 못했습니다: ' + PARK.seasons[id].ground); groundDone = true; ready(); };
+      gi.src = PARK.seasons[id].ground;
+    }
     img.src = PARK.seasons[id].map;
   });
   var fade = { from: null, t: 1 };
   var ringImg = new Image(); ringImg.src = 'assets/ui/entrance-ring.png';
 
   // ---------- 가림 레이어 (캐릭터가 건물 뒤로 지나갈 때) ----------
-  // 길 픽셀은 투명하게 빼고 건물·나무만 남김. 길인지는 색만으로 정하지 않고 '자동 추출 길 격자'(walkmask.js, 손 수정 전)를 함께 씀:
-  //   - 둘레까지 모두 길인 칸의 픽셀 → 항상 투명 (계절마다 길 색이 달라도: 분홍 포장, 회색 눈길 …)
-  //   - 길 가장자리 칸과 그 바로 바깥 칸 → 그 지도에서 잰 실제 길 색과 비슷한 픽셀만 투명
-  //   - 그 밖(건물 뒤로 지나가는 칸 등) → 그대로 남겨 캐릭터를 가림
-  var BASE = window.MP_WALKMASK;
-  function basePath(c, r) {
-    return r >= 0 && r < BASE.rows && c >= 0 && c < BASE.cols && BASE.data[r].charCodeAt(c) === 49;
-  }
-  function cellKind(c, r) { // 2: 길 한가운데, 1: 길 가장자리 근처, 0: 길 아님
-    var n = 0;
-    for (var dr = -1; dr <= 1; dr++) for (var dc = -1; dc <= 1; dc++) if (basePath(c + dc, r + dr)) n++;
-    if (basePath(c, r)) return n === 9 ? 2 : 1;
-    return (basePath(c - 1, r) || basePath(c + 1, r) || basePath(c, r - 1) || basePath(c, r + 1)) ? 1 : 0;
-  }
-  function buildOccluders(img) {
+  // 건물·나무만 남기고 길(땅)은 지워야 캐릭터가 '막'에 덮이지 않음.
+  // 길이 어디인지는 계절마다 미리 만든 땅 지도(seasons.<계절>.ground, tools/build_ground_mask.py)를 씀:
+  // 눈길과 눈 덮인 지붕처럼 색이 같은 경우에도 정확함. 땅 지도가 없으면 가림 레이어를 쓰지 않음(캐릭터가 늘 보임).
+  function buildOccluders(img, ground) {
+    if (!ground) return null;
     // 지도 좌표 = 이미지 픽셀 (같은 크기일 때). 크기가 다르면 비율대로 맞춤
-    var kx = img.naturalWidth / W, ky = img.naturalHeight / H, cs = BASE.cell;
-    var list = (PARK.occluders || []).map(function (o) {
+    var kx = img.naturalWidth / W, ky = img.naturalHeight / H;
+    var gx = ground.naturalWidth / W, gy = ground.naturalHeight / H;
+    return (PARK.occluders || []).map(function (o) {
       var c = document.createElement('canvas');
       c.width = Math.max(1, Math.round(o.w * kx)); c.height = Math.max(1, Math.round(o.h * ky));
       var g = c.getContext('2d');
       g.drawImage(img, o.x * kx, o.y * ky, o.w * kx, o.h * ky, 0, 0, c.width, c.height);
-      var d;
-      try { d = g.getImageData(0, 0, c.width, c.height); } catch (e) { return null; } // 픽셀을 읽을 수 없으면 가림 없이 진행
-      // 픽셀마다 칸 종류
-      var kind = new Uint8Array(c.width * c.height);
-      for (var y = 0; y < c.height; y++) {
-        var r = Math.floor((o.y + (y + 0.5) / ky) / cs);
-        for (var x = 0; x < c.width; x++) kind[y * c.width + x] = cellKind(Math.floor((o.x + (x + 0.5) / kx) / cs), r);
-      }
-      return { o: o, c: c, g: g, d: d, kind: kind };
-    });
-    // 이 지도의 길 색: 모든 가림 영역의 '길 한가운데' 픽셀 평균·편차
-    var sum = [0, 0, 0], sq = [0, 0, 0], n = 0;
-    list.forEach(function (it) {
-      if (!it) return;
-      var px = it.d.data;
-      for (var i = 0; i < it.kind.length; i++) if (it.kind[i] === 2) {
-        for (var k = 0; k < 3; k++) { var v = px[i * 4 + k]; sum[k] += v; sq[k] += v * v; }
-        n++;
-      }
-    });
-    var mean = [0, 0, 0], tol = [0, 0, 0];
-    for (var k = 0; k < 3; k++) {
-      mean[k] = n ? sum[k] / n : 0;
-      tol[k] = n ? Math.max(18, 2.5 * Math.sqrt(Math.max(0, sq[k] / n - mean[k] * mean[k]))) : 0;
-    }
-    function pathColor(px, i) {
-      return n > 0 && Math.abs(px[i] - mean[0]) <= tol[0] && Math.abs(px[i + 1] - mean[1]) <= tol[1] && Math.abs(px[i + 2] - mean[2]) <= tol[2];
-    }
-    return list.map(function (it) {
-      if (!it) return null;
-      var px = it.d.data;
-      for (var i = 0; i < it.kind.length; i++) {
-        if (it.kind[i] === 2 || (it.kind[i] === 1 && pathColor(px, i * 4))) px[i * 4 + 3] = 0;
-      }
-      it.g.putImageData(it.d, 0, 0);
-      return it.c;
+      g.globalCompositeOperation = 'destination-out'; // 땅 지도의 불투명 부분(길)을 지움
+      g.drawImage(ground, o.x * gx, o.y * gy, o.w * gx, o.h * gy, 0, 0, c.width, c.height);
+      g.globalCompositeOperation = 'source-over';
+      // 세로줄(지도 x 1칸)마다 물체의 앞쪽(남쪽) 끝 y. 캐릭터 발이 이보다 위(북쪽)일 때만 그 줄이 캐릭터를 가림
+      // → 섬 앞 길에 선 캐릭터 위로 섬 뒤쪽 덤불이 그려지지 않음
+      var front = new Float32Array(o.w);
+      var m = document.createElement('canvas'); m.width = o.w; m.height = o.h;
+      var mg = m.getContext('2d');
+      mg.drawImage(ground, o.x * gx, o.y * gy, o.w * gx, o.h * gy, 0, 0, o.w, o.h);
+      try {
+        var px = mg.getImageData(0, 0, o.w, o.h).data;
+        for (var x = 0; x < o.w; x++) {
+          front[x] = -Infinity;
+          for (var y = o.h - 1; y >= 0; y--) if (px[(y * o.w + x) * 4 + 3] < 128) { front[x] = o.y + y + 1; break; }
+        }
+      } catch (e) { for (var i = 0; i < o.w; i++) front[i] = o.baseY; } // 읽을 수 없으면 예전처럼 baseY 한 줄로
+      return { c: c, front: front };
     });
   }
   // 캐릭터 그림이 차지하는 대략의 영역(발 위치 기준)
@@ -140,10 +120,20 @@
     if (!cur || !cur.occ) return false;
     var b = spriteBox(p), hidden = false;
     (PARK.occluders || []).forEach(function (o, i) {
-      if (p.y >= o.baseY || !cur.occ[i]) return;
+      var oc = cur.occ[i];
+      if (p.y >= o.baseY || !oc) return;
       if (b.x1 < o.x || b.x0 > o.x + o.w || b.y1 < o.y || b.y0 > o.y + o.h) return;
-      ctx.drawImage(cur.occ[i], o.x, o.y, o.w, o.h);
-      hidden = true;
+      // 캐릭터 폭 안에서 '물체가 발보다 앞에 있는' 세로줄 구간만 다시 그림
+      var x0 = Math.max(o.x, Math.floor(b.x0)), x1 = Math.min(o.x + o.w, Math.ceil(b.x1));
+      var sx = oc.c.width / o.w, start = -1;
+      for (var x = x0; x <= x1; x++) {
+        var on = x < x1 && oc.front[x - o.x] > p.y;
+        if (on && start < 0) start = x;
+        if (!on && start >= 0) {
+          ctx.drawImage(oc.c, (start - o.x) * sx, 0, (x - start) * sx, oc.c.height, start, o.y, x - start, o.h);
+          hidden = true; start = -1;
+        }
+      }
     });
     return hidden;
   }

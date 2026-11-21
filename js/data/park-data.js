@@ -15,12 +15,14 @@ window.MP_PARK = {
   seasons: {
     christmas: {
       label: '크리스마스', map: 'assets/maps/makepark-christmas.webp',
+      // 땅(길) 지도: 캐릭터가 건물 뒤로 지나갈 때 덮개에서 길 부분을 지우는 데 씀 (tools/build_ground_mask.py)
+      ground: 'assets/maps/makepark-christmas-ground.png',
       // 이 계절 지도에만 있는 물체(길가 크리스마스트리)는 이 계절에서만 막음. 형식은 아래 walkEdits 와 같음
       walkEdits: [
         { op: 'remove', ellipse: { cx: 1042, cy: 312, rx: 18, ry: 20 }, note: '스타 페스티벌 왼쪽 길가 트리' }
       ]
     },
-    normal: { label: '일반', map: 'assets/maps/makepark-normal.webp' }
+    normal: { label: '일반', map: 'assets/maps/makepark-normal.webp', ground: 'assets/maps/makepark-normal-ground.png' }
   },
 
   // 캐릭터 시작 위치: 정문 아치 바로 안쪽 길
