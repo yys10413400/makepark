@@ -64,7 +64,7 @@
       if (!img.complete || !img.naturalWidth || !groundDone) return;
       // 비율 유지: 지도 좌표계(W×H) 안에 원본 비율 그대로 맞춤
       var k = Math.min(W / img.naturalWidth, H / img.naturalHeight), w = img.naturalWidth * k, h = img.naturalHeight * k;
-      seasonImgs[id] = { img: img, rect: { x: (W - w) / 2, y: (H - h) / 2, w: w, h: h }, occ: buildOccluders(img, ground) };
+      seasonImgs[id] = { img: img, rect: { x: (W - w) / 2, y: (H - h) / 2, w: w, h: h }, occ: buildOccluders(img, ground, grids[id]) };
     }
     img.onload = ready;
     img.onerror = function () { console.error('지도 이미지를 불러오지 못했습니다: ' + PARK.seasons[id].map); };
@@ -83,7 +83,7 @@
   // 건물·나무만 남기고 길(땅)은 지워야 캐릭터가 '막'에 덮이지 않음.
   // 길이 어디인지는 계절마다 미리 만든 땅 지도(seasons.<계절>.ground, tools/build_ground_mask.py)를 씀:
   // 눈길과 눈 덮인 지붕처럼 색이 같은 경우에도 정확함. 땅 지도가 없으면 가림 레이어를 쓰지 않음(캐릭터가 늘 보임).
-  function buildOccluders(img, ground) {
+  function buildOccluders(img, ground, wgrid) {
     if (!ground) return null;
     // 지도 좌표 = 이미지 픽셀 (같은 크기일 때). 크기가 다르면 비율대로 맞춤
     var kx = img.naturalWidth / W, ky = img.naturalHeight / H;
@@ -96,22 +96,39 @@
       g.globalCompositeOperation = 'destination-out'; // 땅 지도의 불투명 부분(길)을 지움
       g.drawImage(ground, o.x * gx, o.y * gy, o.w * gx, o.h * gy, 0, 0, c.width, c.height);
       g.globalCompositeOperation = 'source-over';
-      // 세로줄(지도 x 1칸)마다 물체의 앞쪽(남쪽) 끝 y. 캐릭터 발이 이보다 위(북쪽)일 때만 그 줄이 캐릭터를 가림
-      // → 섬 앞 길에 선 캐릭터 위로 섬 뒤쪽 덤불이 그려지지 않음
-      var front = new Float32Array(o.w);
+      // 세로줄(지도 x 1칸)마다 '물체 조각' 목록 [위 y, 아래 y). 조각의 아래 끝이 캐릭터 발보다 남쪽일 때만 그 조각이 캐릭터를 가림.
+      //  - 길(땅)에서 끊김 → 섬 앞 길에 선 캐릭터 위로 섬 뒤 덤불이 그려지지 않음
+      //  - 건물에 가려진 숨은 길(걸을 수 있는데 그림은 건물인 칸)의 위 끝에서도 끊김
+      //    → 건물 뒤 길에 선 캐릭터 위로 건물보다 더 뒤에 있는 나무·물이 그려지지 않음
+      var runs = [];
       var m = document.createElement('canvas'); m.width = o.w; m.height = o.h;
       var mg = m.getContext('2d');
       mg.drawImage(ground, o.x * gx, o.y * gy, o.w * gx, o.h * gy, 0, 0, o.w, o.h);
       try {
         var px = mg.getImageData(0, 0, o.w, o.h).data;
+        var hiddenAt = function (x, y) { // 숨은 길: 걸을 수 있는 칸인데 그림은 땅이 아님
+          if (y < 0 || !wgrid) return false;
+          var i = wgrid.idx(o.x + x + 0.5, o.y + y + 0.5);
+          return i >= 0 && wgrid.walk[i] === 1 && px[(y * o.w + x) * 4 + 3] < 128;
+        };
         for (var x = 0; x < o.w; x++) {
-          front[x] = -Infinity;
-          for (var y = o.h - 1; y >= 0; y--) if (px[(y * o.w + x) * 4 + 3] < 128) { front[x] = o.y + y + 1; break; }
+          var col = [], start = -1;
+          for (var y = 0; y < o.h; y++) {
+            var solid = px[(y * o.w + x) * 4 + 3] < 128;
+            var split = solid && hiddenAt(x, y) && !hiddenAt(x, y - 1);
+            if (start >= 0 && (!solid || split)) { col.push(start, y); start = -1; }
+            if (solid && start < 0) start = y;
+          }
+          if (start >= 0) col.push(start, o.h);
+          runs.push(col);
         }
-      } catch (e) { for (var i = 0; i < o.w; i++) front[i] = o.baseY; } // 읽을 수 없으면 예전처럼 baseY 한 줄로
-      return { c: c, front: front };
+      } catch (e) { // 읽을 수 없으면 예전처럼 물체 전체를 baseY 한 줄로
+        for (var i = 0; i < o.w; i++) runs.push([0, o.baseY - o.y]);
+      }
+      return { c: c, runs: runs };
     });
   }
+  var occTmp = document.createElement('canvas'), occTmpCtx = occTmp.getContext('2d');
   // 캐릭터 그림이 차지하는 대략의 영역(발 위치 기준)
   function spriteBox(p) { return { x0: p.x - 16, x1: p.x + 16, y0: p.y - 64, y1: p.y + 6 }; }
   /* 캐릭터보다 앞(남쪽)에 있는 물체를 캐릭터 위에 다시 그림. 가렸으면 true */
@@ -124,17 +141,27 @@
       if (p.y >= o.baseY || !oc) return;
       if (o.season && o.season !== state.season) return; // 그 계절 지도에만 있는 물체
       if (b.x1 < o.x || b.x0 > o.x + o.w || b.y1 < o.y || b.y0 > o.y + o.h) return;
-      // 캐릭터 폭 안에서 '물체가 발보다 앞에 있는' 세로줄 구간만 다시 그림
+      // 캐릭터 폭 안의 세로줄마다, 아래 끝이 발보다 앞(남쪽)인 물체 조각만 다시 그림
       var x0 = Math.max(o.x, Math.floor(b.x0)), x1 = Math.min(o.x + o.w, Math.ceil(b.x1));
-      var sx = oc.c.width / o.w, start = -1;
-      for (var x = x0; x <= x1; x++) {
-        var on = x < x1 && oc.front[x - o.x] > p.y;
-        if (on && start < 0) start = x;
-        if (!on && start >= 0) {
-          ctx.drawImage(oc.c, (start - o.x) * sx, 0, (x - start) * sx, oc.c.height, start, o.y, x - start, o.h);
-          hidden = true; start = -1;
+      if (x1 <= x0) return;
+      var sx = oc.c.width / o.w, sy = oc.c.height / o.h;
+      // 조각을 작은 임시 캔버스에 원본 해상도로 모은 뒤 한 번에 그림(확대 화면에서 줄 사이 틈이 생기지 않게)
+      var tw = Math.ceil((x1 - x0) * sx), th = oc.c.height;
+      if (occTmp.width < tw || occTmp.height < th) { occTmp.width = Math.max(occTmp.width, tw); occTmp.height = Math.max(occTmp.height, th); }
+      occTmpCtx.clearRect(0, 0, tw, th);
+      var any = false;
+      for (var x = x0; x < x1; x++) {
+        var col = oc.runs[x - o.x];
+        for (var k = 0; k < col.length; k += 2) {
+          var t = col[k], bt = col[k + 1];
+          if (o.y + bt <= p.y) continue;
+          occTmpCtx.drawImage(oc.c, Math.round((x - o.x) * sx), Math.round(t * sy), Math.round(sx), Math.round((bt - t) * sy),
+            Math.round((x - x0) * sx), Math.round(t * sy), Math.round(sx), Math.round((bt - t) * sy));
+          any = true;
+          if (o.y + t < b.y1 && o.y + bt > b.y0) hidden = true;
         }
       }
+      if (any) ctx.drawImage(occTmp, 0, 0, tw, th, x0, o.y, tw / sx, o.h);
     });
     return hidden;
   }
@@ -981,6 +1008,7 @@
   window.MP_DEV = {
     state: state, cam: cam, get grid() { return grid; }, grids: grids, park: PARK, character: character,
     screenToWorld: screenToWorld, worldToScreen: worldToScreen,
+    drawNow: function () { draw(); }, // 화면이 숨겨져 애니메이션이 멈춘 상태에서도 한 장면을 그려 확인할 때
     reachAll: function () {
       return PARK.facilities.map(function (f) {
         var t = grid.nearestWalkable(f.entrance.x, f.entrance.y);
