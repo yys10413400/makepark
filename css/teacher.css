@@ -225,3 +225,18 @@ body.teacher [hidden] { display: none !important; }
 .t-ask-text { margin: 0 0 14px; font-size: 16px; line-height: 1.5; word-break: keep-all; }
 .t-ask-input { width: 100%; box-sizing: border-box; margin: 0 0 14px; padding: 10px 12px; font: inherit; font-size: 16px; border: 1px solid var(--t-line); border-radius: 10px; }
 .t-ask-btns { display: flex; justify-content: flex-end; gap: 8px; }
+
+/* 계절 · 학생 대화 설정 */
+.t-opts { display: flex; flex-wrap: wrap; gap: 14px 22px; margin-top: 14px; padding-top: 12px; border-top: 1px dashed var(--line, #e4dccb); }
+.t-opt { display: flex; flex-direction: column; gap: 6px; }
+.t-opt .t-label small { font-size: 12px; opacity: 0.8; margin-left: 4px; }
+.t-seg { display: inline-flex; border-radius: 12px; overflow: hidden; border: 2px solid var(--t-purple); }
+.t-seg-btn {
+  font-family: var(--font); font-size: 16px; min-height: 42px; padding: 0 16px; border: 0; cursor: pointer;
+  background: #fff; color: var(--t-purple);
+}
+.t-seg-btn + .t-seg-btn { border-left: 2px solid var(--t-purple); }
+.t-seg-btn.on { background: var(--t-purple); color: #fff; }
+.t-seg-btn:focus-visible { outline: 3px solid rgba(106, 61, 154, 0.45); outline-offset: -3px; }
+.t-switch { min-height: 42px; font-size: 16px; }
+.t-switch.off { background: #f3eff7; color: #7b7290; }

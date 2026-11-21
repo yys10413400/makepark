@@ -6,9 +6,10 @@
  *  - local    : 설정값이 없으면 같은 컴퓨터·같은 브라우저의 여러 탭끼리만(BroadcastChannel) — 서버 없이 시험용
  *
  * 데이터 모양 (Firebase 경로 기준)
- *   rooms/{code}/meta           { teacher, open, created }        반 공원(code: 5자리 숫자)
+ *   rooms/{code}/meta           { teacher, open, created, season?, chatOff? }  반 공원(code: 5자리 숫자) · 선생님이 고른 계절 · 대화 끄기
  *   rooms/{code}/cmd            { id, type, target?, at }          선생님 명령: gather(모두 모으기) · kick(내보내기) · close(공원 닫기)
- *   rooms/{code}/players/{pid}  { n, g, s, x, y, d, m, w, t }      닉네임·학년·캐릭터 그림·위치·방향·걷는 중·있는 곳(park|coaster|ghost)·시각
+ *   rooms/{code}/players/{pid}  { n, g, s, x, y, d, m, w, t, sy?, st? }  닉네임·학년·캐릭터 그림·위치·방향·걷는 중·있는 곳(park|coaster|ghost)·시각
+ *                                                                   · 마지막으로 한 말(정해진 이모지·문장 번호 sy, 말한 때 st)
  *
  * 쓰는 법
  *   MPNet.ready().then(...)                    연결 준비
@@ -19,11 +20,13 @@
  *   MPNet.watch(code) → 같은 on* 를 가진 handle (선생님 화면: 입장하지 않고 지켜보기)
  *   MPNet.command(code, { type, target })      선생님 명령 보내기
  *   MPNet.setOpen(code, open)                  공원 열기/닫기
+ *   MPNet.setRoomOption(code, { season?, chatOff? })  선생님: 공원 계절 · 대화 끄기/켜기
  */
 (function () {
   'use strict';
   var CFG = window.MP_FIREBASE_CONFIG;
-  var mode = CFG && CFG.databaseURL ? 'firebase' : 'local';
+  // ?netlocal=1 : 설정값이 있어도 시험 모드(같은 브라우저 탭끼리)로 — 서버를 건드리지 않고 화면을 확인할 때
+  var mode = CFG && CFG.databaseURL && !/[?&]netlocal=1/.test(location.search) ? 'firebase' : 'local';
   var SDK = 'https://www.gstatic.com/firebasejs/10.12.2/';
 
   function newId(n) {
@@ -247,6 +250,17 @@
     });
   }
 
+  // 선생님: 공원 계절(PARK.seasons 의 id) · 대화 끄기(chatOff=true 면 학생은 말풍선을 못 띄움)
+  function setRoomOption(code, opts) {
+    var u = {};
+    if (opts && typeof opts.season === 'string') u.season = opts.season.slice(0, 16);
+    if (opts && typeof opts.chatOff === 'boolean') u.chatOff = opts.chatOff;
+    return ready().then(function () {
+      if (mode === 'local') { var r = rooms(); if (r[code]) { Object.assign(r[code].meta, u); saveRooms(r); roomChanged(); } return; }
+      return fbRef('rooms/' + code + '/meta').update(u);
+    });
+  }
+
   // ---------- 학생 기록: 반 공원에 저장(어느 기기에서든 이어 하기) ----------
   // rooms/{code}/names/{key}            true                         이 반에 등록된 닉네임(누구나 읽기)
   // rooms/{code}/students/{key}         { nick, grade, pin, created, save, updated }   본인(비밀번호 확인 후)·선생님만 읽기
@@ -429,7 +443,7 @@
 
   window.MPNet = {
     mode: mode, ready: ready, myId: myId, createRoom: createRoom, getRoom: getRoom, join: join, watch: watch,
-    command: command, removePlayer: removePlayer, setOpen: setOpen, newId: newId, validCode: validCode,
+    command: command, removePlayer: removePlayer, setOpen: setOpen, setRoomOption: setRoomOption, newId: newId, validCode: validCode,
     studentKey: studentKey, studentExists: studentExists, studentLogin: studentLogin, studentSave: studentSave,
     listStudents: listStudents, resetPin: resetPin, clearStudents: clearStudents, validPin: validPin,
     teacher: teacher, myRooms: myRooms, deleteRoom: deleteRoom, renameRoom: renameRoom, countStudents: countStudents,

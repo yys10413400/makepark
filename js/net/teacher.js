@@ -159,7 +159,41 @@
     $('tState').className = 't-state' + (!m ? '' : m.open ? ' on' : ' off');
     $('tToggle').textContent = m && m.open ? '🔒 공원 닫기' : '🔓 공원 다시 열기';
     $('tToggle').className = 't-btn owner-only' + (m && !m.open ? ' go' : '');
+    // 계절 · 대화 설정
+    var season = m && PARK.seasons[m.season] ? m.season : PARK.defaultSeason;
+    $('tSeason').querySelectorAll('button').forEach(function (b) {
+      var on = b.dataset.season === season;
+      b.classList.toggle('on', on); b.setAttribute('aria-pressed', on ? 'true' : 'false');
+    });
+    var chatOn = !(m && m.chatOff);
+    $('tChat').textContent = chatOn ? '💬 대화 켜짐' : '🔇 대화 꺼짐';
+    $('tChat').setAttribute('aria-pressed', chatOn ? 'true' : 'false');
+    $('tChat').classList.toggle('off', !chatOn);
+    $('tMap').style.backgroundImage = 'url(' + PARK.seasons[season].map + ')';
     if (S.owner && !S.recLoaded) { S.recLoaded = true; loadRecords(); }
+  }
+  // 계절 버튼(PARK.seasons 순서대로)
+  Object.keys(PARK.seasons).forEach(function (id) {
+    var b = document.createElement('button');
+    b.type = 'button'; b.className = 't-seg-btn'; b.dataset.season = id;
+    b.textContent = (id === 'christmas' ? '🎄 ' : '🌳 ') + PARK.seasons[id].label;
+    b.addEventListener('click', function () {
+      if (!S.code || (S.meta && S.meta.season || PARK.defaultSeason) === id) return;
+      NET.setRoomOption(S.code, { season: id }).then(function () { msg('tMsg', '공원을 ' + PARK.seasons[id].label + ' 계절로 바꿨어요.'); }, optFail);
+    });
+    $('tSeason').appendChild(b);
+  });
+  $('tChat').addEventListener('click', function () {
+    if (!S.code || !S.meta) return;
+    var off = !S.meta.chatOff;
+    NET.setRoomOption(S.code, { chatOff: off }).then(function () {
+      msg('tMsg', off ? '학생 대화를 껐어요. 학생들은 말풍선을 띄울 수 없어요.' : '학생 대화를 켰어요.');
+    }, optFail);
+  });
+  // 서버 규칙이 예전 것이면 계절·대화 설정이 막힘 → 규칙을 새로 게시하라고 알려 줌
+  function optFail(err) {
+    var why = (err && (err.code || err.message)) || '알 수 없음';
+    ask('바꾸지 못했어요: ' + why + (/permission/i.test(why) ? ' — Firebase 콘솔 → Realtime Database → 규칙에 저장소의 database.rules.json 을 다시 게시해 주세요.' : ''), { alone: true });
   }
   $('tBack').addEventListener('click', function () { S.recLoaded = false; openHome(); });
   $('tRename').addEventListener('click', function () {

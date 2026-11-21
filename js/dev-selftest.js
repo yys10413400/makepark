@@ -29,7 +29,7 @@ window.MP_SELFTEST = async function () {
     $('enterPark').click();
   }
   await sleep(300);
-  check(inView($('hud')) && inView($('mapToggle')) && inView($('playerChip')), '상단 UI 잘림');
+  check(inView($('hud')) && inView($('miniMap')) && inView($('ticketChip')) && inView($('playerChip')), '상단 UI 잘림');
 
   // 1) 정문 → 모든 시설
   var speed = D.park.player.speed; D.park.player.speed = 1500;
@@ -79,23 +79,24 @@ window.MP_SELFTEST = async function () {
 
   // 5) 전체 지도
   st.path = null; st.dest = null;
-  $('mapToggle').click(); await sleep(1500);
+  $('miniMap').click(); await sleep(1500);
   check(Math.abs(D.cam.s - Math.min(innerWidth / D.park.world.width, innerHeight / D.park.world.height)) < 0.02, '전체 지도 배율 이상');
   check(inView($('mapBar')), '전체 지도 하단 바 잘림');
   var tf = D.park.facilities[2], ps = D.worldToScreen(tf.pin.x, tf.pin.y), r = cv.getBoundingClientRect();
   cv.dispatchEvent(new PointerEvent('pointerdown', { clientX: r.left + ps.x, clientY: r.top + ps.y - 18, bubbles: true }));
   check(st.view === 'play' && st.dest && Math.hypot(st.dest.x - tf.entrance.x, st.dest.y - tf.entrance.y) < 1, '지도 핀 누르기 실패');
   st.path = null; st.dest = null;
-  $('mapToggle').click(); await sleep(200); $('mapBack').click(); await sleep(1500);
+  $('miniMap').click(); await sleep(200); $('mapBack').click(); await sleep(1500);
   check(st.view === 'play', '플레이 화면 복귀 실패');
   // 카메라가 지도 밖을 보여주지 않는지
   var tl = D.screenToWorld(0, 0), br = D.screenToWorld(innerWidth, innerHeight);
   check(tl.x >= -1 && tl.y >= -1 && br.x <= D.park.world.width + 1 && br.y <= D.park.world.height + 1, '플레이 화면에 지도 바깥이 보임');
-  // 6) 계절 전환: 위치·학년 유지, 저장, 전환 후 이동
+  // 6) 계절 전환(반 공원에서 선생님이 바꾼 것처럼): 위치·학년 유지, 전환 후 이동
   var before2 = { x: st.player.x, y: st.player.y, grade: st.grade, season: st.season };
-  $('seasonToggle').click(); await sleep(800);
+  var other = Object.keys(D.park.seasons).filter(function (k) { return k !== st.season; })[0];
+  window.MP_API.setSeason(other); await sleep(800);
   var sv = JSON.parse(localStorage.getItem('makepark.save.v1') || '{}');
-  check(st.season !== before2.season && sv.season === st.season, '계절 전환/저장 실패');
+  check(st.season === other, '계절 전환 실패');
   check(st.player.x === before2.x && st.player.y === before2.y && st.grade === before2.grade && sv.grade === before2.grade, '계절 전환 때 위치·학년이 바뀜');
   D.park.player.speed = 1500;
   var fs = D.park.facilities[0];
@@ -103,7 +104,7 @@ window.MP_SELFTEST = async function () {
   check(st.nearby === fs, '계절 전환 후 이동 실패');
   D.park.player.speed = speed;
   R.season = st.season;
-  $('seasonToggle').click(); await sleep(700);
+  window.MP_API.setSeason(before2.season); await sleep(700);
 
   R.scale = D.cam.s.toFixed(2);
   R.pass = R.problems.length === 0;

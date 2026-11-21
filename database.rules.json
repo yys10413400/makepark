@@ -29,6 +29,8 @@
           "open": { ".validate": "newData.isBoolean()" },
           "created": { ".validate": "newData.isNumber()" },
           "owner": { ".validate": "newData.isString() && (!data.exists() || newData.val() === data.val())" },
+          "season": { ".validate": "newData.isString() && newData.val().length <= 16" },
+          "chatOff": { ".validate": "newData.isBoolean()" },
           "$other": { ".validate": false }
         },
         "cmd": {
@@ -56,6 +58,8 @@
             "m": { ".validate": "newData.val() === 0 || newData.val() === 1" },
             "w": { ".validate": "newData.isString() && newData.val().length <= 12" },
             "t": { ".validate": "newData.isNumber()" },
+            "sy": { ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 99" },
+            "st": { ".validate": "newData.isNumber()" },
             "tc": { ".validate": "newData.val() === 1 && root.child('rooms').child($code).child('meta/owner').val() === auth.uid" },
             "$other": { ".validate": false }
           }

@@ -393,3 +393,92 @@ button.chip:focus-visible { outline: 3px solid var(--mint); outline-offset: 2px;
 .char-panel .profile-actions { position: sticky; bottom: -18px; z-index: 2; margin: 10px -8px -18px; padding: 10px 8px 14px;
   background: linear-gradient(180deg, rgba(255, 248, 232, 0), #fff8e8 30%); }
 @media (max-width: 520px) { .char-grid { grid-template-columns: repeat(3, 1fr); } .char-card canvas { width: 64px; height: 75px; } }
+
+/* ---------- 이름 밑 티켓 수 ---------- */
+#hud .ticket-chip {
+  position: absolute; left: 0; top: calc(100% + 8px);
+  padding: 5px 13px; font-size: 16px; gap: 5px; color: var(--e-brown-soft);
+  max-width: none; flex: none;
+}
+.ticket-chip b { font-weight: 400; color: var(--accent-dark); font-size: 18px; }
+
+/* ---------- 미니맵 (누르면 전체 지도) ---------- */
+.mini-map {
+  position: absolute; right: 0; top: calc(100% + 8px);
+  width: 176px; aspect-ratio: 1448 / 1086; padding: 0; border: 3px solid #fff; border-radius: 14px;
+  overflow: hidden; cursor: pointer; background: #9fcf8a;
+  box-shadow: 0 4px 0 rgba(44, 53, 80, 0.18), 0 6px 14px rgba(20, 30, 50, 0.18);
+  touch-action: manipulation;
+}
+.mini-map canvas { display: block; width: 100%; height: 100%; }
+.mini-map .mini-hint {
+  position: absolute; right: 4px; bottom: 4px; width: 22px; height: 22px; border-radius: 7px;
+  display: grid; place-items: center; font-size: 15px; line-height: 1;
+  background: rgba(255, 253, 247, 0.92); color: var(--ink);
+}
+.mini-map:hover { border-color: var(--e-gold); }
+.mini-map:active { transform: translateY(2px); }
+.mini-map:focus-visible { outline: 3px solid var(--mint); outline-offset: 2px; }
+@media (max-width: 520px) { .mini-map { width: 128px; border-radius: 11px; } }
+@media (max-height: 519px) and (orientation: landscape) { .mini-map { width: 132px; } }
+
+/* ---------- 대화창 (화면 아래 가운데) ---------- */
+.chat-bar {
+  position: absolute; left: 50%; bottom: max(12px, env(safe-area-inset-bottom)); transform: translateX(-50%);
+  z-index: 11; display: flex; flex-direction: column; align-items: center; gap: 8px;
+  max-width: calc(100% - 16px);
+}
+.chat-row {
+  display: flex; align-items: center; gap: 4px; padding: 5px;
+  background: rgba(255, 253, 247, 0.96); border-radius: 999px;
+  box-shadow: 0 4px 0 rgba(44, 53, 80, 0.18), 0 6px 16px rgba(20, 30, 50, 0.16);
+}
+.chat-emojis { display: flex; gap: 2px; min-width: 0; }
+.chat-emoji { flex: none; }
+.chat-emoji, .chat-more, .chat-phrase {
+  font: inherit; border: 0; cursor: pointer; touch-action: manipulation; user-select: none; color: var(--ink);
+}
+.chat-emoji {
+  width: 42px; height: 42px; border-radius: 50%; background: transparent; font-size: 24px; line-height: 1;
+  display: grid; place-items: center; transition: transform 0.12s, background 0.12s;
+}
+.chat-emoji:hover { background: var(--e-cream-2); transform: scale(1.12); }
+.chat-emoji:active { transform: scale(0.92); }
+.chat-more {
+  height: 42px; padding: 0 14px 0 10px; border-radius: 999px; display: flex; align-items: center; gap: 4px;
+  background: var(--e-teal); color: #fff; font-size: 18px; margin-left: 2px; flex: none; white-space: nowrap;
+  box-shadow: 0 3px 0 var(--e-teal-dark);
+}
+.chat-more span { font-size: 16px; }
+.chat-more:active { transform: translateY(2px); box-shadow: 0 1px 0 var(--e-teal-dark); }
+.chat-more[aria-expanded="true"] { background: var(--e-teal-dark); }
+.chat-emoji:focus-visible, .chat-more:focus-visible, .chat-phrase:focus-visible { outline: 3px solid var(--mint); outline-offset: 2px; }
+.chat-phrases {
+  display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px; padding: 10px;
+  width: min(340px, calc(100vw - 16px));
+  background: var(--e-cream); border: 3px solid var(--e-gold); border-radius: 18px;
+  box-shadow: 0 6px 0 rgba(150, 105, 30, 0.25), 0 10px 24px rgba(20, 30, 50, 0.2);
+  animation: rise 0.15s ease-out;
+}
+.chat-phrase {
+  padding: 9px 8px; border-radius: 12px; background: #fff; font-size: 17px; color: var(--e-navy);
+  box-shadow: 0 2px 0 rgba(150, 105, 30, 0.25); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.chat-phrase:hover { background: #fff3d6; }
+.chat-phrase:active { transform: translateY(1px); box-shadow: none; }
+.chat-bar.cooling .chat-row { opacity: 0.55; }
+.chat-bar.is-off .chat-row { opacity: 0.45; filter: grayscale(0.8); }
+.chat-bar button:disabled { cursor: not-allowed; }
+.chat-off {
+  margin: 0; padding: 4px 12px; border-radius: 99px; font-size: 14px;
+  background: rgba(44, 53, 80, 0.85); color: #fff;
+}
+/* 대화창이 있으면 입장하기 버튼·전체 지도 바를 그 위로 */
+body.has-chat .enter-btn { bottom: calc(max(12px, env(safe-area-inset-bottom)) + 66px); }
+body.map-open .chat-bar { display: none; }
+@media (max-width: 400px) {
+  .chat-emoji { width: 36px; height: 36px; font-size: 21px; }
+  .chat-more { height: 38px; padding: 0 10px 0 8px; font-size: 16px; }
+  .chat-more span { font-size: 14px; }
+}
+@media (max-width: 340px) { .chat-more span { display: none; } }

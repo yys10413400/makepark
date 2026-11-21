@@ -105,6 +105,16 @@
             <button id="tWalkOpen" class="t-btn owner-only" type="button">🐾 공원에 들어가기</button>
             <button id="tRecOpen" class="t-btn owner-only" type="button">📋 학생 기록 <span id="tRecBadge" class="t-count"></span></button>
           </div>
+          <div class="t-opts owner-only">
+            <div class="t-opt">
+              <p class="t-label">공원 계절 <small>모든 학생 화면이 같이 바뀌어요</small></p>
+              <div id="tSeason" class="t-seg" role="group" aria-label="공원 계절"></div>
+            </div>
+            <div class="t-opt">
+              <p class="t-label">학생 대화 <small>이모지·정해진 문장만</small></p>
+              <button id="tChat" class="t-btn t-switch" type="button" aria-pressed="true">💬 대화 켜짐</button>
+            </div>
+          </div>
           <p id="tMsg" class="t-msg" aria-live="polite"></p>
         </div>
       </div>

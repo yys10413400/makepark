@@ -4,6 +4,8 @@
  * 입장 흐름: 첫 화면(닉네임·학년) → '어디로 갈까요?' 창(반 코드 입장 / 혼자 둘러보기) → (처음이면 캐릭터 고르기) → 공원
  * 공원에서: 같은 반 친구들이 자기 캐릭터로 걸어 다니고 머리 위에 닉네임이 보임. 놀이기구 안에 있는 친구는 공원에서 안 보임.
  * 선생님 명령: 모두 모으기(분수 광장으로 순간 이동, 놀이기구에서도 나옴) · 내보내기 · 공원 닫기
+ * 선생님 설정(반 공원 meta): 계절(season) — 모든 학생 화면이 같은 계절로 · 대화 끄기(chatOff)
+ * 대화: 화면 아래에서 정해진 이모지·문장만 골라 말함 → 캐릭터 머리 위 말풍선(4초). 글자를 직접 쓰지 않음
  * 연결: js/net/net.js (MPNet) / 게임과의 창구: window.MP_API (game.js)
  */
 (function () {
@@ -14,7 +16,16 @@
   var GATHER = { x: 690, y: 600 };      // 모두 모으기: 분수 광장 앞
   var WHERE = { coaster: '코스터 익스프레스', ghost: '유령의 집' };
 
-  var S = { code: null, handle: null, pid: null, others: {}, last: null, lastSend: 0, joinedAt: 0 };
+  var S = { code: null, handle: null, pid: null, others: {}, last: null, lastSend: 0, joinedAt: 0, mySay: null, chatOff: false, lastSay: 0 };
+  // 보낼 수 있는 말(번호로만 주고받음 — 번호를 바꾸면 예전 기기와 뜻이 달라지므로 끝에만 더하기)
+  //   0~9: 이모지 줄, 10~: '💬 말하기' 문장
+  var SAYS = {
+    0: '😀', 1: '👍', 2: '❤️', 3: '😂', 4: '😮', 5: '👋',
+    10: '안녕!', 11: '반가워!', 12: '같이 가자!', 13: '여기로 와!', 14: '잠깐 기다려 줘!',
+    15: '고마워!', 16: '잘했어!', 17: '대단해!', 18: '미안해', 19: '또 만나!'
+  };
+  var EMOJI_IDS = [0, 1, 2, 3, 4, 5], PHRASE_IDS = [10, 11, 12, 13, 14, 15, 16, 17, 18, 19];
+  var SAY_MS = 4000, SAY_GAP = 2000;   // 말풍선 보이는 시간 · 다음 말까지 기다리는 시간(도배 막기)
   var ui = {};
   function api() { return window.MP_API; }
   function el(tag, cls, text) { var e = document.createElement(tag); if (cls) e.className = cls; if (text != null) e.textContent = text; return e; }
@@ -154,7 +165,7 @@
   // ---------- 공원 입장 / 나가기 ----------
   function onEnter() {
     leave();
-    if (!S.code) { setChip(); return; }
+    if (!S.code) { setChip(); if (api().setSeason) api().setSeason(null); return; }   // 혼자 둘러보기: 기본 계절
     S.pid = NET.myId(); S.others = {}; S.joinedAt = Date.now(); S.lastCmd = null;   // 같은 컴퓨터라도 탭마다 다른 사람
     S.handle = NET.join(S.code, S.pid, snapshot(true));
     S.last = snapshot(true); S.lastSend = performance.now();
@@ -165,6 +176,8 @@
         o = S.others[pid] = { x: data.x, y: data.y, walker: makeWalker(data) };
         api().toast && api().toast(data.tc ? '선생님이 공원에 오셨어요!' : data.n + ' 친구가 공원에 왔어요');
       }
+      // 새로 한 말(st 가 바뀜)이면 말풍선. 처음 보이는 친구의 예전 말은 띄우지 않음
+      if (o.data && data.st && data.st !== o.data.st && SAYS[data.sy] != null) o.say = { i: data.sy, until: performance.now() + SAY_MS };
       if (o.data && (!!o.data.tc !== !!data.tc)) o.walker = makeWalker(data);
       else if (o.walker && (o.data && (o.data.s !== data.s || o.data.gd !== data.gd))) o.walker.set(data.s, data.gd);
       o.data = data; o.tx = data.x; o.ty = data.y; o.seen = performance.now();
@@ -182,16 +195,20 @@
     };
     S.handle.onMeta(function (meta) {
       if (!S.handle) return;
-      if (!meta || !meta.open) kickOut('선생님이 공원을 닫았어요. 다음에 또 만나요!');
-      else if (meta.name && meta.name !== S.className) { S.className = meta.name; setChip(); }   // 선생님이 반 이름을 바꿈
+      if (!meta || !meta.open) { kickOut('선생님이 공원을 닫았어요. 다음에 또 만나요!'); return; }
+      if (meta.name && meta.name !== S.className) { S.className = meta.name; setChip(); }   // 선생님이 반 이름을 바꿈
+      if (api().setSeason) api().setSeason(meta.season);   // 선생님이 고른 계절(없으면 기본)
+      setChatOff(!!meta.chatOff);
     });
     setChip();
+    showChat(true);
     api().toast && api().toast(S.className + ' 공원에 들어왔어요!');
   }
   function leave() {
     if (S.handle) { S.handle.leave(); S.handle = null; }
-    S.others = {};
+    S.others = {}; S.mySay = null;
     setChip();
+    showChat(false);
   }
   // 친구는 학생 캐릭터(js/characters.js), 선생님(tc)은 동물 선생님(js/teacher-chars.js)으로 그림
   function makeWalker(data) {
@@ -271,11 +288,99 @@
   }
   function drawNames(ctx, me) {
     if (!S.handle) return;
+    var now = performance.now();
     Object.keys(S.others).forEach(function (pid) {
       var o = S.others[pid], d = o.data;
-      if (d && d.w === 'park') nameTag(ctx, (d.tc ? 'GM ' : '') + (d.n || '친구'), o.x, o.y - 64);
+      if (!d || d.w !== 'park') return;
+      nameTag(ctx, (d.tc ? 'GM ' : '') + (d.n || '친구'), o.x, o.y - 64);
+      if (o.say && o.say.until > now) bubble(ctx, o.say, o.x, o.y - 81, now);
     });
-    if (me) nameTag(ctx, (S.isTeacher ? 'GM ' : '') + me.nickname, me.x, me.y - 64);
+    if (me) {
+      nameTag(ctx, (S.isTeacher ? 'GM ' : '') + me.nickname, me.x, me.y - 64);
+      if (S.mySay && S.mySay.until > now) bubble(ctx, S.mySay, me.x, me.y - 81, now);
+    }
+  }
+  // 말풍선: 이름표 바로 위. 이모지는 크게, 문장은 둥근 풍선 안에. 사라질 때 살짝 흐려짐
+  function bubble(ctx, sayObj, x, y, now) {
+    var text = SAYS[sayObj.i], emoji = sayObj.i < 10, left = sayObj.until - now;
+    if (text == null) return;
+    ctx.save();
+    ctx.globalAlpha = Math.max(0, Math.min(1, left / 400));
+    var pop = Math.min(1, (SAY_MS - left) / 160), sc = 0.7 + 0.3 * pop;
+    ctx.translate(x, y); ctx.scale(sc, sc);
+    ctx.font = (emoji ? '20px ' : '400 12px ') + '"Jua", "Malgun Gothic", "Apple SD Gothic Neo", "Noto Sans KR", sans-serif';
+    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    var w = Math.max(emoji ? 34 : 30, ctx.measureText(text).width + (emoji ? 12 : 18)), h = emoji ? 30 : 22, r = h / 2;
+    var bx = -w / 2, by = -h - 6;
+    ctx.beginPath();
+    ctx.moveTo(bx + r, by); ctx.arcTo(bx + w, by, bx + w, by + h, r); ctx.arcTo(bx + w, by + h, bx, by + h, r);
+    ctx.lineTo(5, by + h); ctx.lineTo(0, by + h + 6); ctx.lineTo(-5, by + h);   // 아래 꼬리
+    ctx.arcTo(bx, by + h, bx, by, r); ctx.arcTo(bx, by, bx + w, by, r); ctx.closePath();
+    ctx.shadowColor = 'rgba(60,40,20,0.22)'; ctx.shadowBlur = 3; ctx.shadowOffsetY = 1.5;
+    ctx.fillStyle = '#fff'; ctx.fill();
+    ctx.shadowColor = 'transparent';
+    ctx.lineWidth = 1.2; ctx.strokeStyle = 'rgba(226,179,87,0.9)'; ctx.stroke();
+    ctx.fillStyle = '#1f2b5e'; ctx.fillText(text, 0, by + h / 2 + 1);
+    ctx.restore();
+  }
+
+  // ---------- 대화창 (화면 아래) ----------
+  var chat = null;
+  function buildChat() {
+    var bar = document.getElementById('chatBar');
+    if (!bar) return null;
+    chat = { bar: bar, emojis: document.getElementById('chatEmojis'), phrases: document.getElementById('chatPhrases'),
+      more: document.getElementById('chatMore'), off: document.getElementById('chatOff') };
+    EMOJI_IDS.forEach(function (i) {
+      var b = el('button', 'chat-emoji', SAYS[i]); b.type = 'button'; b.dataset.say = i; b.setAttribute('aria-label', SAYS[i] + ' 보내기');
+      chat.emojis.appendChild(b);
+    });
+    PHRASE_IDS.forEach(function (i) {
+      var b = el('button', 'chat-phrase', SAYS[i]); b.type = 'button'; b.dataset.say = i; b.setAttribute('role', 'menuitem');
+      chat.phrases.appendChild(b);
+    });
+    bar.addEventListener('click', function (e) {
+      var b = e.target.closest('[data-say]');
+      if (b) { say(Number(b.dataset.say)); b.blur(); openPhrases(false); return; }
+      if (e.target.closest('#chatMore')) { openPhrases(chat.phrases.hidden); chat.more.blur(); }
+    });
+    // 문장 목록 밖을 누르거나 Esc 면 닫기
+    document.addEventListener('pointerdown', function (e) { if (!chat.phrases.hidden && !chat.bar.contains(e.target)) openPhrases(false); });
+    document.addEventListener('keydown', function (e) { if (e.code === 'Escape' && !chat.phrases.hidden) openPhrases(false); }, true);
+    return chat;
+  }
+  function openPhrases(open) {
+    if (!chat) return;
+    chat.phrases.hidden = !open; chat.more.setAttribute('aria-expanded', open ? 'true' : 'false');
+  }
+  function showChat(on) {
+    if (!chat && !buildChat()) return;
+    chat.bar.hidden = !on; openPhrases(false);
+    document.body.classList.toggle('has-chat', !!on);
+    if (on) setChatOff(S.chatOff);
+  }
+  function setChatOff(off) {
+    S.chatOff = off;
+    if (!chat) return;
+    var blocked = off && !S.isTeacher;   // 선생님은 대화를 꺼도 말할 수 있음
+    chat.bar.classList.toggle('is-off', blocked);
+    chat.off.hidden = !blocked;
+    chat.bar.querySelectorAll('button').forEach(function (b) { b.disabled = blocked; });
+    if (blocked) openPhrases(false);
+  }
+  function say(i) {
+    if (!S.handle || SAYS[i] == null) return;
+    if (S.chatOff && !S.isTeacher) { if (api().toast) api().toast('선생님이 대화를 잠시 껐어요'); return; }
+    var now = performance.now();
+    if (now - S.lastSay < SAY_GAP) { if (api().toast) api().toast('조금 있다가 다시 말해요'); return; }
+    S.lastSay = now;
+    S.mySay = { i: i, until: now + SAY_MS };
+    // 위치와 따로 보냄: 서버 규칙이 아직 예전 것이어도 위치 보내기는 막히지 않게
+    S.handle.update({ sy: i, st: Date.now() });
+    if (chat) {
+      chat.bar.classList.add('cooling');
+      setTimeout(function () { chat.bar.classList.remove('cooling'); }, SAY_GAP);
+    }
   }
 
   // ---------- 위쪽 반 표시 ----------
@@ -323,6 +428,13 @@
 
   window.MPMulti = {
     askRoom: askRoom, onEnter: onEnter, leave: leave, tick: tick, drawOthers: drawOthers, drawNames: drawNames,
-    active: function () { return !!S.handle; }, _state: S
+    active: function () { return !!S.handle; }, say: say,
+    // 미니맵용: 공원에 있는(놀이기구 밖) 친구·선생님 위치
+    others: function () {
+      return Object.keys(S.others).map(function (k) { return S.others[k]; })
+        .filter(function (o) { return o.data && o.data.w === 'park'; })
+        .map(function (o) { return { x: o.x, y: o.y, tc: !!o.data.tc }; });
+    },
+    _state: S
   };
 })();

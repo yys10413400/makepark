@@ -27,8 +27,8 @@
     hint: $('titleHint'), welcome: $('welcomeBack'), nickError: $('nickError'), storageNote: $('storageNote'),
     profile: $('profile'), profileForm: $('profileForm'), profileNick: $('profileNick'),
     profileNickError: $('profileNickError'), profileCancel: $('profileCancel'), profileSave: $('profileSave'),
-    hud: $('hud'), playerChip: $('playerChip'), playerName: $('playerName'), playerGrade: $('playerGrade'), mapToggle: $('mapToggle'),
-    seasonToggle: $('seasonToggle'), seasonLabel: $('seasonLabel'),
+    hud: $('hud'), playerChip: $('playerChip'), playerName: $('playerName'), playerGrade: $('playerGrade'),
+    miniMap: $('miniMap'), miniCanvas: $('miniCanvas'), ticketChip: $('ticketChip'), ticketCount: $('ticketCount'),
     mapBar: $('mapBar'), mapBack: $('mapBack'),
     enter: $('enterFacility'), enterName: $('enterName'),
     toast: $('toast'),
@@ -178,17 +178,6 @@
       if (t) { p.x = t.x; p.y = t.y; }
     }
     stopMoving();
-    ui.seasonLabel.textContent = PARK.seasons[id].label;
-    ui.seasonToggle.setAttribute('aria-label', '계절 바꾸기 (지금: ' + PARK.seasons[id].label + ')');
-    // 계절만 저장: 위치·학년·진행 기록은 그대로 둠
-    var data = readSave() || {};
-    data.season = id;
-    try { localStorage.setItem(saveKey, JSON.stringify(data)); } catch (e) { /* 저장 불가 환경 */ }
-    if (saveHook) saveHook(data);
-  }
-  function nextSeason() {
-    var ids = Object.keys(PARK.seasons);
-    return ids[(ids.indexOf(state.season) + 1) % ids.length];
   }
 
   // ---------- 저장 ----------
@@ -215,6 +204,7 @@
     catch (e) { storageOk = false; } // 저장이 안 되는 환경: 이번 방문 동안 메모리 상태로 진행
     ui.storageNote.hidden = storageOk;
     if (saveHook) saveHook(data);
+    if ('tickets' in patch) showTickets();
   }
   function writeSave() {
     if (state.phase !== 'play') return;
@@ -266,8 +256,8 @@
 
   // ---------- 첫 입장 화면 ----------
   var saved = readSave();
-  setSeason((saved && saved.season) || PARK.defaultSeason, false);
-  ui.seasonToggle.addEventListener('click', function () { setSeason(nextSeason(), true); ui.seasonToggle.blur(); });
+  // 계절은 선생님이 반 공원마다 고름(js/net/multiplayer.js 가 MP_API.setSeason 으로 바꿈). 혼자 둘러보기는 기본 계절
+  setSeason(PARK.defaultSeason, false);
   var profile = loadProfile();
   ui.nickname.value = profile.nickname;
   setGradeRadios('grade', profile.grade);  // 첫 방문은 미선택
@@ -330,7 +320,7 @@
     if (state.profileOpen) closeProfile();
     if (state.charOpen) closeChars();
     state.phase = 'title'; state.view = 'play';
-    ui.mapBar.hidden = true; ui.mapToggle.hidden = false;
+    ui.mapBar.hidden = true; ui.miniMap.hidden = false;
     ui.title.hidden = false; ui.hud.hidden = true; ui.enter.hidden = true; state.nearby = null;
     ui.enterPark.disabled = false;
     updateTitle();
@@ -339,6 +329,13 @@
   function showPlayer() {
     ui.playerName.textContent = state.nickname;
     ui.playerGrade.textContent = state.grade + '학년';
+    showTickets();
+  }
+  // 이름 밑 티켓 수(코스터·유령의 집 보상으로 모으고, 캐릭터 가게에서 씀)
+  function showTickets() {
+    var t = Number((readSave() || {}).tickets) || 0;
+    ui.ticketCount.textContent = t;
+    ui.ticketChip.setAttribute('aria-label', '내 티켓 ' + t + '장');
   }
 
   // ---------- 공원 안 프로필 수정 ----------
@@ -673,15 +670,55 @@
   ui.modalClose.addEventListener('click', closeFacility);
   ui.modal.addEventListener('pointerdown', function (e) { if (e.target === ui.modal) closeFacility(); });
 
-  // ---------- 전체 지도 ----------
+  // ---------- 전체 지도 (미니맵을 누르면 크게 펼쳐짐) ----------
   function setView(v) {
     state.view = v;
     ui.mapBar.hidden = v !== 'map';
-    ui.mapToggle.hidden = v === 'map';
+    ui.miniMap.hidden = v === 'map';
+    document.body.classList.toggle('map-open', v === 'map');
     updateNearby();
   }
-  ui.mapToggle.addEventListener('click', function () { setView('map'); });
+  ui.miniMap.addEventListener('click', function () { setView('map'); ui.miniMap.blur(); });
   ui.mapBack.addEventListener('click', function () { setView('play'); });
+
+  // 미니맵: 지도 그림(계절마다 작게 줄여 한 번만 만들어 둠) + 지금 보이는 곳 네모 + 친구 점 + 내 위치
+  var mini = { bg: null, key: '' };
+  function drawMini() {
+    if (ui.miniMap.hidden || ui.hud.hidden) return;
+    var cv = ui.miniCanvas, w = cv.clientWidth, h = cv.clientHeight, d = view.dpr;
+    if (!w || !h) return;
+    if (cv.width !== Math.round(w * d) || cv.height !== Math.round(h * d)) { cv.width = Math.round(w * d); cv.height = Math.round(h * d); mini.key = ''; }
+    var cur = seasonImgs[state.season], key = state.season + ':' + cv.width + 'x' + cv.height + (cur ? '' : '-');
+    if (mini.key !== key) {
+      mini.key = key;
+      mini.bg = document.createElement('canvas'); mini.bg.width = cv.width; mini.bg.height = cv.height;
+      var b = mini.bg.getContext('2d');
+      b.fillStyle = '#9fcf8a'; b.fillRect(0, 0, cv.width, cv.height);
+      if (cur) {
+        b.imageSmoothingQuality = 'high';
+        b.drawImage(cur.img, cur.rect.x / W * cv.width, cur.rect.y / H * cv.height, cur.rect.w / W * cv.width, cur.rect.h / H * cv.height);
+      }
+    }
+    var c = cv.getContext('2d');
+    c.setTransform(1, 0, 0, 1, 0, 0);
+    c.drawImage(mini.bg, 0, 0);
+    var sx = cv.width / W, sy = cv.height / H;
+    // 지금 화면에 보이는 곳
+    var hw = view.w / (2 * cam.s), hh = view.h / (2 * cam.s);
+    c.strokeStyle = 'rgba(255,255,255,0.95)'; c.lineWidth = 1.5 * d;
+    c.strokeRect((cam.cx - hw) * sx, (cam.cy - hh) * sy, hw * 2 * sx, hh * 2 * sy);
+    // 친구들(놀이기구 안에 있는 친구는 빼고), 선생님은 노란 점
+    var others = window.MPMulti && MPMulti.others ? MPMulti.others() : [];
+    others.forEach(function (o) {
+      c.fillStyle = o.tc ? '#ffc93c' : '#4f8df5'; c.strokeStyle = '#fff'; c.lineWidth = 1.2 * d;
+      c.beginPath(); c.arc(o.x * sx, o.y * sy, 3.2 * d, 0, Math.PI * 2); c.fill(); c.stroke();
+    });
+    // 나: 깜빡이는 빨간 점
+    var px = state.player.x * sx, py = state.player.y * sy, r = (4.5 + Math.sin(state.time * 5) * 1) * d;
+    c.fillStyle = 'rgba(255,107,107,0.35)'; c.beginPath(); c.arc(px, py, r + 4 * d, 0, Math.PI * 2); c.fill();
+    c.fillStyle = '#ff4d4d'; c.strokeStyle = '#fff'; c.lineWidth = 2 * d;
+    c.beginPath(); c.arc(px, py, 4.5 * d, 0, Math.PI * 2); c.fill(); c.stroke();
+  }
 
   // ---------- 입력 ----------
   var KEYMAP = { ArrowUp: 'up', KeyW: 'up', ArrowDown: 'down', KeyS: 'down', ArrowLeft: 'left', KeyA: 'left', ArrowRight: 'right', KeyD: 'right' };
@@ -914,6 +951,7 @@
     }
     updateCamera(dt);
     draw();
+    if (state.phase === 'play') drawMini();
     fpsCount++; fpsTime += dt;
     if (fpsTime >= 0.5) { fps = Math.round(fpsCount / fpsTime); fpsCount = 0; fpsTime = 0; }
     updateDebugPanel(fps);
@@ -951,6 +989,10 @@
     patchSave: patchSave,
     openChars: function () { openChars('edit'); },
     storageOk: function () { return storageOk; },
+    // 반 공원에서 선생님이 고른 계절로 바꾸기(id 가 없거나 모르는 값이면 기본 계절)
+    setSeason: function (id) { setSeason(id || PARK.defaultSeason, state.phase === 'play'); },
+    // 대화 말풍선 등 화면에 그리는 배율
+    camScale: function () { return cam.s; },
     profile: function () { return { nickname: state.nickname, grade: state.grade, band: state.gradeBand }; },
     character: function () { return { sid: character.sid || 'F1' }; },
     // 함께하기(js/net/multiplayer.js)용
@@ -982,6 +1024,7 @@
       if (slot && data) { try { localStorage.setItem(saveKey, JSON.stringify(data)); } catch (e) { /* 저장 불가 */ } }
       var cs = charSave(readSave());
       if (character.set && !teacherAvatar) character.set(cs.id, cs.gender);
+      showTickets();
     },
     // 선생님 모드(선생님 화면의 '공원에 들어가기'): 동물 선생님 캐릭터로 바로 공원에 들어감
     //  - 저장은 학생 기록과 섞이지 않게 'teacher' 칸에, 캐릭터 고르기·내 정보 바꾸기는 숨김
@@ -992,6 +1035,7 @@
       saveKey = 'makepark.class.teacher'; saveHook = null;
       if (ui.charBtn) ui.charBtn.hidden = true;
       ui.playerChip.disabled = true; ui.playerChip.classList.add('teacher-chip');
+      ui.ticketChip.hidden = true;
       enterPark(String(name || '선생님').slice(0, 12), 6);
       ui.playerGrade.textContent = '선생님';
     },
