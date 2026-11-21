@@ -308,7 +308,9 @@
     ctx.globalAlpha = Math.max(0, Math.min(1, left / 400));
     var pop = Math.min(1, (SAY_MS - left) / 160), sc = 0.7 + 0.3 * pop;
     ctx.translate(x, y); ctx.scale(sc, sc);
-    ctx.font = (emoji ? '20px ' : '400 12px ') + '"Jua", "Malgun Gothic", "Apple SD Gothic Neo", "Noto Sans KR", sans-serif';
+    // 문장은 이름표처럼 얇은 글꼴(굵은 Jua 대신)
+    ctx.font = emoji ? '20px "Malgun Gothic", "Apple SD Gothic Neo", "Noto Sans KR", sans-serif'
+      : '400 11.5px "Malgun Gothic", "Apple SD Gothic Neo", "Noto Sans KR", sans-serif';
     ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
     var w = Math.max(emoji ? 34 : 30, ctx.measureText(text).width + (emoji ? 12 : 18)), h = emoji ? 30 : 22, r = h / 2;
     var bx = -w / 2, by = -h - 6;
@@ -320,7 +322,7 @@
     ctx.fillStyle = '#fff'; ctx.fill();
     ctx.shadowColor = 'transparent';
     ctx.lineWidth = 1.2; ctx.strokeStyle = 'rgba(226,179,87,0.9)'; ctx.stroke();
-    ctx.fillStyle = '#1f2b5e'; ctx.fillText(text, 0, by + h / 2 + 1);
+    ctx.fillStyle = emoji ? '#1f2b5e' : '#3a4470'; ctx.fillText(text, 0, by + h / 2 + 1);
     ctx.restore();
   }
 
