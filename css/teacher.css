@@ -16,7 +16,9 @@ body.teacher {
   --t-red: #c2412d;
   --t-red-tint: #fdecea;
   --t-body: 'Pretendard', 'Apple SD Gothic Neo', 'Malgun Gothic', system-ui, sans-serif;
-  overflow: auto; height: auto; min-height: 100%;
+  /* 스크롤은 html(화면 전체)이 맡음. body 를 따로 스크롤 상자로 두면, 게임용 'overscroll-behavior: none' 때문에
+     손가락으로 밀어도 위로 전달되지 않아 휴대폰에서 아래로 내려가지 않았음 */
+  overflow: visible; overscroll-behavior: auto; height: auto; min-height: 100%;
   background: var(--t-bg); color: var(--t-ink); font-family: var(--t-body); font-size: 15px;
 }
 body.teacher h1, body.teacher h2, .t-brand, .t-code-num, .t-btn, .t-google, .t-count, .t-back, .t-roomcard-name { font-family: var(--font); font-weight: 400; }
