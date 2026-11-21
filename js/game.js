@@ -72,24 +72,64 @@
   var ringImg = new Image(); ringImg.src = 'assets/ui/entrance-ring.png';
 
   // ---------- 가림 레이어 (캐릭터가 건물 뒤로 지나갈 때) ----------
-  // tools/build_walkmask.py 의 길 판정과 같은 규칙. 길 픽셀은 투명하게 빼고 건물·나무만 남김.
-  function isPavingPixel(r, g, b) {
-    return r > 215 && r - g >= 20 && r - g <= 48 && g - b >= -4 && g - b <= 26 && b > 160;
+  // 길 픽셀은 투명하게 빼고 건물·나무만 남김. 길인지는 색만으로 정하지 않고 '자동 추출 길 격자'(walkmask.js, 손 수정 전)를 함께 씀:
+  //   - 둘레까지 모두 길인 칸의 픽셀 → 항상 투명 (계절마다 길 색이 달라도: 분홍 포장, 회색 눈길 …)
+  //   - 길 가장자리 칸과 그 바로 바깥 칸 → 그 지도에서 잰 실제 길 색과 비슷한 픽셀만 투명
+  //   - 그 밖(건물 뒤로 지나가는 칸 등) → 그대로 남겨 캐릭터를 가림
+  var BASE = window.MP_WALKMASK;
+  function basePath(c, r) {
+    return r >= 0 && r < BASE.rows && c >= 0 && c < BASE.cols && BASE.data[r].charCodeAt(c) === 49;
+  }
+  function cellKind(c, r) { // 2: 길 한가운데, 1: 길 가장자리 근처, 0: 길 아님
+    var n = 0;
+    for (var dr = -1; dr <= 1; dr++) for (var dc = -1; dc <= 1; dc++) if (basePath(c + dc, r + dr)) n++;
+    if (basePath(c, r)) return n === 9 ? 2 : 1;
+    return (basePath(c - 1, r) || basePath(c + 1, r) || basePath(c, r - 1) || basePath(c, r + 1)) ? 1 : 0;
   }
   function buildOccluders(img) {
     // 지도 좌표 = 이미지 픽셀 (같은 크기일 때). 크기가 다르면 비율대로 맞춤
-    var kx = img.naturalWidth / W, ky = img.naturalHeight / H;
-    return (PARK.occluders || []).map(function (o) {
+    var kx = img.naturalWidth / W, ky = img.naturalHeight / H, cs = BASE.cell;
+    var list = (PARK.occluders || []).map(function (o) {
       var c = document.createElement('canvas');
       c.width = Math.max(1, Math.round(o.w * kx)); c.height = Math.max(1, Math.round(o.h * ky));
       var g = c.getContext('2d');
       g.drawImage(img, o.x * kx, o.y * ky, o.w * kx, o.h * ky, 0, 0, c.width, c.height);
-      try {
-        var d = g.getImageData(0, 0, c.width, c.height), px = d.data;
-        for (var i = 0; i < px.length; i += 4) if (isPavingPixel(px[i], px[i + 1], px[i + 2])) px[i + 3] = 0;
-        g.putImageData(d, 0, 0);
-      } catch (e) { return null; } // 픽셀을 읽을 수 없는 환경이면 가림 없이 진행
-      return c;
+      var d;
+      try { d = g.getImageData(0, 0, c.width, c.height); } catch (e) { return null; } // 픽셀을 읽을 수 없으면 가림 없이 진행
+      // 픽셀마다 칸 종류
+      var kind = new Uint8Array(c.width * c.height);
+      for (var y = 0; y < c.height; y++) {
+        var r = Math.floor((o.y + (y + 0.5) / ky) / cs);
+        for (var x = 0; x < c.width; x++) kind[y * c.width + x] = cellKind(Math.floor((o.x + (x + 0.5) / kx) / cs), r);
+      }
+      return { o: o, c: c, g: g, d: d, kind: kind };
+    });
+    // 이 지도의 길 색: 모든 가림 영역의 '길 한가운데' 픽셀 평균·편차
+    var sum = [0, 0, 0], sq = [0, 0, 0], n = 0;
+    list.forEach(function (it) {
+      if (!it) return;
+      var px = it.d.data;
+      for (var i = 0; i < it.kind.length; i++) if (it.kind[i] === 2) {
+        for (var k = 0; k < 3; k++) { var v = px[i * 4 + k]; sum[k] += v; sq[k] += v * v; }
+        n++;
+      }
+    });
+    var mean = [0, 0, 0], tol = [0, 0, 0];
+    for (var k = 0; k < 3; k++) {
+      mean[k] = n ? sum[k] / n : 0;
+      tol[k] = n ? Math.max(18, 2.5 * Math.sqrt(Math.max(0, sq[k] / n - mean[k] * mean[k]))) : 0;
+    }
+    function pathColor(px, i) {
+      return n > 0 && Math.abs(px[i] - mean[0]) <= tol[0] && Math.abs(px[i + 1] - mean[1]) <= tol[1] && Math.abs(px[i + 2] - mean[2]) <= tol[2];
+    }
+    return list.map(function (it) {
+      if (!it) return null;
+      var px = it.d.data;
+      for (var i = 0; i < it.kind.length; i++) {
+        if (it.kind[i] === 2 || (it.kind[i] === 1 && pathColor(px, i * 4))) px[i * 4 + 3] = 0;
+      }
+      it.g.putImageData(it.d, 0, 0);
+      return it.c;
     });
   }
   // 캐릭터 그림이 차지하는 대략의 영역(발 위치 기준)
