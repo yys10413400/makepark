@@ -422,15 +422,17 @@
   function startSolo() {
     closeDialog();
     S.mode = 'solo';
-    S.run = { band: BAND_OF(S.grade), stage: 0, used: [], stars: 0, first: 0, guests: 0, rewarded: false };
-    var first = !gateSave().howto;   // 처음 한 번은 '어떻게 놀아요?'를 먼저
-    if (first) patchGate(function (g) { g.howto = true; });
+    var band = BAND_OF(S.grade), gs = gateSave(), last = (gs.last && gs.last[band]) || [];
+    // 코스터처럼 판마다 새 문제: 어떤 단서인지는 무작위, 바로 전 판 문제는 피함
+    var plans = G.planRound(band, Math.random, last);
+    S.run = { band: band, stage: 0, plans: plans, stars: 0, first: 0, guests: 0, rewarded: false };
+    var first = !gs.howto;   // 처음 한 번은 '어떻게 놀아요?'를 먼저
+    patchGate(function (g) { g.howto = true; g.last = g.last || {}; g.last[band] = plans.sigs; });
     nextStage(first);
   }
   function nextStage(withHowTo) {
     var run = S.run; run.stage++;
-    var plan = G.stagePlan(run.band, run.stage, null, run.used);
-    run.used.push(plan.rule);
+    var plan = run.plans[run.stage - 1];
     beginStage(G.newRound({ rule: plan.rule, domain: plan.domain, shapes: plan.shapes, guests: GUESTS }), plan.tip, withHowTo);
   }
   // 그 단계에 나오는 모습 안내(배지 없음·빈손)
@@ -451,7 +453,7 @@
     setJudgeEnabled(false);
     updateInfo();
     var lines = [tip];
-    if (S.mode === 'friend' && domainNote(R)) lines.push(domainNote(R));
+    if (domainNote(R)) lines.push(domainNote(R));   // 배지 없는 손님·빈손인 손님도 오는지
     lines.push(FIRST_GUIDE);
     var title = S.mode === 'friend' ? '친구가 만든 비밀 규칙' : S.run.stage + '단계';
     showModal(title, lines, [{ text: '시작!', main: true, fn: function () { hideModal(); nextGuest(); } }], null,
@@ -654,7 +656,7 @@
       lines.push('처음에 맞힌 손님 ' + run.first + ' / ' + run.guests + ' · 규칙 맞히기 별 ' + run.stars + ' / ' + STAGES);
       if (gain) lines.push('티켓 ' + gain + '장을 받았어요!');
       if (newClear) lines.push('★ 꼬마 유령 캐릭터를 받았어요! 공원 위쪽 ‘캐릭터’에서 골라 봐요.');
-      btns.push({ text: '한 판 더', main: true, fn: function () { hideModal(); startSolo(); } });
+      btns.push({ text: '🎲 새 문제로 한 판 더', main: true, fn: function () { hideModal(); startSolo(); } });
       btns.push({ text: '로비로', fn: function () { hideModal(); toLobby(); } });
       btns.push({ text: '공원으로', fn: function () { hideModal(); close(); } });
     } else {

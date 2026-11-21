@@ -41,23 +41,31 @@ function playStage(R, label) {
 }
 
 ['low', 'middle', 'high'].forEach(function (band) {
-  var st = { extras: 0, novel: 0, n: 0 }, kinds = {};
+  var st = { extras: 0, novel: 0, n: 0, repeat: 0 }, kinds = {}, seen = {}, prev = [];
   for (var seed = 1; seed <= 300; seed++) {
-    var rand = G.rng(seed * 7919 + band.length), used = [];
-    for (var n = 1; n <= 3; n++) {
-      var plan = G.stagePlan(band, n, rand, used); used.push(plan.rule);
+    var rand = G.rng(seed * 7919 + band.length);
+    var plans = G.planRound(band, rand, prev);
+    // 바로 전 판과 1·2단계 규칙이 겹치지 않음(후보가 둘 이상이라 늘 피할 수 있음)
+    if (prev.length) { ok(plans.sigs[0] !== prev[0] || plans.sigs[1] !== prev[1], band + ': 바로 전 판과 같은 문제 #' + seed); if (plans.sigs[2] === prev[2]) st.repeat++; }
+    ok(G.kindOf(plans[0].rule.a) !== G.kindOf(plans[1].rule.a), band + ': 1·2단계는 배지 한 번·소품 한 번');
+    ok(G.atomsOf(plans[2].rule).every(function (a) { return a !== plans[0].rule.a && a !== plans[1].rule.a; }), band + ': 3단계가 1·2단계 단서를 다시 씀 ' + plans.sigs.join(' '));
+    prev = plans.sigs;
+    plans.forEach(function (plan, i) {
+      var n = i + 1;
+      seen[n + ' ' + G.describe(plan.rule)] = 1;
       if (n === 3) {
         kinds[plan.rule.op] = (kinds[plan.rule.op] || 0) + 1;
         if (band === 'middle') ok(plan.rule.op === 'and', '3~4학년 3단계는 그리고');
         if (band === 'high') ok(plan.rule.op === 'or' || plan.rule.op === 'not', '5~6학년 3단계는 또는/만 빼고');
-        if (band === 'low') ok(plan.rule.op === 'is' && used.slice(0, 2).every(function (r) { return r.a !== plan.rule.a; }), '1~2학년 3단계는 다른 한 가지');
+        if (band === 'low') ok(plan.rule.op === 'is' && plans.slice(0, 2).every(function (p) { return p.rule.a !== plan.rule.a; }), '1~2학년 3단계는 다른 한 가지');
       }
       var R = G.newRound({ rule: plan.rule, domain: plan.domain, shapes: plan.shapes, rand: rand });
       var s = playStage(R, band + ' ' + n + '단계 #' + seed + ' ' + R.text);
       st.extras += s.extras; st.novel += s.novel; st.n++;
-    }
+    });
   }
-  console.log(band + ': ' + st.n + '단계 점검, 3단계 규칙 ' + JSON.stringify(kinds) + ', 단계당 새 모습 손님 ' + (st.novel / st.n).toFixed(1) + ', 더 꺼낸 기록 ' + (st.extras / st.n).toFixed(2));
+  console.log(band + ': ' + st.n + '단계 점검, 나온 문제 ' + Object.keys(seen).length + '가지, 3단계 규칙 ' + JSON.stringify(kinds) +
+    ', 3단계가 바로 전 판과 같았던 판 ' + st.repeat + ', 단계당 새 모습 손님 ' + (st.novel / st.n).toFixed(1));
 });
 var ex = G.newRound({ rule: { op: 'is', a: 'star' }, domain: 'd4', shapes: ['single'], rand: G.rng(3) });
 console.log('예) ' + ex.text + '  기록: ' + ex.records.map(function (k) { return G.comboText(k) + (k.pass ? ' ✔' : ' ✋'); }).join(' | '));

@@ -112,33 +112,57 @@
   }
   function masksOf(c) { return c.map(function (x) { return x.mask; }); }
 
-  // ---------- 단계 정하기 ----------
+  // ---------- 단계 정하기 (코스터처럼: 학년마다 배울 '틀'은 그대로, 어떤 단서인지는 무작위, 바로 전 판과 다르게) ----------
+  // 1·2단계: 한 가지만 보기(배지 한 번, 손 소품 한 번 — 어느 쪽이 먼저인지도 무작위)
+  // 3단계: 1~2학년 다른 한 가지 / 3~4학년 그리고 / 5~6학년 또는·~만 빼고
   var BAND = {
     low: { domain: 'd4', shapes: ['single'], tip: '마지막 단계! 이번에도 한 가지만 보면 돼.' },
-    middle: { domain: 'd6', shapes: ['single', 'and'], tip: '마지막 단계! 두 가지가 모두 있어야 할 수도 있어. 빈손인 손님도 와.' },
-    high: { domain: 'd9', shapes: ['single', 'and', 'or'], tip: '마지막 단계! 둘 중 하나만 있어도 되거나, 하나만 빼고 모두 통과일 수도 있어. 배지 없는 손님, 빈손인 손님도 와.' }
+    middle: { domain: 'd6', shapes: ['single', 'and'], tip: '마지막 단계! 두 가지가 모두 있어야 할 수도 있어.' },
+    high: { domain: 'd9', shapes: ['single', 'and', 'or'], tip: '마지막 단계! 둘 중 하나만 있어도 되거나, 하나만 빼고 모두 통과일 수도 있어.' }
+  };
+  // 1·2단계에 나오는 단서와 손님 모습: 학년이 올라가면 '배지 없음'·'빈손'도 단서가 됨
+  var POOL = {
+    low: { domain: 'd4', badge: ['star', 'moon'], item: ['key', 'lantern'] },
+    middle: { domain: 'd6', badge: ['star', 'moon'], item: ['key', 'lantern', 'empty'] },
+    high: { domain: 'd9', badge: ['star', 'moon', 'none'], item: ['key', 'lantern', 'empty'] }
   };
   var STAGE_TIPS = ['1단계! 한 가지만 보면 돼.', '2단계! 이번에도 한 가지만. 아까와 다른 곳을 볼 수도 있어.'];
   function pick(list, rand) { return list[Math.floor(rand() * list.length)]; }
-  // used: 이 판에서 이미 나온 규칙 (1~2학년 3단계는 다른 단서로)
-  function stagePlan(band, n, rand, used) {
-    rand = rand || Math.random; used = used || [];
-    if (n === 1) return { rule: { op: 'is', a: pick(['star', 'moon'], rand) }, domain: 'd4', shapes: ['single'], tip: STAGE_TIPS[0] };
-    if (n === 2) return { rule: { op: 'is', a: pick(['key', 'lantern'], rand) }, domain: 'd4', shapes: ['single'], tip: STAGE_TIPS[1] };
-    var B = BAND[band], rule;
-    if (band === 'low') {
-      var usedA = used.map(function (r) { return r.a; });
-      var left = ['star', 'moon', 'key', 'lantern'].filter(function (a) { return usedA.indexOf(a) < 0; });
-      rule = { op: 'is', a: pick(left, rand) };
-    } else if (band === 'middle') {
-      rule = { op: 'and', a: pick(['star', 'moon'], rand), b: pick(['key', 'lantern'], rand) };
-    } else {
-      rule = rand() < 0.6
-        ? { op: 'or', a: pick(['star', 'moon'], rand), b: pick(['key', 'lantern'], rand) }
-        : { op: 'not', a: pick(['star', 'moon', 'key', 'lantern'], rand) };
-    }
-    return { rule: rule, domain: B.domain, shapes: B.shapes, tip: B.tip };
+  // 규칙 이름표(바로 전 판과 겹치는지 볼 때)
+  function sigOf(rule) { return rule.op + ':' + atomsOf(rule).join('+'); }
+  // 후보 중 피할 것(avoid)을 빼고 고름. 다 빠지면 그냥 후보에서
+  function pickRule(list, rand, avoid) {
+    var fresh = list.filter(function (r) { return avoid.indexOf(sigOf(r)) < 0; });
+    return pick(fresh.length ? fresh : list, rand);
   }
+  // 한 판(3단계) 정하기. avoid: 바로 전 판 규칙 이름표들
+  function planRound(band, rand, avoid) {
+    rand = rand || Math.random; avoid = avoid || [];
+    var P = POOL[band], B = BAND[band];
+    var order = rand() < 0.5 ? ['badge', 'item'] : ['item', 'badge'];
+    var plans = order.map(function (kind, i) {
+      var rule = pickRule(P[kind].map(function (a) { return { op: 'is', a: a }; }), rand, avoid);
+      return { rule: rule, domain: P.domain, shapes: ['single'], tip: STAGE_TIPS[i] };
+    });
+    var used = plans.map(function (x) { return x.rule.a; }), list = [];
+    if (band === 'low') {
+      ['star', 'moon', 'key', 'lantern'].forEach(function (a) { if (used.indexOf(a) < 0) list.push({ op: 'is', a: a }); });
+    } else if (band === 'middle') {
+      ['star', 'moon'].forEach(function (a) { ['key', 'lantern', 'empty'].forEach(function (b) { list.push({ op: 'and', a: a, b: b }); }); });
+    } else {
+      var ors = [], nots = [];
+      ['star', 'moon', 'none'].forEach(function (a) { ['key', 'lantern', 'empty'].forEach(function (b) { ors.push({ op: 'or', a: a, b: b }); }); });
+      ['star', 'moon', 'none', 'key', 'lantern', 'empty'].forEach(function (a) { nots.push({ op: 'not', a: a }); });
+      list = rand() < 0.6 ? ors : nots;
+    }
+    // 3단계는 1·2단계에 나온 단서를 쓰지 않음(예: 2단계 '열쇠면 통과' 다음에 '열쇠만 빼고 통과'처럼 뒤집기만 한 문제 막기)
+    var other = list.filter(function (r) { return atomsOf(r).every(function (a) { return used.indexOf(a) < 0; }); });
+    plans.push({ rule: pickRule(other.length ? other : list, rand, avoid), domain: B.domain, shapes: B.shapes, tip: B.tip });
+    plans.sigs = plans.map(function (x) { return sigOf(x.rule); });
+    return plans;
+  }
+  // (예전 방식 호환) n단계 하나만
+  function stagePlan(band, n, rand) { return planRound(band, rand)[n - 1]; }
 
   // ---------- 기록과 맞는 후보 / 공정한 손님 ----------
   function consistent(masks, known) {
@@ -318,7 +342,7 @@
     BADGES: BADGES, ITEMS: ITEMS, COMBOS: COMBOS, DOMAINS: DOMAINS, BAND: BAND, FRIEND: FRIEND, LINK_LABEL: LINK_LABEL, NOUN: NOUN,
     evaluate: evaluate, describe: describe, comboText: comboText, atomsOf: atomsOf, kindOf: kindOf, maskOf: maskOf,
     domainCombos: domainCombos, domainAtoms: domainAtoms, candidates: candidates, consistent: consistent, isFair: isFair,
-    stagePlan: stagePlan, pickRecords: pickRecords, newRound: newRound, hint: hint,
+    stagePlan: stagePlan, planRound: planRound, sigOf: sigOf, POOL: POOL, pickRecords: pickRecords, newRound: newRound, hint: hint,
     buildRule: buildRule, checkRule: checkRule, rng: rng, shuffle: shuffle, sameCombo: sameCombo, bit: bit
   };
   if (typeof module !== 'undefined' && module.exports) module.exports = API;
