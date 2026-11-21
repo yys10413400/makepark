@@ -620,14 +620,35 @@
   }
 
   // ---------- 그리기: 블록 상자·내 코드 ----------
+  /* 블록 상자: '움직이기 · 반복 · 조건' 줄로 묶고, 블록은 한 줄 이름표(안쪽 자리 모양은 작은 꺾쇠로만) */
+  var GROUPS = [['움직이기', ['move', 'turn']], ['반복', ['loop']], ['조건', ['cond']]];
+  function chipEl(t) {
+    var e = el('div', 'cs-blk cs-chip k-' + KIND[t.type] + (isC(t) ? ' is-c' : ''));
+    var head = el('div', 'cs-bhead');
+    head.appendChild(blockLabel(t));
+    if (t.type === 'ifelse') head.appendChild(el('span', 'cs-chipelse', '/ 아니면'));
+    e.appendChild(head);
+    if (isC(t)) e.appendChild(el('div', 'cs-chipmouth'));
+    return e;
+  }
   function renderPalette() {
     ui.palette.textContent = '';
-    ui.palette.classList.toggle('many', S.mission.palette.length > 5);
-    S.mission.palette.forEach(function (t, i) {
-      var b = blockEl(t, {});
-      b.dataset.idx = i; b.tabIndex = 0; b.setAttribute('role', 'button');
-      b.setAttribute('aria-label', blockText(t) + ' 블록 넣기');
-      ui.palette.appendChild(b);
+    ui.palette.classList.toggle('many', S.mission.palette.length > 5);   // 블록이 많으면 조금 작게
+    GROUPS.forEach(function (g) {
+      var items = [];
+      S.mission.palette.forEach(function (t, i) { if (g[1].indexOf(KIND[t.type]) >= 0) items.push([t, i]); });
+      if (!items.length) return;
+      var row = el('div', 'cs-pgroup');
+      row.appendChild(el('span', 'cs-pglabel', g[0]));
+      var wrap = el('div', 'cs-pitems');
+      items.forEach(function (x) {
+        var b = chipEl(x[0]);
+        b.dataset.idx = x[1]; b.tabIndex = 0; b.setAttribute('role', 'button');
+        b.setAttribute('aria-label', blockText(x[0]) + ' 블록 넣기');
+        wrap.appendChild(b);
+      });
+      row.appendChild(wrap);
+      ui.palette.appendChild(row);
     });
   }
   /* follow: 새 블록을 넣었을 때만 다음 자리(커서)가 보이게 스크롤 — 숫자 바꾸기·빼기 때는 제자리 */
