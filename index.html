@@ -95,45 +95,8 @@
     </section>
 
 
-    <!-- 코스터 익스프레스 (코딩 놀이기구) -->
-    <section id="coaster" class="coaster-overlay" hidden aria-label="코스터 익스프레스">
-      <div class="cs-stage">
-        <p class="cs-course" id="csCourse"></p>
-        <p class="cs-tickets" id="csTickets"></p>
-        <h2 class="cs-title">코스터 익스프레스</h2>
-        <div class="cs-ribbon">
-          <button type="button" class="cs-nav" id="csPrev" aria-label="이전 미션">◀</button>
-          <p><span class="cs-mission" id="csMission"></span><span class="cs-missionno" id="csMissionNo"></span></p>
-          <button type="button" class="cs-nav" id="csNext" aria-label="다음 미션">▶</button>
-        </div>
-        <button type="button" class="cs-over cs-exit" id="csExit">공원으로</button>
-        <p class="cs-guide" id="csGuide"></p>
-        <div class="cs-goals" id="csGoals" role="list"></div>
-        <div class="cs-board" id="csBoard" role="img" aria-label="레일과 역, 열차가 있는 게임 영역"></div>
-        <p class="cs-status" id="csStatus" role="status" aria-live="polite"></p>
-        <div class="cs-cmds" id="csCmds" role="group" aria-label="사용할 수 있는 명령"></div>
-        <h3 class="cs-listtitle">내 명령</h3>
-        <div class="cs-list" id="csList" aria-label="내 명령 목록"></div>
-        <button type="button" class="cs-clear" id="csClear">명령 지우기</button>
-        <button type="button" class="cs-over cs-step" id="csStep">한 단계씩</button>
-        <button type="button" class="cs-over cs-reset" id="csReset">열차 되돌리기</button>
-        <button type="button" class="cs-over cs-run" id="csRun">실행</button>
-        <div class="cs-success" id="csSuccess" hidden role="dialog" aria-label="도착 성공">
-          <div class="cs-success-card">
-            <p class="cs-success-title">도착했어요!</p>
-            <p class="cs-success-stars" id="csSuccessStars"></p>
-            <p id="csSuccessMsg"></p>
-            <p id="csSuccessStamp" class="cs-success-stamp" hidden>★ 코스터 스탬프를 받았어요!</p>
-            <p id="csSuccessSave" class="cs-success-save" hidden>이 기기에는 저장되지 않았어요. 기록은 이번에만 남아요.</p>
-            <div class="cs-success-btns">
-              <button type="button" class="cs-pill" id="csSuccessNext">다음 미션</button>
-              <button type="button" class="cs-pill light" id="csSuccessAgain">다시 하기</button>
-              <button type="button" class="cs-pill light" id="csSuccessPark">공원으로</button>
-            </div>
-          </div>
-        </div>
-      </div>
-    </section>
+    <!-- 코스터역: 블록을 쌓아 선로 만들기 (화면은 js/coaster/ui.js 가 만듦) -->
+    <section id="coaster" class="coaster-overlay" hidden aria-label="코스터역 — 블록으로 선로 만들기"></section>
 
     <!-- 유령의 집: 문지기의 비밀 규칙 (화면은 js/gatekeeper/ui.js 가 만듦) -->
     <section id="gatekeeper" class="gk-overlay" hidden aria-label="유령의 집 — 문지기의 비밀 규칙"></section>

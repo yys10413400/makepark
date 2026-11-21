@@ -1,218 +1,169 @@
 /*
- * 코스터 명령 실행 로직 (화면과 분리된 순수 로직 — 브라우저와 node 검증에서 함께 사용)
- * 프로그램: [{ id, type, n, body, then, else }]
- *   type: 'fwd' 앞으로 | 'left' 'right' 돌기 | 'wait' 기다리기 | 'repeat' 반복 | 'if' 만약
- *         'fast' 빠르게(가속) | 'slow' 천천히(브레이크) | 'pick' 손님 태우기
- * makeRun() 은 명령을 하나씩 실행하는 생성기를 돌려줌. 화면은 이벤트마다 애니메이션을 기다렸다 다음을 꺼냄.
+ * 코스터역 — 블록을 쌓아 선로 만들기: 실행 로직 (화면과 분리 — 브라우저와 node 검증(tools/verify_coaster.js)에서 함께 씀)
  *
- * 미션 장치(missions.js)
- *  rails: [열, 행, 조각]  조각은 h v ne se sw nw, 갈림길은 'h+nw' 처럼 + 로 합침
- *  stars: 레일 위 별 칸(지나가면 저절로 모음)
- *  speedRules: true 면 속도 규칙 — climbs(오르막 칸)에 들어갈 때는 빨라야 하고, 커브 칸에 들어갈 때는 느려야 함
- *  speed: 출발 속도 'slow'(기본) | 'fast'
- *  guests: 손님이 기다리는 칸(늘 같음) / guestCells + guestRandom: 실행할 때마다 일부 칸에만 손님
- *  ifCond: 만약 블록이 보는 것 'green'(앞 칸 신호가 초록, 기본) | 'guest'(지금 칸에 손님)
- *  par: 별 2개 기준 블록 수 / bonus: 별 3개 조건 'stars'|'guests'|'fast'
+ * 프로그램: [{ id, type, n?, cond?, body?, else? }]
+ *   fwd    앞으로 n칸 — 바라보는 쪽으로 한 칸씩 가며 지나간 자리에 선로를 놓음
+ *   left / right   그 자리에서 90° 돌기(선로는 다음 칸으로 갈 때 커브로 이어짐)
+ *   repeat n번 반복(body) / until 역에 닿을 때까지 반복(body)
+ *   if     만약 바로 앞이 cond(tulip|sunflower)라면(body)
+ *   ifelse 만약 바로 앞이 cond라면(body) 아니면(else)
+ *
+ * 판(layout): { cols, rows, start: [c, r, dir], goal: [c, r] | null, loop: bool, target: [[c, r]...],
+ *              pre: [[c, r]...] (처음부터 있는 선로, 마지막 칸이 거북이 자리), tulip: [[c, r]], sunflower: [[c, r]], hint: [[c, r]] }
+ *   - 역(goal)으로 가는 판: 거북이가 역 칸에 들어가면 성공
+ *   - 순환(loop) 판: 거북이는 역에서 출발. 목표 선로(target)를 모두 놓고 역으로 돌아와 한 바퀴를 이었을 때만 성공
+ *   - 꽃 칸·잔디 끝·이미 선로가 있는 칸으로는 갈 수 없음(실패로 멈춤)
  */
 window.MP_COASTER_LOGIC = (function () {
   var DIRS = ['E', 'S', 'W', 'N'];
   var DELTA = { E: [1, 0], S: [0, 1], W: [-1, 0], N: [0, -1] };
   var OPP = { E: 'W', W: 'E', N: 'S', S: 'N' };
-  var CONN = { h: ['E', 'W'], v: ['N', 'S'], ne: ['N', 'E'], se: ['S', 'E'], sw: ['S', 'W'], nw: ['N', 'W'] };
+  var MAX_STEPS = 300;   // 끝나지 않는 반복을 안전하게 멈추는 한도(블록 실행 횟수)
+  var IDLE_ROUNDS = 4;   // '역에 닿을 때까지 반복'이 이만큼 돌아도 한 칸도 못 가면 멈춤
 
   function key(c, r) { return c + ',' + r; }
   function turn(dir, side) { var i = DIRS.indexOf(dir); return DIRS[(i + (side === 'right' ? 1 : 3)) % 4]; }
-  function parts(piece) { return String(piece).split('+'); }
-  function opens(piece, dir) { return parts(piece).some(function (p) { return CONN[p].indexOf(dir) >= 0; }); }
-  function isCurve(piece) { return parts(piece).every(function (p) { return p !== 'h' && p !== 'v'; }); }
   function cellSet(list) { var s = {}; (list || []).forEach(function (c) { s[key(c[0], c[1])] = true; }); return s; }
-
-  function railMap(m) {
-    var map = {};
-    m.rails.forEach(function (t) { map[key(t[0], t[1])] = t[2]; });
-    return map;
-  }
-  /* 지금 칸에서 dir 쪽으로 레일이 이어지는지 */
-  function canMove(map, c, r, dir) {
-    var here = map[key(c, r)];
-    if (!here || !opens(here, dir)) return false;
-    var d = DELTA[dir], next = map[key(c + d[0], r + d[1])];
-    return !!next && opens(next, OPP[dir]);
-  }
-  /* 레일을 따라 도착까지 남은 칸 수(방향 무시) */
-  function distance(m, c, r) {
-    var map = railMap(m), goal = key(m.to[0], m.to[1]), seen = {}, q = [[c, r, 0]];
-    seen[key(c, r)] = true;
-    while (q.length) {
-      var cur = q.shift();
-      if (key(cur[0], cur[1]) === goal) return cur[2];
-      for (var i = 0; i < 4; i++) {
-        var d = DIRS[i];
-        if (!canMove(map, cur[0], cur[1], d)) continue;
-        var nc = cur[0] + DELTA[d][0], nr = cur[1] + DELTA[d][1];
-        if (!seen[key(nc, nr)]) { seen[key(nc, nr)] = true; q.push([nc, nr, cur[2] + 1]); }
-      }
-    }
-    return -1;
-  }
-  function countBlocks(list) {
-    var n = 0;
-    (list || []).forEach(function (b) { n += 1 + countBlocks(b.body) + countBlocks(b.then) + countBlocks(b.else); });
-    return n;
+  /* 한 칸에 이어진 방향들 → 레일 조각 이름(h v ne se sw nw), 한쪽만 이어졌으면 그 방향의 직선 */
+  function pieceOf(conn) {
+    var ds = DIRS.filter(function (d) { return conn && conn[d]; });
+    if (!ds.length) return null;
+    if (ds.length === 1) return ds[0] === 'E' || ds[0] === 'W' ? 'h' : 'v';
+    var s = ds.join('');
+    return { EW: 'h', NS: 'v', SN: 'v', ES: 'se', EN: 'ne', SW: 'sw', WN: 'nw' }[s] || (conn.E && conn.W ? 'h' : 'v');
   }
 
-  // ---------- 실행할 때마다 달라지는 것(세계): 신호 색, 손님 위치 ----------
-  /* 신호 조합: signals 의 각 칸을 red/green 으로 (bits 의 i번째 비트가 1이면 빨강) */
-  function signalState(m, bits) {
-    var s = {};
-    (m.signals || []).forEach(function (cell, i) { s[key(cell[0], cell[1])] = (bits >> i) & 1 ? 'red' : 'green'; });
-    return s;
+  /* 판의 처음 상태 */
+  function initial(L) {
+    var flowers = {};
+    (L.tulip || []).forEach(function (c) { flowers[key(c[0], c[1])] = 'tulip'; });
+    (L.sunflower || []).forEach(function (c) { flowers[key(c[0], c[1])] = 'sunflower'; });
+    var track = {}, path = (L.pre || []).map(function (c) { return [c[0], c[1]]; });
+    for (var i = 1; i < path.length; i++) link(track, path[i - 1], path[i]);
+    if (!path.length) path.push([L.start[0], L.start[1]]);
+    return { c: L.start[0], r: L.start[1], dir: L.start[2], flowers: flowers, track: track, path: path,
+      target: cellSet(L.target), steps: 0 };
   }
-  function guestState(m, bits) {
-    if (!m.guestRandom) return cellSet(m.guests);
-    var g = {};
-    (m.guestCells || []).forEach(function (cell, i) { if ((bits >> i) & 1) g[key(cell[0], cell[1])] = true; });
-    return g;
+  function dirBetween(a, b) {
+    for (var i = 0; i < 4; i++) { var d = DELTA[DIRS[i]]; if (a[0] + d[0] === b[0] && a[1] + d[1] === b[1]) return DIRS[i]; }
+    return null;
   }
-  function randomBits(n) { return Math.floor(Math.random() * (1 << n)); }
-  function randomSignals(m) { return signalState(m, randomBits((m.signals || []).length)); }
-  function randomWorld(m) {
-    var gn = m.guestRandom ? (m.guestCells || []).length : 0, gb = randomBits(gn);
-    if (gn && !gb) gb = 1 << Math.floor(Math.random() * gn);   // 화면에서는 손님이 적어도 한 명
-    return { signals: randomSignals(m), guests: guestState(m, gb) };
+  function link(track, a, b) {
+    var d = dirBetween(a, b); if (!d) return;
+    var ka = key(a[0], a[1]), kb = key(b[0], b[1]);
+    (track[ka] = track[ka] || {})[d] = true;
+    (track[kb] = track[kb] || {})[OPP[d]] = true;
   }
-  /* 가능한 모든 세계(검증용) */
-  function allWorlds(m) {
-    var sn = (m.signals || []).length, gn = m.guestRandom ? (m.guestCells || []).length : 0, out = [];
-    for (var a = 0; a < (1 << sn); a++) for (var b = 0; b < (1 << gn); b++) out.push({ signals: signalState(m, a), guests: guestState(m, b), bits: [a, b] });
-    return out;
-  }
+  function inside(L, c, r) { return c >= 0 && r >= 0 && c < L.cols && r < L.rows; }
+  function ahead(st) { var d = DELTA[st.dir]; return [st.c + d[0], st.r + d[1]]; }
+  function aheadIs(st, cond) { var a = ahead(st); return st.flowers[key(a[0], a[1])] === cond; }
 
   /*
-   * 실행 생성기. yield 하는 이벤트:
-   *  { type: 'move', block, from, to, dir }          앞으로 한 칸
-   *  { type: 'star', block, cell }                    별을 모음(앞으로 다음에)
-   *  { type: 'turn', block, dir }                     돌기
-   *  { type: 'speed', block, value }                  빠르게/천천히
-   *  { type: 'pick', block, cell }                    손님 태움
-   *  { type: 'wait', block, cell }                    기다리기(신호가 초록으로)
-   *  { type: 'check', block, value }                  만약 — 확인 결과
-   *  { type: 'repeat', block, round, total }          반복 몇 번째
-   *  { type: 'success', block }                       도착(즉시 멈춤)
-   *  { type: 'blocked', block, reason }               못 감: 'norail' | 'red' | 'nowait' | 'slow' | 'fast' | 'noguest'
-   *  { type: 'end' }                                  명령을 다 했는데 도착 못 함
-   * state 는 실행 중 계속 바뀌는 객체: { c, r, dir, speed, signals, guests, boarded, stars, executed }
-   * world: { signals, guests } (예전처럼 신호 객체만 넘겨도 됨)
+   * 실행 생성기. 이벤트:
+   *  { type: 'block', id }                    블록 하나를 시작(화면은 그 블록을 밝힘)
+   *  { type: 'turn', id, dir }
+   *  { type: 'move', id, from, to, dir }      한 칸 이동 + 선로 놓기(state.track 은 이미 바뀜)
+   *  { type: 'check', id, value }             만약 — 확인 결과
+   *  { type: 'round', id, n, total }          반복 몇 번째(until 은 total 없음)
+   *  { type: 'success' }
+   *  { type: 'fail', id, reason, at, dir, flower? }
+   *     reason: 'empty' 블록 없음 | 'flower' 앞이 꽃 | 'edge' 잔디 끝 | 'track' 이미 선로 | 'off' 목표 선로 밖(순환 판)
+   *             'short' 다 두르지 않고 역으로 | 'end' 명령이 끝남(역 못 감) | 'notback' 순환 판에서 역으로 못 돌아옴 | 'toolong' 반복이 끝나지 않음
    */
-  function makeRun(m, program, world) {
-    var map = railMap(m), climbs = cellSet(m.climbs), starCells = cellSet(m.stars);
-    if (world && !world.signals && !world.guests) world = { signals: world };
-    world = world || {};
-    var st = { c: m.from[0], r: m.from[1], dir: m.dir, speed: m.speed || 'slow',
-      signals: Object.assign({}, world.signals || {}), guests: Object.assign({}, world.guests || cellSet(m.guests)),
-      guestTotal: 0, boarded: 0, stars: {}, executed: {} };
-    st.guestTotal = Object.keys(st.guests).length;
-    function ahead() { var d = DELTA[st.dir]; return key(st.c + d[0], st.r + d[1]); }
-    function here() { return key(st.c, st.r); }
+  function makeRun(L, program) {
+    var st = initial(L), goal = L.goal ? key(L.goal[0], L.goal[1]) : null, home = key(L.start[0], L.start[1]);
+    function fail(id, reason, extra) {
+      var e = { type: 'fail', id: id, reason: reason, at: [st.c, st.r], dir: st.dir };
+      for (var k in extra || {}) e[k] = extra[k];
+      return e;
+    }
+    function targetDone() {
+      for (var k in st.target) if (!st.track[k]) return false;
+      return true;
+    }
+    function* step(id) {
+      var a = ahead(st), ka = key(a[0], a[1]);
+      if (!inside(L, a[0], a[1])) { yield fail(id, 'edge'); return 'stop'; }
+      if (st.flowers[ka]) { yield fail(id, 'flower', { flower: st.flowers[ka] }); return 'stop'; }
+      if (L.loop && !st.target[ka]) { yield fail(id, 'off'); return 'stop'; }
+      var closing = L.loop && ka === home && st.path.length > 1;
+      if (st.track[ka] && !closing) { yield fail(id, 'track'); return 'stop'; }
+      if (closing) {
+        // 역으로 돌아옴: 목표 선로를 다 놓았을 때만 고리를 이음
+        var before = {}; for (var k in st.target) if (k !== home) before[k] = true;
+        var missing = Object.keys(before).some(function (k) { return !st.track[k]; });
+        if (missing) { yield fail(id, 'short'); return 'stop'; }
+      }
+      var from = [st.c, st.r];
+      link(st.track, from, a);
+      st.c = a[0]; st.r = a[1]; st.path.push([a[0], a[1]]);
+      yield { type: 'move', id: id, from: from, to: [a[0], a[1]], dir: st.dir };
+      if (closing && targetDone()) { yield { type: 'success' }; return 'done'; }
+      if (goal && ka === goal) { yield { type: 'success' }; return 'done'; }
+    }
     function* exec(list) {
       for (var i = 0; i < list.length; i++) {
-        var b = list[i];
-        st.executed[b.id] = true;
+        var b = list[i], res;
+        if (++st.steps > MAX_STEPS) { yield fail(b.id, 'toolong'); return 'stop'; }
+        yield { type: 'block', id: b.id };
         if (b.type === 'fwd') {
-          if (!canMove(map, st.c, st.r, st.dir)) { yield { type: 'blocked', block: b.id, reason: 'norail' }; return 'stop'; }
-          var nk = ahead();
-          if (st.signals[nk] === 'red') { yield { type: 'blocked', block: b.id, reason: 'red' }; return 'stop'; }
-          if (m.speedRules) {
-            if (climbs[nk] && st.speed !== 'fast') { yield { type: 'blocked', block: b.id, reason: 'slow' }; return 'stop'; }
-            if (isCurve(map[nk]) && st.speed === 'fast') { yield { type: 'blocked', block: b.id, reason: 'fast' }; return 'stop'; }
-          }
-          var from = [st.c, st.r], d = DELTA[st.dir];
-          st.c += d[0]; st.r += d[1];
-          yield { type: 'move', block: b.id, from: from, to: [st.c, st.r], dir: st.dir };
-          if (starCells[here()] && !st.stars[here()]) { st.stars[here()] = true; yield { type: 'star', block: b.id, cell: here() }; }
-          if (st.c === m.to[0] && st.r === m.to[1]) { yield { type: 'success', block: b.id }; return 'done'; }
+          for (var k = 0; k < (b.n || 1); k++) { res = yield* step(b.id); if (res) return res; }
         } else if (b.type === 'left' || b.type === 'right') {
           st.dir = turn(st.dir, b.type);
-          yield { type: 'turn', block: b.id, dir: st.dir };
-        } else if (b.type === 'fast' || b.type === 'slow') {
-          st.speed = b.type;
-          yield { type: 'speed', block: b.id, value: st.speed };
-        } else if (b.type === 'pick') {
-          if (!st.guests[here()]) { yield { type: 'blocked', block: b.id, reason: 'noguest' }; return 'stop'; }
-          delete st.guests[here()]; st.boarded++;
-          yield { type: 'pick', block: b.id, cell: here() };
-        } else if (b.type === 'wait') {
-          var a = ahead();
-          if (st.signals[a] !== 'red') { yield { type: 'blocked', block: b.id, reason: 'nowait' }; return 'stop'; }
-          st.signals[a] = 'green';
-          yield { type: 'wait', block: b.id, cell: a };
+          yield { type: 'turn', id: b.id, dir: st.dir };
         } else if (b.type === 'repeat') {
-          for (var k = 0; k < b.n; k++) {
-            yield { type: 'repeat', block: b.id, round: k + 1, total: b.n };
-            var r1 = yield* exec(b.body || []);
-            if (r1) return r1;
+          for (var n = 0; n < (b.n || 1); n++) {
+            yield { type: 'round', id: b.id, n: n + 1, total: b.n || 1 };
+            res = yield* exec(b.body || []); if (res) return res;
           }
-        } else if (b.type === 'if') {
-          var yes = m.ifCond === 'guest' ? !!st.guests[here()] : st.signals[ahead()] !== 'red';
-          yield { type: 'check', block: b.id, value: yes };
-          var r2 = yield* exec((yes ? b.then : b.else) || []);
-          if (r2) return r2;
+        } else if (b.type === 'until') {
+          // 반복 4번 동안 한 칸도 못 가면(방향만 돌거나 아무것도 안 함) 끝나지 않는 반복으로 보고 멈춤
+          for (var m = 1, idle = 0; ; m++) {
+            if (++st.steps > MAX_STEPS) { yield fail(b.id, 'toolong'); return 'stop'; }
+            yield { type: 'round', id: b.id, n: m };
+            var moved = st.path.length;
+            res = yield* exec(b.body || []); if (res) return res;
+            idle = st.path.length === moved ? idle + 1 : 0;
+            if (idle >= IDLE_ROUNDS) { yield fail(b.id, 'toolong'); return 'stop'; }
+          }
+        } else if (b.type === 'if' || b.type === 'ifelse') {
+          var yes = aheadIs(st, b.cond);
+          yield { type: 'check', id: b.id, value: yes };
+          res = yield* exec((yes ? b.body : b.type === 'ifelse' ? b.else : null) || []);
+          if (res) return res;
         }
       }
     }
     function* top() {
-      var res = yield* exec(program || []);
-      if (!res) yield { type: 'end' };
+      if (!program || !program.length) { yield fail(null, 'empty'); return; }
+      var res = yield* exec(program);
+      if (!res) yield fail(null, L.loop ? 'notback' : 'end');
     }
     return { state: st, gen: top() };
   }
-  /* 끝까지 실행해 결과만 돌려줌(검증용) */
-  function runAll(m, program, world) {
-    var run = makeRun(m, program, world), last = null, ev;
+  /* 끝까지 실행해 마지막 이벤트(성공/실패)를 돌려줌(검증용) */
+  function runAll(L, program) {
+    var run = makeRun(L, program), last = null, ev;
     while (!(ev = run.gen.next()).done) last = ev.value;
-    return { result: last && last.type, reason: last && last.reason, state: run.state };
+    return { result: last && last.type, reason: last && last.reason, state: run.state, last: last };
   }
-
-  // ---------- 별 평가 ----------
-  var BONUS_LABEL = { stars: '별 모두 모으기', guests: '손님 모두 태우기', fast: '마지막엔 빠르게 도착' };
-  /* 목표 3개: 도착 / 블록 par개 이하 / 보너스. 보너스가 없는 미션은 세 번째 별도 블록 수로 받음 */
-  function goals(m) {
-    return [
-      { id: 'arrive', label: '도착역에 도착' },
-      { id: 'par', label: '블록 ' + m.par + '개 이하로' },
-      { id: 'bonus', label: m.bonus ? BONUS_LABEL[m.bonus] : '블록 ' + m.par + '개 이하로 도착' }
-    ];
+  function countBlocks(list) {
+    var n = 0;
+    (list || []).forEach(function (b) { n += 1 + countBlocks(b.body) + countBlocks(b.else); });
+    return n;
   }
-  function score(m, program, result, state) {
-    var arrive = result === 'success';
-    var par = arrive && countBlocks(program) <= m.par;
-    var bonus = arrive && (
-      m.bonus === 'stars' ? Object.keys(state.stars).length === (m.stars || []).length :
-      m.bonus === 'guests' ? state.boarded === state.guestTotal :
-      m.bonus === 'fast' ? state.speed === 'fast' : par);
-    return { arrive: arrive, par: par, bonus: bonus, stars: (arrive ? 1 : 0) + (par ? 1 : 0) + (bonus ? 1 : 0) };
-  }
-  /* 모든 세계에서 결과(검증용): 성공 수와 가장 적은 별 수 */
-  function solvesAll(m, program) {
-    var ws = allWorlds(m), fails = [], minStars = 3;
-    ws.forEach(function (w) {
-      var r = runAll(m, program, w), sc = score(m, program, r.result, r.state);
-      minStars = Math.min(minStars, sc.stars);
-      if (r.result !== 'success') fails.push({ bits: w.bits, result: r.result, reason: r.reason });
-    });
-    return { ok: fails.length === 0, combos: ws.length, fails: fails, minStars: minStars };
-  }
-  /* 블록에 고유 번호 붙인 복사본(미션 데이터의 정답·처음 목록을 실제 프로그램으로 쓸 때) */
+  /* 블록에 고유 번호 붙인 복사본(미션 데이터의 정답을 실제 프로그램으로 쓸 때) */
   var seq = 0;
   function withIds(list) {
     return (list || []).map(function (b) {
-      var o = { id: 'b' + (++seq), type: b.type };
-      if (b.type === 'repeat') { o.n = b.n || 2; o.body = withIds(b.body); }
-      if (b.type === 'if') { o.then = withIds(b.then); o.else = withIds(b.else); }
+      var o = { id: 'k' + (++seq), type: b.type };
+      if (b.n != null) o.n = b.n;
+      if (b.cond) o.cond = b.cond;
+      if (b.body) o.body = withIds(b.body);
+      if (b.else) o.else = withIds(b.else);
       return o;
     });
   }
-  return { DIRS: DIRS, DELTA: DELTA, CONN: CONN, turn: turn, withIds: withIds, canMove: canMove, railMap: railMap, distance: distance,
-    parts: parts, isCurve: isCurve, countBlocks: countBlocks, signalState: signalState, randomSignals: randomSignals, randomWorld: randomWorld,
-    allWorlds: allWorlds, makeRun: makeRun, runAll: runAll, solvesAll: solvesAll, goals: goals, score: score };
+  return { DIRS: DIRS, DELTA: DELTA, OPP: OPP, key: key, turn: turn, pieceOf: pieceOf, initial: initial,
+    makeRun: makeRun, runAll: runAll, countBlocks: countBlocks, withIds: withIds, MAX_STEPS: MAX_STEPS };
 })();

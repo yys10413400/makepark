@@ -383,10 +383,10 @@
       owned: Array.isArray(c.owned) ? c.owned.filter(function (x) { return M && M.byId(x); }) : []
     };
   }
-  // 건물(스테이지) 통과: 지금은 코스터만 미션이 있어, 학년 과정 스탬프를 하나라도 받으면 통과
+  // 건물(스테이지) 통과: 코스터역은 선로 만들기 미션을 하나라도 성공하면(예전 코스터 스탬프도 인정)
   function facilityCleared(fid) {
     var s = readSave() || {};
-    if (fid === 'coaster') { var st = (s.coaster && s.coaster.stamps) || {}; return Object.keys(st).some(function (k) { return st[k]; }); }
+    if (fid === 'coaster') { var c = s.coaster || {}, st = c.stamps || {}; return !!(c.build && c.build.cleared) || Object.keys(st).some(function (k) { return st[k]; }); }
     if (fid === 'ghost') return !!(s.gate && s.gate.cleared);   // 문지기 게임 혼자 추리하기 본 게임 한 판
     return false;
   }
@@ -470,7 +470,7 @@
     if (d.kind === 'reward') {
       pendingBuy = null; renderChars();
       ui.charMsg.textContent = d.facility === 'coaster'
-        ? facilityName(d.facility) + '에서 학년 과정을 끝내면 받을 수 있어요.'
+        ? facilityName(d.facility) + '에서 거북이 역장과 선로 만들기 미션을 하나 끝내면 받을 수 있어요.'
         : d.facility === 'ghost' ? '유령의 집 문지기와 혼자 추리하기 한 판을 끝내면 받을 수 있어요.'
         : josa(facilityName(d.facility), '이', '가') + ' 문을 열면 받을 수 있어요.';
       return;

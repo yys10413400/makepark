@@ -1,10 +1,9 @@
-// 코스터 미션 자동 검증: node tools/verify_coaster.js
-// - 모든 미션의 정답 예시가 모든 세계(신호 색·손님 위치 조합)에서 도착하고 별 3개를 받는지
-// - 정답이 블록 제한·공개 블록 안에 있는지
-// - 첫 미션: 0개/2개/3개/5개 명령 결과, 틀린 명령 고치기의 처음 목록이 실패하는지
-// - 조건 미션: 조건 없이 만든 답이 어떤 세계에서는 실패하거나 별이 줄어드는지(조건이 꼭 필요한지)
-// - 속도 미션: 속도를 바꾸지 않으면 오르막·커브에서 멈추는지
-// - 갈림길 미션: 짧은 길은 도착하지만 별 3개는 못 받는지
+// 코스터역(블록으로 선로 만들기) 미션 자동 검증: node tools/verify_coaster.js
+// - 학년마다 미션이 하나 이상, 대표 풀이가 모든 판에서 성공하고 블록 상자에 있는 블록만 쓰는지
+// - 자주 하는 실수(블록 빠뜨림·반대로 돌기·조건 없이 직진)가 알맞은 이유로 실패하는지
+// - 순환 판: 출발하자마자 성공하지 않고, 한 바퀴를 다 이어야 성공하는지
+// - 끝나지 않는 반복이 안전하게 멈추는지, 5학년 조건문이 두 판 모두에서 같은 코드로 성공하는지
+// - 성공 뒤 선로가 끊기지 않고 이어졌는지(이웃 칸끼리 서로 마주 보는 방향으로 연결)
 const fs = require('fs'), vm = require('vm'), path = require('path');
 const root = path.join(__dirname, '..');
 const ctx = { window: {} }; vm.createContext(ctx);
@@ -12,73 +11,85 @@ for (const f of ['js/coaster/missions.js', 'js/coaster/logic.js']) vm.runInConte
 const M = ctx.window.MP_COASTER_MISSIONS, LG = ctx.window.MP_COASTER_LOGIC;
 let fails = 0;
 function ok(cond, msg) { console.log((cond ? '  통과 ' : '  실패 ') + msg); if (!cond) fails++; }
-function types(list, out = new Set()) { (list || []).forEach(b => { out.add(b.type); types(b.body, out); types(b.then, out); types(b.else, out); }); return out; }
-const all = M.common.concat(...Object.values(M.courses).map(c => c.missions));
-const ids = new Set();
-for (const m of all) {
-  console.log(`[${m.id}] ${m.title}`);
-  ok(!ids.has(m.id), '미션 id가 겹치지 않음'); ids.add(m.id);
-  ok(typeof m.par === 'number', `별 2개 기준 블록 수(par) ${m.par}`);
-  const ans = LG.withIds(m.answer);
-  const r = LG.solvesAll(m, ans);
-  ok(r.ok, `정답 예시가 모든 세계에서 도착 (${r.combos}가지)` + (r.ok ? '' : ' ' + JSON.stringify(r.fails)));
-  ok(r.minStars === 3, `정답 예시는 늘 별 3개 (가장 적을 때 ${r.minStars}개)`);
-  const used = [...types(m.answer)];
-  ok(used.every(t => m.blocks.includes(t)), `정답이 공개 블록만 사용 (${used.join(',')})`);
-  ok(LG.countBlocks(m.answer) <= m.par, `정답 블록 ${LG.countBlocks(m.answer)}개 ≤ par ${m.par}`);
-  if (m.limit) ok(LG.countBlocks(m.answer) <= m.limit && m.par <= m.limit, `블록 제한 ${m.limit} 안`);
-  ok(LG.distance(m, m.from[0], m.from[1]) > 0, `출발에서 도착까지 레일로 이어짐 (${LG.distance(m, m.from[0], m.from[1])}칸)`);
-  (m.stars || []).concat(m.climbs || [], m.guests || [], m.guestCells || []).forEach(c => {
-    ok(m.rails.some(t => t[0] === c[0] && t[1] === c[1]), `장치 칸 (${c})이 레일 위에 있음`);
-  });
-  if (m.start) {
-    const s = LG.runAll(m, LG.withIds(m.start), {});
-    ok(s.result !== 'success', `처음 목록(틀린 명령)은 실패: ${s.result}/${s.reason}`);
-  }
-  if (m.limit && m.blocks.includes('repeat')) {
-    // 반복 없이 앞으로·돌기만 나열한 답은 par를 넘는지
-    const flat = []; (function f(list) { list.forEach(b => b.type === 'repeat' ? [...Array(b.n)].forEach(() => f(b.body)) : flat.push(b)); })(m.answer);
-    if (!flat.some(b => b.type === 'if')) ok(LG.countBlocks(flat) > m.par, `반복 없이 나열하면 ${LG.countBlocks(flat)}개 > par ${m.par} (반복이 필요함)`);
-  }
-  if (m.signals || m.guestRandom) {
-    // 정답에서 '만약'을 한쪽 가지로만 바꾼 답은 어떤 세계에서는 실패하거나 별이 줄어야 조건이 꼭 필요한 미션
-    const strip = (list, side) => list.reduce((a, b) => b.type === 'if' ? a.concat(strip(b[side] || [], side))
-      : a.concat([b.type === 'repeat' ? { type: 'repeat', n: b.n, body: strip(b.body, side) } : { type: b.type }]), []);
-    for (const side of ['then', 'else']) {
-      const rr = LG.solvesAll(m, LG.withIds(strip(m.answer, side)));
-      ok(!rr.ok || rr.minStars < 3, `조건 없이 늘 '${side === 'then' ? '예' : '아니오'}' 쪽만 하면 일부 세계에서 실패/별 감소 (실패 ${rr.fails.length}/${rr.combos}, 최소 별 ${rr.minStars})`);
+const sig = b => b.type + (b.cond ? ':' + b.cond : '');
+function sigs(list, out = new Set()) { (list || []).forEach(b => { out.add(sig(b)); sigs(b.body, out); sigs(b.else, out); }); return out; }
+const F = { type: 'fwd', n: 1 }, R = { type: 'right' }, L = { type: 'left' };
+function run(L0, prog) { return LG.runAll(L0, LG.withIds(prog)); }
+function tracksConnected(st) {
+  for (const k in st.track) {
+    const [c, r] = k.split(',').map(Number);
+    for (const d in st.track[k]) {
+      const [dc, dr] = LG.DELTA[d], n = st.track[(c + dc) + ',' + (r + dr)];
+      if (!n || !n[LG.OPP[d]]) return false;
     }
   }
-  if (m.speedRules) {
-    const noSpeed = LG.withIds(m.answer.filter(b => b.type !== 'fast' && b.type !== 'slow'));
-    const rs = LG.runAll(m, noSpeed, {});
-    ok(rs.result === 'blocked' && (rs.reason === 'slow' || rs.reason === 'fast'), `속도를 안 바꾸면 멈춤: ${rs.result}/${rs.reason}`);
-  }
-  if (m.shortcut) {
-    const sc = LG.withIds(m.shortcut), rr = LG.runAll(m, sc, {}), s = LG.score(m, sc, rr.result, rr.state);
-    ok(rr.result === 'success' && s.stars === 2, `짧은 길은 도착하지만 별 ${s.stars}개 (별 3개는 다른 길)`);
-  }
+  return true;
 }
-console.log('[첫 출발 세부]');
-const t = M.common[0];
-const fw = k => LG.withIds([...Array(k)].map(() => ({ type: 'fwd' })));
-const r0 = LG.runAll(t, fw(0), {}); ok(r0.result === 'end', '명령 0개 → 끝(안내 필요): ' + r0.result);
-const r2 = LG.runAll(t, fw(2), {}); ok(r2.result === 'end' && LG.distance(t, r2.state.c, r2.state.r) === 1, '명령 2개 → 한 칸 부족');
-const r3 = LG.runAll(t, fw(3), {}); ok(r3.result === 'success', '명령 3개 → 도착');
-const p5 = fw(5); const r5 = LG.runAll(t, p5, {});
-ok(r5.result === 'success' && !r5.state.executed[p5[3].id] && !r5.state.executed[p5[4].id], '명령 5개 → 3번째에서 도착하고 4·5번째는 실행 안 함');
-ok(LG.score(t, p5, r5.result, r5.state).stars === 1, '명령 5개로 도착하면 블록이 많아 별 1개');
-console.log('[회전 규칙]');
-const c2 = M.courses.low.missions[1];
-const rr = LG.runAll(c2, LG.withIds([{ type: 'fwd' }, { type: 'fwd' }, { type: 'fwd' }]), {});
-ok(rr.result === 'blocked' && rr.reason === 'norail' && rr.state.c === 2, '곡선 칸에서 돌지 않고 앞으로 → 움직이기 전에 멈춤');
-const rt = LG.runAll(c2, LG.withIds([{ type: 'left' }]), {});
-ok(rt.state.c === 0 && rt.state.dir === 'N', '돌기는 제자리에서 방향만 바뀜');
-console.log('[손님 규칙]');
-const h1 = M.courses.high.missions[0];
-const np = LG.runAll(h1, LG.withIds([{ type: 'fwd' }, { type: 'pick' }]), {});
-ok(np.result === 'blocked' && np.reason === 'noguest', '손님 없는 칸에서 태우기 → 멈춤');
-const skip = LG.withIds([...Array(5)].map(() => ({ type: 'fwd' }))), sk = LG.runAll(h1, skip, {});
-ok(sk.result === 'success' && LG.score(h1, skip, sk.result, sk.state).bonus === false, '손님을 안 태우고 도착하면 보너스 별 없음');
+
+for (let g = 1; g <= 6; g++) ok(M.list.some(m => m.grade === g), `${g}학년 미션 있음`);
+for (const m of M.list) {
+  console.log(`[${m.id}] ${m.grade}학년 · ${m.title}`);
+  const pal = new Set(m.palette.map(sig));
+  ok([...sigs(m.answer)].every(s => pal.has(s)), `대표 풀이가 블록 상자 블록만 씀 (${[...sigs(m.answer)].join(', ')})`);
+  m.layouts.forEach((Lx, i) => {
+    const r = run(Lx, m.answer);
+    ok(r.result === 'success', `판 ${i + 1}: 대표 풀이 성공` + (r.result === 'success' ? '' : ` (${r.reason})`));
+    ok(tracksConnected(r.state), `판 ${i + 1}: 놓인 선로가 끊김 없이 맞물림`);
+    ok(run(Lx, []).reason === 'empty', `판 ${i + 1}: 빈 코드는 '블록 없음'`);
+    const k = (c) => LG.key(c[0], c[1]);
+    if (Lx.goal) ok(!(Lx.tulip || []).concat(Lx.sunflower || []).some(c => k(c) === k(Lx.goal)), `판 ${i + 1}: 역 칸에 꽃 없음`);
+  });
+}
+
+const [g1, g2, g3, g4, g5, g6] = M.list;
+console.log('[실수와 실패 이유]');
+let r = run(g1.layouts[0], [F, F]);
+ok(r.reason === 'end', `1학년 앞으로 두 번만: 명령이 끝남 (${r.reason})`);
+r = run(g1.layouts[0], [F, L, F]);
+ok(r.result === 'fail', `1학년 왼쪽으로 돌면 실패 (${r.reason})`);
+r = run(g1.layouts[0], [F, F, F, F]);
+ok(r.reason === 'edge', `1학년 계속 앞으로: 잔디 끝에서 멈춤 (${r.reason})`);
+r = run(g2.layouts[0], [F, F]);
+ok(r.reason === 'flower' && r.last.flower === 'tulip', `2학년 직진: 앞은 튤립 꽃밭 (${r.reason})`);
+ok(r.state.c === 2 && r.state.r === 1, '2학년 실패 때 거북이는 멈춘 칸에 그대로');
+r = run(g3.layouts[0], [{ type: 'fwd', n: 3 }]);
+ok(r.reason === 'notback', `3학년 한 변만: 역으로 못 돌아옴 (${r.reason})`);
+r = run(g3.layouts[0], [{ type: 'repeat', n: 3, body: [{ type: 'fwd', n: 3 }, R] }]);
+ok(r.reason === 'notback', `3학년 3번 반복: 아직 한 바퀴가 아님 (${r.reason})`);
+r = run(g3.layouts[0], [{ type: 'repeat', n: 4, body: [{ type: 'fwd', n: 3 }, L] }]);
+ok(r.result === 'fail', `3학년 왼쪽으로 돌면 목표 선로 밖 (${r.reason})`);
+r = run(g3.layouts[0], [{ type: 'repeat', n: 4, body: [{ type: 'fwd', n: 1 }, R] }]);
+ok(r.reason === 'flower', `3학년 1칸씩: 꽃밭으로 들어가려다 멈춤 (${r.reason})`);
+// 출발 직후 성공하지 않는지: 첫 이벤트들에 success 없음, 마지막 이동이 역으로 돌아올 때 성공
+{
+  const run3 = LG.makeRun(g3.layouts[0], LG.withIds(g3.answer)); let moves = 0, okAt = -1, ev;
+  while (!(ev = run3.gen.next()).done) { if (ev.value.type === 'move') moves++; if (ev.value.type === 'success') okAt = moves; }
+  ok(okAt === 12, `3학년: 12칸을 다 돌아 역에 돌아왔을 때 성공 (성공 시점 ${okAt}칸)`);
+}
+r = run(g4.layouts[0], [{ type: 'repeat', n: 2, body: [{ type: 'fwd', n: 4 }, R, { type: 'fwd', n: 1 }, R] }]);
+ok(r.result === 'fail', `4학년 짧은 변을 1칸으로: 실패 (${r.reason})`);
+r = run(g5.layouts[0], [{ type: 'until', body: [F] }]);
+ok(r.reason === 'flower', `5학년 조건 없이 직진: 튤립 앞에서 멈춤 (${r.reason})`);
+r = run(g5.layouts[0], [{ type: 'until', body: [{ type: 'if', cond: 'tulip', body: [R, F] }] }]);
+ok(r.reason === 'toolong', `5학년 전진을 조건 안에만: 끝나지 않는 반복을 안전하게 멈춤 (${r.reason})`);
+r = run(g5.layouts[0], [{ type: 'until', body: [] }]);
+ok(r.reason === 'toolong', `빈 반복: 안전하게 멈춤 (${r.reason})`);
+{
+  const run5 = LG.makeRun(g5.layouts[0], LG.withIds([{ type: 'until', body: [R] }])); let n = 0, ev, last;
+  while (!(ev = run5.gen.next()).done) { n++; last = ev.value; }
+  ok(last.reason === 'toolong' && n < 40, `돌기만 하는 반복: 몇 번 만에 바로 멈춤 (이벤트 ${n}개, ${last.reason})`);
+}
+r = run(g5.layouts[1], [F, R, F, F, R, F]);
+ok(r.result === 'success', '5학년 두 번째 판은 꽃·역 자리가 다름(직접 쓴 순서 풀이로도 확인)');
+ok(run(g5.layouts[0], [F, R, F, F, R, F]).result === 'fail', '5학년: 판 하나에 맞춘 순서 풀이는 다른 판에서 실패 → 조건이 필요함');
+r = run(g6.layouts[0], [{ type: 'until', body: [{ type: 'if', cond: 'tulip', body: [R] }, F] }]);
+ok(r.reason === 'flower' && r.last.flower === 'sunflower', `6학년 튤립만 보면: 해바라기 앞에서 멈춤 (${r.reason}/${r.last.flower})`);
+{
+  const run6 = LG.makeRun(g6.layouts[0], LG.withIds(g6.answer)); const seen = { tulip: 0, sunflower: 0 }; let ev, last;
+  while (!(ev = run6.gen.next()).done) { if (ev.value.type === 'check' && ev.value.value) last = ev.value; if (ev.value.type === 'turn') seen[run6.state.dir === 'S' ? 'tulip' : 'sunflower']++; }
+  ok(seen.tulip >= 1 && seen.sunflower >= 1, `6학년 대표 풀이는 튤립(오른쪽)·해바라기(왼쪽)를 모두 만남 (${JSON.stringify(seen)})`);
+}
+ok(LG.pieceOf({ E: true, S: true }) === 'se' && LG.pieceOf({ W: true, N: true }) === 'nw' && LG.pieceOf({ E: true, W: true }) === 'h', '레일 조각 이름: 이어진 두 방향');
+
 console.log(fails ? `\n실패 ${fails}개` : '\n모두 통과');
 process.exit(fails ? 1 : 0);
