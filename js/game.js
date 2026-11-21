@@ -122,6 +122,7 @@
     (PARK.occluders || []).forEach(function (o, i) {
       var oc = cur.occ[i];
       if (p.y >= o.baseY || !oc) return;
+      if (o.season && o.season !== state.season) return; // 그 계절 지도에만 있는 물체
       if (b.x1 < o.x || b.x0 > o.x + o.w || b.y1 < o.y || b.y0 > o.y + o.h) return;
       // 캐릭터 폭 안에서 '물체가 발보다 앞에 있는' 세로줄 구간만 다시 그림
       var x0 = Math.max(o.x, Math.floor(b.x0)), x1 = Math.min(o.x + o.w, Math.ceil(b.x1));

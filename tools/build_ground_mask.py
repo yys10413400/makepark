@@ -82,6 +82,16 @@ def main():
         b = np.array(Image.open(ROOT + path).convert('RGB')).astype(float)
         dx, dy = best_shift(n, b)
         gs = np.roll(np.roll(g, dy, 0), dx, 1)
+        # 이 계절 지도에만 길 위에 놓인 물체(크리스마스트리·선물 등)는 길에서 뺌 → 캐릭터를 가릴 수 있게
+        lum = b.mean(-1); sat = b.max(-1) - b.min(-1)
+        obj = gs & ~((lum > 150) & (sat < 50))
+        obj = ndimage.binary_opening(obj, iterations=2 * k)
+        lab, cnt = ndimage.label(obj)
+        sizes = ndimage.sum(obj, lab, range(1, cnt + 1))
+        big = np.zeros(cnt + 1, bool); big[1:] = sizes >= 400 * k * k  # 그림자·얼룩 같은 작은 것은 무시
+        obj = ndimage.binary_fill_holes(ndimage.binary_dilation(big[lab], iterations=2 * k))
+        gs = gs & ~obj
+        print(season, 'objects on path', int(big.sum()))
         save(gs, ROOT + 'assets/maps/makepark-%s-ground.png' % season)
         print(season, 'shift from normal', dx, dy)
 

@@ -70,7 +70,9 @@ window.MP_PARK = {
     { id: 'cottages-parade', x: 378, y: 596, w: 145, h: 140, baseY: 735, walkUnder: 30 },
     { id: 'arcade', x: 705, y: 686, w: 250, h: 132, baseY: 816, walkUnder: 30 },
     { id: 'ghost', x: 1055, y: 628, w: 205, h: 205, baseY: 832, walkUnder: 30 },
-    { id: 'cottage-s', x: 418, y: 815, w: 115, h: 92, baseY: 900, walkUnder: 24 }
+    { id: 'cottage-s', x: 418, y: 815, w: 115, h: 92, baseY: 900, walkUnder: 24 },
+    // 크리스마스 지도에만 있는 범퍼카 오른쪽 길가 트리: 길을 막지 않고 캐릭터가 트리 뒤로 지나가게 함
+    { id: 'xmas-tree-e', season: 'christmas', x: 1262, y: 486, w: 84, h: 128, baseY: 612, walkUnder: 0 }
   ],
 
   // 공원 중심 장소 (입장 시설 아님)
