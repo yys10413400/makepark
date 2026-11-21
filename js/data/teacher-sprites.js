@@ -72,6 +72,11 @@ window.MP_TEACHER_SPRITES = {
  "fox": {
   "anim": {
    "frames": 12,
+   "idle": {
+    "down": 7,
+    "right": 0,
+    "up": 2
+   },
    "k": 0.5,
    "ms": 100,
    "rowH": 164,
@@ -86,17 +91,17 @@ window.MP_TEACHER_SPRITES = {
      156
     ],
     "right": [
-     213,
+     219,
      4,
-     109,
+     100,
      156,
-     67.0,
+     58.0,
      156
     ],
     "up": [
      107,
      4,
-     98,
+     104,
      154,
      43.0,
      154
@@ -450,4 +455,4 @@ window.MP_TEACHER_SPRITES = {
   }
  }
 };
-window.MP_TEACHER_VER = '20261120101637';
+window.MP_TEACHER_VER = '20261121111106';

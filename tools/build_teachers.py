@@ -187,8 +187,17 @@ def split_views(a, cx):
     자기 몸에서 이어진 쪽으로 나뉨. 어느 몸통과도 이어지지 않은 조각은 가장 가까운 칸(아주 작은 점은 버림)."""
     h, w = a.shape
     L = np.zeros((h, w), np.int16)
-    for c, m in leg_seeds(a):
-        L[m] = int(np.argmin([abs(c - x) for x in cx])) + 1
+    # 시작점: 칸마다 다리 가운데(cx) 바로 옆 좁은 띠(칸 간격의 ±20%)의 아래 35%만.
+    # (예전처럼 다리 줄을 옆으로 넓혀 묶으면, 여우 꼬리처럼 두 사람 사이에서 맞닿는 것이 있을 때
+    #  두 사람이 한 덩어리가 되어 한쪽 몸 전체가 다른 칸으로 가 버림)
+    ys = np.where(a.any(axis=1))[0]
+    if len(ys):
+        y0 = int(ys.max() - (ys.max() - ys.min()) * 0.35)
+        win = 0.2 * (min(np.diff(sorted(cx))) if len(cx) > 1 else w)
+        for i, c in enumerate(cx):
+            x0, x1 = max(0, int(c - win)), min(w, int(c + win) + 1)
+            band = a[y0:, x0:x1]
+            L[y0:, x0:x1][band] = i + 1
     for _ in range(400):
         grown = ndimage.grey_dilation(L, size=(3, 3))
         add = (L == 0) & a & (grown > 0)
