@@ -79,11 +79,11 @@ body.coaster-open #hud, body.coaster-open #enterFacility { display: none !import
 
 /* ================= 게임 ================= */
 .cs-game {
-  position: absolute; inset: 0; display: flex; flex-direction: column;
-  font-size: clamp(13px, 1.05vw + 0.55vh, 22px); color: #3b2a1a;
+  position: absolute; inset: 0; display: flex; flex-direction: row;   /* 왼쪽 꽃밭 | 오른쪽 코딩창 */
+  font-size: clamp(13px, 0.8vw + 0.75vh, 21px); color: #3b2a1a;
 }
 .cs-game[hidden] { display: none; }
-/* 위: 연두색 잔디 */
+/* 왼쪽: 연두색 잔디 */
 .cs-field {
   position: relative; flex: 1; min-height: 0; overflow: hidden;
   background:
@@ -128,24 +128,24 @@ body.coaster-open #hud, body.coaster-open #enterFacility { display: none !import
 .cs-car { position: absolute; left: 0; top: 0; z-index: 5; pointer-events: none; transition: transform 0.26s linear; filter: drop-shadow(0 5px 3px rgba(0, 0, 0, 0.3)); }
 .cs-car[hidden] { display: none; }
 
-/* 잔디 위 글자: 역장 말풍선(왼쪽), 미션 제목(가운데), 버튼(오른쪽) */
-.cs-say {
-  position: absolute; left: 1.2%; top: 4%; width: 19%; z-index: 6;
-  display: flex; flex-direction: column; align-items: flex-start; gap: 0.3em;
-}
-.cs-say-face { width: 46%; max-width: 120px; filter: drop-shadow(0 4px 2px rgba(20, 60, 20, 0.3)); }
+/* 꽃밭 위쪽 띠: 미션 제목(+꽃밭 1·2) → 역장 얼굴과 말풍선 */
+.cs-ftop { position: absolute; left: 14px; right: 14px; top: 10px; z-index: 6; display: flex; flex-direction: column; align-items: flex-start; gap: 0.45em; }
+.cs-top { display: flex; align-items: center; gap: 0.5em; flex-wrap: wrap; }
+.cs-say { display: flex; align-items: flex-start; gap: 0.7em; max-width: 100%; }
+.cs-say-face { width: 3.4em; flex: none; filter: drop-shadow(0 4px 2px rgba(20, 60, 20, 0.3)); }
 .cs-say-text {
-  position: relative; margin: 0; padding: 0.7em 0.9em; border-radius: 1em; line-height: 1.4;
+  position: relative; margin: 0.3em 0 0; padding: 0.5em 0.9em; border-radius: 1em; line-height: 1.4; min-height: 2.8em;
   background: #fffaf0; border: 2px solid #e8d2a6; box-shadow: 0 4px 0 rgba(60, 90, 30, 0.3);
 }
-.cs-say-text::before { content: ''; position: absolute; left: 1.4em; top: -0.62em; border: 0.6em solid transparent; border-top: 0; border-bottom-color: #fffaf0; }
+.cs-say-text::before { content: ''; position: absolute; left: -0.62em; top: 0.9em; border: 0.6em solid transparent; border-left: 0; border-right-color: #fffaf0; }
 .cs-say.good .cs-say-text { background: #f2ffe4; border-color: #7cc15a; }
+.cs-say.good .cs-say-text::before { border-right-color: #f2ffe4; }
 .cs-say.bad .cs-say-text { background: #fff1f4; border-color: #e0457b; }
+.cs-say.bad .cs-say-text::before { border-right-color: #fff1f4; }
 .cs-say.pop .cs-say-text { animation: cs-pop 0.3s ease-out; }
-@keyframes cs-pop { from { transform: scale(0.94); } }
-.cs-top { position: absolute; left: 50%; top: 2.2%; transform: translateX(-50%); display: flex; flex-direction: column; align-items: center; gap: 0.3em; z-index: 6; }
+@keyframes cs-pop { from { transform: scale(0.96); } }
 .cs-mtitle {
-  margin: 0; padding: 0.35em 1.4em; border-radius: 99px; white-space: nowrap; font-size: 1.2em;
+  margin: 0; padding: 0.3em 1.2em; border-radius: 99px; font-size: 1.1em;
   background: #2f5fb3; color: #fff; border: 2px solid #f6e3b4; box-shadow: 0 3px 0 #1d3c75;
 }
 .cs-ltabs { display: flex; gap: 0.4em; }
@@ -153,20 +153,22 @@ body.coaster-open #hud, body.coaster-open #enterFacility { display: none !import
 .cs-ltab { padding: 0.15em 0.8em; border-radius: 99px; background: rgba(255, 250, 240, 0.85); color: #6e4b2f; font-size: 0.85em; border: 2px solid transparent; }
 .cs-ltab.on { border-color: #2f5fb3; }
 .cs-ltab.ok { background: #dff5c8; color: #2f6b1a; }
-.cs-topright { position: absolute; right: 1.2%; top: 2.2%; display: flex; gap: 0.5em; align-items: center; z-index: 6; font-size: 0.9em; }
 
-/* 아래: 하나의 아이보리색 조작대 */
+/* 오른쪽: 아이보리색 코딩창 — 위 버튼 줄, 블록 상자(여러 줄로 감김), 내 코드(남은 높이 모두), ▶ 실행 */
 .cs-panel {
-  flex: none; height: clamp(200px, 31vh, 340px); display: grid; grid-template-columns: 28% 1fr 15%;
-  background: #fbf4e3; border-top: 4px solid #e9d7ae; border-radius: 1.4em 1.4em 0 0; margin-top: -1.2em; position: relative; z-index: 7;
-  box-shadow: 0 -4px 12px rgba(40, 70, 20, 0.15);
+  flex: none; width: clamp(340px, 38vw, 580px); display: flex; flex-direction: column; min-height: 0;
+  background: #fbf4e3; border-left: 4px solid #e9d7ae; border-radius: 1.4em 0 0 1.4em; margin-left: -1.2em; position: relative; z-index: 7;
+  box-shadow: -4px 0 12px rgba(40, 70, 20, 0.15);
 }
-.cs-panel > section { min-height: 0; display: flex; flex-direction: column; padding: 0.45em 0.9em 0.5em; }
-.cs-box, .cs-code { border-right: 2px solid #e6d5b2; }
+.cs-ptop { display: flex; gap: 0.4em; justify-content: flex-end; align-items: center; flex-wrap: wrap; padding: 0.55em 0.8em 0.1em; font-size: 0.85em; }
+.cs-panel > section { min-height: 0; display: flex; flex-direction: column; padding: 0.4em 0.9em 0.5em; }
+.cs-box { flex: none; max-height: 36%; border-bottom: 2px solid #e6d5b2; }
+.cs-code { flex: 1; border-bottom: 2px solid #e6d5b2; }
 .cs-ph { margin: 0 0 0.25em; font-size: 1em; font-weight: 400; color: #5a3a1e; }
-.cs-palette { flex: 1; min-height: 0; overflow-y: auto; display: flex; flex-direction: column; gap: 0.5em; padding: 0.2em 0.3em 0.4em; border-radius: 0.8em; transition: background 0.2s; }
+.cs-palette { flex: 1; min-height: 0; overflow-y: auto; display: flex; flex-direction: row; flex-wrap: wrap; align-content: flex-start; gap: 0.5em 0.45em; padding: 0.2em 0.3em 0.4em; border-radius: 0.8em; transition: background 0.2s; }
 .cs-palette { overflow-x: hidden; }
-.cs-palette.many { gap: 0.4em; font-size: 0.86em; }   /* 블록이 많으면 한 줄씩 조금 작게(세로로만 스크롤) */
+.cs-palette.many { gap: 0.4em; font-size: 0.86em; }   /* 블록이 많으면 조금 작게 */
+.cs-palette .cs-blk { min-width: 0; }
 .cs-palette .is-c > .cs-inner { min-height: 0.7em; padding-top: 0; padding-bottom: 0; }
 .cs-palette .is-c > .cs-bfoot { height: 0.6em; }
 .cs-palette .is-c > .cs-bmid { padding: 0.05em 0.6em; }
@@ -177,9 +179,9 @@ body.coaster-open #hud, body.coaster-open #enterFacility { display: none !import
 .cs-mini { font-size: 0.75em; padding: 0.25em 0.8em; border-radius: 99px; background: #fff; color: #8a5a3a; border: 2px solid #e2c99a; }
 .cs-mini:disabled { opacity: 0.4; cursor: default; }
 .cs-script { flex: 1; min-height: 0; overflow-y: auto; overflow-x: hidden;padding: 0.1em 0.6em 1.2em 0.2em; }
-.cs-runw { align-items: center; justify-content: center; gap: 0.6em; }
+.cs-runw { flex: none; align-items: center; justify-content: center; gap: 0.3em; padding: 0.6em 0.9em 0.8em !important; }
 .cs-run {
-  width: 100%; max-width: 12em; padding: 0.55em 0.4em; border-radius: 0.8em; font-size: 1.4em;
+  width: 100%; padding: 0.45em 0.4em; border-radius: 0.8em; font-size: 1.35em;
   background: #2f6fd0; color: #fff; border: 0; box-shadow: 0 6px 0 #1d4a94;
 }
 .cs-run:hover:not(:disabled) { background: #3a7de0; }
@@ -301,8 +303,7 @@ body.coaster-open #hud, body.coaster-open #enterFacility { display: none !import
 
 /* 좁은 화면(세로 폰) — 그래도 쓸 수 있게 조작대를 세 줄로 */
 @media (max-width: 700px) and (orientation: portrait) {
-  .cs-panel { height: 52vh; grid-template-columns: 1fr 1fr; grid-template-rows: 1fr auto; }
-  .cs-runw { grid-column: 1 / -1; flex-direction: row; padding: 0.4em; }
-  .cs-say { width: 34%; }
+  .cs-game { flex-direction: column; }
+  .cs-panel { width: auto; height: 56vh; border-left: 0; border-top: 4px solid #e9d7ae; border-radius: 1.4em 1.4em 0 0; margin: -1.2em 0 0; }
   .cs-steps { grid-template-columns: 1fr; }
 }

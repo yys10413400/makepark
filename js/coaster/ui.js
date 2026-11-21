@@ -438,27 +438,30 @@
     var field = ui.field = el('div', 'cs-field');
     ui.grid = el('div', 'cs-grid'); ui.grid.setAttribute('role', 'img');
     field.appendChild(ui.grid);
-    var say = ui.say = el('div', 'cs-say');
-    say.appendChild(pic('turtle-S', 'cs-say-face'));
-    ui.sayText = el('p', 'cs-say-text'); ui.sayText.setAttribute('role', 'status'); ui.sayText.setAttribute('aria-live', 'polite');
-    say.appendChild(ui.sayText);
-    field.appendChild(say);
+    // 꽃밭 위쪽 띠: 미션 제목(+꽃밭 1·2) → 역장 얼굴과 말풍선
+    var ftop = ui.ftop = el('div', 'cs-ftop');
     var top = el('div', 'cs-top');
     ui.title = el('p', 'cs-mtitle');
     top.appendChild(ui.title);
     ui.layoutTabs = el('div', 'cs-ltabs');
     top.appendChild(ui.layoutTabs);
-    field.appendChild(top);
-    var right = el('div', 'cs-topright');
+    ftop.appendChild(top);
+    var say = ui.say = el('div', 'cs-say');
+    say.appendChild(pic('turtle-S', 'cs-say-face'));
+    ui.sayText = el('p', 'cs-say-text'); ui.sayText.setAttribute('role', 'status'); ui.sayText.setAttribute('aria-live', 'polite');
+    say.appendChild(ui.sayText);
+    ftop.appendChild(say);
+    field.appendChild(ftop);
+    g.appendChild(field);
+
+    // 오른쪽 코딩창: 위 버튼 줄 → 블록 상자 → 내 코드 → ▶ 실행
+    var panel = el('div', 'cs-panel');
+    var right = el('div', 'cs-ptop');
     ui.gTickets = ticketChip(); right.appendChild(ui.gTickets);
     ui.helpBtn = btn('cs-pill', '? 하는 방법', function () { if (!S.running) showHowTo(false); });
     right.appendChild(ui.helpBtn);
     right.appendChild(btn('cs-pill', '역으로', toLobby));
-    field.appendChild(right);
-    g.appendChild(field);
-
-    // 조작대: 블록 상자 | 내 코드 | 실행
-    var panel = el('div', 'cs-panel');
+    panel.appendChild(right);
     var box = el('section', 'cs-box'); box.setAttribute('aria-label', '블록 상자');
     box.appendChild(el('h3', 'cs-ph', '블록 상자'));
     ui.palette = el('div', 'cs-palette');
@@ -665,20 +668,16 @@
   // ---------- 잔디밭 격자 ----------
   function layout() { return S.mission.layouts[S.layoutIdx]; }
   function layoutGrid() {
-    var L = layout(), fr = ui.field.getBoundingClientRect(), sr = ui.say.getBoundingClientRect();
-    // 왼쪽 역장 말풍선과 겹치지 않게: 말풍선 오른쪽부터 남은 너비 안에서 가운데
-    var left0 = sr.right - fr.left + 14, availW = fr.width - left0 - 14;
-    var cell = Math.floor(Math.min((fr.height * 0.84) / L.rows, availW / L.cols, 150));
+    // 위쪽 띠(제목·말풍선) 아래 남은 곳에서 가장 크게, 가운데
+    var L = layout(), fr = ui.field.getBoundingClientRect();
+    var topH = ui.ftop.getBoundingClientRect().bottom - fr.top + 12, pad = 16;
+    var cell = Math.floor(Math.min((fr.height - topH - pad) / L.rows, (fr.width - pad * 2) / L.cols, 150));
     S.cell = cell;
-    ui.grid.style.width = cell * L.cols + 'px'; ui.grid.style.height = cell * L.rows + 'px';
-    ui.grid.style.left = Math.max(left0, (fr.width - cell * L.cols) / 2) + 'px';
+    var gw = cell * L.cols, gh = cell * L.rows;
+    ui.grid.style.width = gw + 'px'; ui.grid.style.height = gh + 'px';
     ui.grid.style.setProperty('--cell', cell + 'px');
-    // 위쪽 미션 제목(과 꽃밭 표시) 아래, 남은 높이 안에서 가운데
-    var topH = ui.title.parentNode.getBoundingClientRect().bottom - fr.top + 10, gh = cell * L.rows;
-    if (topH + gh > fr.height - 26) { cell = S.cell = Math.floor((fr.height - 26 - topH) / L.rows); gh = cell * L.rows;
-      ui.grid.style.width = cell * L.cols + 'px'; ui.grid.style.height = gh + 'px'; ui.grid.style.setProperty('--cell', cell + 'px');
-      ui.grid.style.left = Math.max(left0, (fr.width - cell * L.cols) / 2) + 'px'; }
-    ui.grid.style.top = Math.max(topH, (fr.height - 22 - gh + topH) / 2) + 'px';
+    ui.grid.style.left = (fr.width - gw) / 2 + 'px';
+    ui.grid.style.top = (topH + (fr.height - topH - pad - gh) / 2) + 'px';
     placeTurtle(true);
   }
   function cellPos(c, r) { return { x: c * S.cell, y: r * S.cell }; }
@@ -1005,9 +1004,9 @@
     demo.appendChild(dg);
     box.appendChild(demo);
     var steps = el('ol', 'cs-steps');
-    [['블록을 골라요', '왼쪽 블록 상자에서 쓸 블록을 눌러요. (끌어다 놓아도 돼요)'],
-     ['차례대로 쌓아요', '가운데 ‘시작’ 아래에 거북이가 할 일을 위에서부터 이어요.'],
-     ['실행해요', '‘▶ 실행’을 누르면 거북이가 움직이며 지나간 자리에 선로를 놓아요.']].forEach(function (s, i) {
+    [['블록을 골라요', '오른쪽 위 ‘블록 상자’에서 쓸 블록을 눌러요. (끌어다 놓아도 돼요)'],
+     ['차례대로 쌓아요', '‘내 코드’의 ‘시작’ 아래에 거북이가 할 일을 위에서부터 이어요.'],
+     ['실행해요', '아래 ‘▶ 실행’을 누르면 왼쪽 꽃밭에서 거북이가 움직이며 지나간 자리에 선로를 놓아요.']].forEach(function (s, i) {
       var li = el('li', 'cs-step');
       li.appendChild(el('span', 'cs-step-num', ['①', '②', '③'][i]));
       var t = el('div');
