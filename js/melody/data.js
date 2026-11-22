@@ -28,7 +28,7 @@
   var GRADES = {
     low:    { label: '1~2학년', bpm: 80, showNext: true,  hide: [0, 0, 0],        guide: '다음 동작을 미리 보여 줘요' },
     middle: { label: '3~4학년', bpm: 88, showNext: false, hide: [0, 0, 0],        guide: '여덟 박자 · 같은 동작 반복과 쉼' },
-    high:   { label: '5~6학년', bpm: 96, showNext: false, hide: [0.5, 0.75, 1],   guide: '기억 도전 · 세트마다 안내가 줄어요' }
+    high:   { label: '5~6학년', bpm: 84, showNext: false, hide: [0, 0.25, 0.5],   guide: '기억 도전 · 2세트부터 카드가 조금씩 숨어요' }
   };
 
   var L = 'left', R = 'right', J = 'jump', F = 'freeze', _ = 'rest';
@@ -44,9 +44,9 @@
       { id: 'mid-3', title: '쉼표 댄스', goal: '쉬는 박을 기억해요', pattern: [R, _, R, J, L, _, L, F] }
     ],
     high: [
-      { id: 'high-1', title: '기억 무대', goal: '시범을 잘 기억해요', pattern: [L, R, J, F, R, L, J, F] },
-      { id: 'high-2', title: '메아리 스텝', goal: '두 번 스텝, 한 번 점프', pattern: [L, L, J, R, R, J, F, _] },
-      { id: 'high-3', title: '피날레', goal: '마지막 무대! 끝까지 기억해요', pattern: [J, L, R, J, _, F, L, R] }
+      { id: 'high-1', title: '기억 무대', goal: '앞 네 박을 한 번 더 해요', pattern: [L, R, J, F, L, R, J, F] },
+      { id: 'high-2', title: '메아리 스텝', goal: '두 번 스텝, 한 번 점프', pattern: [L, L, J, _, R, R, J, _] },
+      { id: 'high-3', title: '피날레', goal: '거울처럼: 왼오 다음 오왼, 마지막은 멈춤', pattern: [L, R, J, _, R, L, J, F] }
     ]
   };
 

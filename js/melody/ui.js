@@ -500,7 +500,7 @@
       '유니콘이 먼저 보여 줄게. 카운트다운 4박이 끝나면 네 차례야!',
       '세트 ' + D.CONFIG.sets + '번 중 ' + D.CONFIG.missionPassSets + '번 이상 성공하면 공연 성공 · ' + G.bpm + ' BPM',
       m.pattern.indexOf('rest') >= 0 ? '‘쉼’ 박자에는 아무것도 누르지 않아요. (‘멈춤’은 Space를 눌러 포즈!)' : '',
-      G.hide[2] ? '세트마다 안내 카드가 하나씩 숨어요. 시범을 잘 기억해!' : ''
+      G.hide.some(Boolean) ? '2세트부터 안내 카드가 조금씩 숨어요. 시범을 잘 기억해!' : ''
     ];
     showModal('미션 · ' + m.title, lines, [
       { text: '▶ 시작!', main: true, fn: function () { hideModal(); startRun(m, 'mission'); } },
