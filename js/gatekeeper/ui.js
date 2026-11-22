@@ -441,16 +441,16 @@
     var o = off.getContext('2d');
     o.globalCompositeOperation = 'source-over'; o.filter = 'none';
     o.clearRect(0, 0, ow, oh);
-    o.filter = 'saturate(0.82) brightness(0.92)';
+    o.filter = 'saturate(0.95) brightness(1.02)';
     // 움직이는 걷기 GIF 프레임이 있으면 그것으로, 없으면 걷는 자세 그림으로
     if (!(me.moving && MPChars.drawAnim && MPChars.drawAnim(o, sid, fx, fy, me.dir, h, t)) &&
         !MPChars.drawSprite(o, sid, fx, fy, me.dir, h, opt)) { opt = { bob: opt.bob }; MPChars.drawSprite(o, sid, fx, fy, me.dir, h, opt); }
     o.filter = 'none';
     // 그림이 있는 곳에만(source-atop) 보랏빛과 촛불빛을 얹음 — 투명한 가장자리·팔 사이에는 색이 번지지 않음
     o.globalCompositeOperation = 'source-atop';
-    o.fillStyle = 'rgba(80,40,130,0.16)'; o.fillRect(0, 0, ow, oh);
+    o.fillStyle = 'rgba(80,40,130,0.07)'; o.fillRect(0, 0, ow, oh);
     var warm = o.createLinearGradient(0, 0, 0, oh);
-    warm.addColorStop(0, 'rgba(255,170,90,0.16)'); warm.addColorStop(0.55, 'rgba(255,170,90,0)');
+    warm.addColorStop(0, 'rgba(255,170,90,0.12)'); warm.addColorStop(0.55, 'rgba(255,170,90,0)');
     o.fillStyle = warm; o.fillRect(0, 0, ow, oh);
     o.globalCompositeOperation = 'source-over';
     // 2) 바닥에 비친 모습(아래로 뒤집어 흐리게, 점점 사라지게)
