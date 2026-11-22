@@ -79,5 +79,57 @@ for (g = 1; g <= 6; g++) {
   });
 }
 
+// ---------- 판마다 새 주문(GEN) ----------
+// 정해진 씨앗으로 같은 결과가 나오게
+function seeded(seed) { var s = seed >>> 0; return function () { s = (s * 1664525 + 1013904223) >>> 0; return s / 4294967296; }; }
+function sumBox(b) { return P.FOODS.reduce(function (s, f) { return s + (b[f] || 0); }, 0); }
+function countSolutions(o) {
+  var c = 0;
+  for (var a = 0; a <= 16; a++) for (var b = 0; b <= 16 - a; b++) for (var d = 0; d <= 16 - a - b; d++) for (var e = 0; e <= 16 - a - b - d; e++)
+    if (P.judge(o, [{ onigiri: a, sandwich: b, strawberry: d, tomato: e }]).ok) c++;
+  return c;
+}
+console.log('\n판마다 새 주문: 학년마다 600판');
+var ROUNDS = 600, BRUTE = 40;
+for (g = 1; g <= 6; g++) {
+  var rng = seeded(1000 + g), prev = [], bad = 0, texts = {}, range = [[1e9, 0], [1e9, 0], [1e9, 0]];
+  var first = P.makeRound(g, { first: true });
+  if (first.map(function (o) { return o.text; }).join() !== P.ORDERS[g].map(function (o) { return o.text; }).join()) { bad++; console.log('  FAIL 처음 판이 예시 주문이 아님'); }
+  for (var k = 0; k < ROUNDS; k++) {
+    var round = P.makeRound(g, { rng: rng, avoid: prev });
+    if (round.length !== 3) { bad++; continue; }
+    round.forEach(function (o, i) {
+      var fixed = P.ORDERS[g][i];
+      texts[o.text] = 1;
+      // 유형이 그대로인지: 도시락 수·처음 담긴 재료 유무가 예시와 같음
+      if (o.boxes !== fixed.boxes || !!o.start !== !!fixed.start) { bad++; console.log('  FAIL 유형 다름', g, i, o.text); }
+      if (prev.indexOf(o.text) >= 0) { bad++; console.log('  FAIL 바로 전 판과 같은 주문', o.text); }
+      // 정답 예시는 통과, 도시락 크기 안
+      var ans = o.answer.map(box);
+      if (!P.judge(o, ans).ok) { bad++; console.log('  FAIL 정답 예시가 틀림', o.text, JSON.stringify(o.answer), P.judge(o, ans).hint); }
+      if (ans.concat((o.start || []).map(box)).some(function (b) { return sumBox(b) > P.BOX_MAX; })) { bad++; console.log('  FAIL 도시락 20개 넘음', o.text); }
+      // 처음 담긴 그대로 전달하면 실패
+      if (o.start && P.judge(o, P.startBoxes(o)).ok) { bad++; console.log('  FAIL 처음 상태가 정답', o.text); }
+      // 정답에 재료 하나를 더하면 실패
+      P.FOODS.forEach(function (f) { var w = ans.map(function (b) { return Object.assign({}, b); }); w[0][f]++; if (P.judge(o, w).ok) { bad++; console.log('  FAIL 하나 더 담아도 통과', o.text, f); } });
+      // 힌트 문장이 비어 있지 않음
+      var h = P.judge(o, ans.map(function () { return box({}); }).map(function (b, j) { if (j === 0) b[P.FOODS[0]] = 1; return b; }));
+      if (!h.ok && !h.hint) { bad++; console.log('  FAIL 힌트 없음', o.text); }
+      // 숫자 범위(난이도): 담는 전체 개수를 예시와 비교해 기록
+      var tot = ans.reduce(function (s, b) { return s + sumBox(b); }, 0);
+      range[i][0] = Math.min(range[i][0], tot); range[i][1] = Math.max(range[i][1], tot);
+      // 도시락 하나 주문: 정답 개수(4학년 2번만 여러 개, 나머지는 하나)
+      if (k < BRUTE && o.boxes === 1) {
+        var cnt = countSolutions(o), want = g === 4 && i === 1 ? cnt > 1 : cnt === 1;
+        if (!want) { bad++; console.log('  FAIL 정답 수', cnt, o.text); }
+      }
+    });
+    prev = round.map(function (o) { return o.text; });
+  }
+  fails += bad;
+  console.log((bad ? '  FAIL' : '  ok  ') + ' ' + g + '학년: 서로 다른 주문 ' + Object.keys(texts).length + '가지 · 담는 개수 ' +
+    range.map(function (r, i) { var fx = P.ORDERS[g][i]; return (i + 1) + '번 ' + r[0] + '~' + r[1] + '개'; }).join(', '));
+}
+
 console.log(fails ? '\n실패 ' + fails + '개' : '\n모두 통과');
 process.exit(fails ? 1 : 0);

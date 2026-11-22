@@ -4,7 +4,7 @@
  * 장면 1 대기실(assets/picnic/lobby.webp): 공원 캐릭터로 바닥을 걸어 다니다 아기 다람쥐 토리에게 '말 걸기'
  *        → 시작 창(학년 1~6 고르기 → '도시락 만들기')
  * 장면 2 주문(한 화면): 위 뒤로가기·제목·진행도 / 토리와 주문 / 가운데 도시락(1~2개) / 아래 재료 4개·전달하기
- *        주문 3개를 풀면 완료 창(다시 하기 · 가게로 돌아가기)
+ *        주문 3개를 풀면 완료 창(새 주문 받기 · 가게로 돌아가기). 처음 하는 학년은 예시 주문, 그다음부터는 판마다 새 주문
  * 위치는 모두 배경 그림(1672×941) 기준 %라서 창 크기가 바뀌어도 함께 커지고 작아집니다(유령의 집과 같은 방식).
  * 주문·판정은 js/picnic/orders.js, 공원과의 연결은 window.MP_API (game.js)
  */
@@ -171,8 +171,8 @@
     var park = api().profile().grade || null, pc = save().picnic || {};
     var day = pc.day && pc.day.date === today() ? pc.day.n : 0;
     ui.ticketNote.textContent = '🎟 주문 3개를 다 풀면 티켓을 받아요! ' + (!(pc.done && pc.done['g' + g])
-      ? g + '학년은 처음이라 3장! (그다음부터는 한 판에 1장, 하루 ' + DAY_MAX + '장까지)'
-      : '한 판에 1장씩 (오늘 ' + day + ' / ' + DAY_MAX + '장 받았어요)');
+      ? g + '학년은 처음이라 3장! (그다음부터는 새 주문 한 판에 1장, 하루 ' + DAY_MAX + '장까지)'
+      : '판마다 새 주문이 와요! 한 판에 1장씩 (오늘 ' + day + ' / ' + DAY_MAX + '장 받았어요)');
     ui.gradeNote.textContent = g + '학년 주문: ' + KIND[g] + ' · 주문 3개' + (park && park !== g ? ' (공원 학년은 ' + park + '학년이에요)' : '');
   }
   function openStart() {
@@ -355,6 +355,15 @@
   function startGame() {
     closeStart();
     S.idx = 0; S.done = false;
+    // 코스터·유령의 집처럼 판마다 새 주문(유형·숫자 범위는 학년마다 그대로). 처음 하는 학년은 예시 주문,
+    // 바로 전 판과 같은 주문은 피함(picnic.last 에 문장 저장)
+    var pc0 = save().picnic || {}, key = 'g' + S.grade;
+    S.orders = P.makeRound(S.grade, { first: !(pc0.done && pc0.done[key]), avoid: (pc0.last && pc0.last[key]) || [] });
+    if (api() && pc0.done && pc0.done[key]) {   // 새 주문 판만 기억(예시 주문은 기억할 필요 없음)
+      pc0.last = pc0.last && typeof pc0.last === 'object' ? pc0.last : {};
+      pc0.last[key] = S.orders.map(function (o) { return o.text; });
+      api().patchSave({ picnic: pc0 });
+    }
     showScene('game');
     loadOrder();
     var pc = save().picnic;
@@ -406,9 +415,9 @@
     if (!(pc && pc.howto) && api()) { pc = pc && typeof pc === 'object' ? pc : {}; pc.howto = true; api().patchSave({ picnic: pc }); }
   }
   function loadOrder() {
-    var o = S.order = P.ORDERS[S.grade][S.idx];
+    var o = S.order = S.orders[S.idx];
     S.boxes = P.startBoxes(o); S.sel = 0; S.busy = false; S.added = null;
-    ui.progress.textContent = (S.idx + 1) + ' / ' + P.ORDERS[S.grade].length;
+    ui.progress.textContent = (S.idx + 1) + ' / ' + S.orders.length;
     richText(ui.order, o.text);
     ui.order.classList.toggle('long', o.text.replace(/[{}]/g, '').length > 40);
     ui.order.classList.remove('pop'); void ui.order.offsetWidth; ui.order.classList.add('pop');
@@ -506,7 +515,7 @@
     S.timer = setTimeout(function () {
       ui.gTori.classList.remove('cheer'); ui.boxRow.classList.remove('sent');
       S.idx++;
-      if (S.idx < P.ORDERS[S.grade].length) loadOrder();
+      if (S.idx < S.orders.length) loadOrder();
       else finish();
     }, 1400);
   }
@@ -528,7 +537,7 @@
       api().patchSave(patch);
       saved = api().storageOk();
     }
-    var lines = [S.grade + '학년 ' + KIND[S.grade] + ' 주문 3개를 모두 전달했어요. 손님들이 즐거운 소풍을 떠났어요!'];
+    var lines = [S.grade + '학년 ' + KIND[S.grade] + ' 주문 3개를 모두 전달했어요. 손님들이 즐거운 소풍을 떠났어요! 다음 판에는 새 주문이 와요.'];
     if (got) lines.push(got.kind === 'first' ? '🎟 티켓 ' + got.gain + '장을 받았어요! 다음부터는 한 판 끝낼 때마다 1장씩 받아요.'
       : got.kind === 'new' ? '🎟 티켓 1장을 받았어요! (오늘 ' + pc.day.n + ' / ' + DAY_MAX + ')'
       : '오늘 받을 수 있는 티켓(' + DAY_MAX + '장)은 다 받았어요. 내일 또 받아요!');
@@ -538,7 +547,7 @@
     c.appendChild(el('h2', 'pc-card-title', '주문 완료!'));
     lines.forEach(function (l) { c.appendChild(el('p', 'pc-card-line', l)); });
     var row = el('div', 'pc-acts');
-    var again = btn('pc-choice', '다시 하기', function () { ui.modal.hidden = true; startGame(); });
+    var again = btn('pc-choice', '🎲 새 주문 받기', function () { ui.modal.hidden = true; startGame(); });
     row.appendChild(again);
     row.appendChild(btn('pc-choice light', '가게로 돌아가기', function () { toLobby(); }));
     c.appendChild(row);

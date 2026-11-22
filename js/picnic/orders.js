@@ -8,6 +8,7 @@
  *   check : 담은 상태(도시락마다 { onigiri, sandwich, strawberry, tomato } 개수)를 받아
  *           맞으면 null, 틀리면 짧은 힌트 문장을 돌려줌
  * }
+ * ORDERS 는 처음 하는 학년의 예시 주문, GEN 은 같은 유형·같은 숫자 범위로 판마다 새 주문을 만드는 틀입니다.
  * 판정은 담은 순서와 상관없이 재료별 개수만 봅니다. 화면은 js/picnic/ui.js.
  * 검증: node tools/verify_picnic.js
  */
@@ -171,6 +172,151 @@
     ]
   };
 
+  /* ---------- 새 주문 만들기(코스터·유령의 집처럼 판마다 새 문제) ----------
+   * 학년마다 주문 3칸의 '유형'과 숫자 범위는 위 예시 주문과 같게 두고, 재료와 숫자만 바꿉니다(난이도는 그대로).
+   * 만든 주문에는 정답 예시(answer)를 같이 넣어 검증(tools/verify_picnic.js)에 씁니다.
+   */
+  function pick(rng, list) { return list[Math.floor(rng() * list.length)]; }
+  function int(rng, a, b) { return a + Math.floor(rng() * (b - a + 1)); }
+  function foods(rng, k) {   // 서로 다른 재료 k개
+    var l = FOODS.slice();
+    for (var i = l.length - 1; i > 0; i--) { var j = Math.floor(rng() * (i + 1)), t = l[i]; l[i] = l[j]; l[j] = t; }
+    return l.slice(0, k);
+  }
+  function one(f, c) { var o = {}; o[f] = c; return o; }
+  function two(f, a, g, b) { var o = {}; o[f] = a; o[g] = b; return o; }
+  function N(f) { return NAME[f]; }
+  // 분수: 글자와 뒤에 붙는 조사(읽는 소리 '삼분의 일은', '오분의 이는')
+  var FRAC = { '1/3': ['⅓', '은'], '1/4': ['¼', '은'], '2/3': ['⅔', '는'], '3/4': ['¾', '은'], '2/5': ['⅖', '는'], '3/5': ['⅗', '은'] };
+  // 지정한 두 재료만 담는 분수 주문(5학년 1·2번 칸)
+  function fracOrder(f, t, den, num, fr) {
+    var p = t / den * num;
+    return { text: '음식을 {' + t + '}개 담아 주세요. 그중 {' + fr[0] + '}' + fr[1] + ' ' + N(f[0]) + ', 나머지는 ' + josa(N(f[1]), '으로', '로') + ' 주세요.', boxes: 1,
+      check: function (x) {
+        var y = x[0], other = FOODS.filter(function (g) { return f.indexOf(g) < 0; });
+        return first(
+          other.some(function (g) { return n(y, g); }) && josa(N(f[0]), '과', '와') + ' ' + N(f[1]) + '만 담아야 해. 주문을 다시 읽어 봐!',
+          total(y) !== t && '전체 개수가 ' + t + '개인지 다시 세어 봐!',
+          n(y, f[0]) !== p && (num === 1
+            ? t + '개를 똑같이 ' + den + '묶음으로 나누면 한 묶음은 몇 개일까? ' + N(f[0]) + ' 개수를 살펴봐!'
+            : t + '개를 ' + den + '묶음으로 나누고 그중 ' + num + '묶음이 ' + N(f[0]) + '야. 다시 세어 봐!'));
+      }, answer: [two(f[0], p, f[1], t - p)] };
+  }
+  function ratioText(f, a, b) { return josa(N(f[0]), '과', '와') + ' ' + josa(N(f[1]), '을', '를') + ' {' + a + ':' + b + '}의 비로'; }
+
+  var GEN = {
+    // 1학년 개수 세기: 두 재료 2~3개씩 / 한 재료 3~5개 / 한 재료 4~5개 + 다른 재료 1개
+    1: [
+      function (r) { var f = foods(r, 2), a = int(r, 2, 3), b = int(r, 2, 3), w = two(f[0], a, f[1], b);
+        return { text: N(f[0]) + ' {' + a + '}개랑 ' + N(f[1]) + ' {' + b + '}개 담아 주세요.', boxes: 1,
+          check: function (x) { return exact(x, 0, w); }, answer: [w] }; },
+      function (r) { var f = foods(r, 1)[0], c = int(r, 3, 5), w = one(f, c);
+        return { text: N(f) + ' {' + c + '}개 담아 주세요.', boxes: 1, check: function (x) { return exact(x, 0, w); }, answer: [w] }; },
+      function (r) { var f = foods(r, 2), a = int(r, 4, 5), w = two(f[0], a, f[1], 1);
+        return { text: N(f[0]) + ' {' + a + '}개랑 ' + N(f[1]) + ' {1}개 담아 주세요.', boxes: 1,
+          check: function (x) { return exact(x, 0, w); }, answer: [w] }; }
+    ],
+    // 2학년 더하기·빼기: 3~5개에 2~3개 더 / 6~8개에서 2~3개 빼기 / 한 재료는 빼고 다른 재료는 더하기
+    2: [
+      function (r) { var f = foods(r, 1)[0], s = int(r, 3, 5), k = int(r, 2, 3), w = one(f, s + k);
+        return { text: N(f) + ' {' + s + '}개가 담겨 있어요. {' + k + '}개 더 담아 주세요.', boxes: 1, start: [one(f, s)],
+          check: function (x) { return exact(x, 0, w); }, answer: [w] }; },
+      function (r) { var f = foods(r, 1)[0], s = int(r, 6, 8), k = int(r, 2, 3), w = one(f, s - k);
+        return { text: N(f) + ' {' + s + '}개가 담겨 있어요. {' + k + '}개를 빼 주세요.', boxes: 1, start: [one(f, s)],
+          check: function (x) { return exact(x, 0, w); }, answer: [w] }; },
+      function (r) { var f = foods(r, 2), a = int(r, 4, 6), k = int(r, 1, 2), b = int(r, 2, 4), m = int(r, 3, 4), w = two(f[0], a - k, f[1], b + m);
+        return { text: N(f[0]) + ' {' + a + '}개, ' + N(f[1]) + ' {' + b + '}개가 담겨 있어요. ' + josa(N(f[0]), '은', '는') + ' {' + k + '}개 빼고, ' +
+          josa(N(f[1]), '은', '는') + ' {' + m + '}개 더 담아 주세요.', boxes: 1, start: [two(f[0], a, f[1], b)],
+          check: function (x) { return exact(x, 0, w); }, answer: [w] }; }
+    ],
+    // 3학년 똑같이 나누기(도시락 두 개): 한 재료 6~10개 / 두 재료 4개·6개 / 도시락 1에 10~14개가 다 담긴 것을 나누기
+    3: [
+      function (r) { var f = foods(r, 1)[0], t = pick(r, [6, 8, 10]);
+        return { text: N(f) + ' {' + t + '}개를 도시락 두 개에 똑같이 나눠 주세요.', boxes: 2, check: shareEqually(one(f, t)), answer: [one(f, t / 2), one(f, t / 2)] }; },
+      function (r) { var f = foods(r, 2), a = pick(r, [4, 6]), b = a === 4 ? 6 : 4, h = two(f[0], a / 2, f[1], b / 2);
+        return { text: N(f[0]) + ' {' + a + '}개와 ' + N(f[1]) + ' {' + b + '}개를 도시락 두 개에 똑같이 나눠 주세요.', boxes: 2,
+          check: shareEqually(two(f[0], a, f[1], b)), answer: [h, h] }; },
+      function (r) { var f = foods(r, 1)[0], t = pick(r, [10, 12, 14]);
+        return { text: N(f) + ' {' + t + '}개가 도시락 1에 다 담겨 있어요. 두 도시락에 똑같이 나눠 주세요.', boxes: 2, start: [one(f, t), {}],
+          check: shareEqually(one(f, t)), answer: [one(f, t / 2), one(f, t / 2)] }; }
+    ],
+    // 4학년 여러 조건(정답 여러 가지): 두 도시락 같은 개수 + 한 재료 2개씩 / 전체·한 재료 개수·'~보다 2개 더' / 도시락 1보다 2~3개 적게 + 한 재료 2~3개씩
+    4: [
+      function (r) { var f = foods(r, 2), t = pick(r, [10, 12, 14]), k = 2, h = t / 2;
+        return { text: '도시락 두 개에 음식을 모두 {' + t + '}개 담아 주세요. 두 도시락의 음식 개수는 같고, ' + josa(N(f[0]), '은', '는') + ' {' + k + '}개씩 넣어 주세요.', boxes: 2,
+          check: function (x) {
+            return first(
+              allTotal(x) !== t && '두 도시락의 전체 개수를 다시 살펴봐!',
+              total(x[0]) !== total(x[1]) && '두 도시락의 음식 개수가 같은지 세어 봐!',
+              n(x[0], f[0]) !== k && '도시락 1의 ' + N(f[0]) + ' 개수를 다시 세어 봐!',
+              n(x[1], f[0]) !== k && '도시락 2의 ' + N(f[0]) + ' 개수를 다시 세어 봐!');
+          }, answer: [two(f[0], k, f[1], h - k), two(f[0], k, f[1], h - k)] }; },
+      function (r) { var f = foods(r, 4), t = int(r, 9, 11), c = int(r, 3, 4), d = 2, rest = t - c - d, lo = Math.floor(rest / 2), ans = {};
+        ans[f[0]] = c; ans[f[2]] = lo; ans[f[1]] = lo + d; ans[f[3]] = rest - lo * 2;
+        return { text: '음식을 {' + t + '}개 담아 주세요. ' + josa(N(f[0]), '은', '는') + ' {' + c + '}개, ' + josa(N(f[1]), '은', '는') + ' ' + N(f[2]) + '보다 {' + d + '}개 더 많게 넣어 주세요.', boxes: 1,
+          check: function (x) {
+            var y = x[0];
+            return first(
+              total(y) !== t && '전체 개수가 ' + t + '개인지 다시 세어 봐!',
+              n(y, f[0]) !== c && N(f[0]) + ' 개수를 다시 세어 봐!',
+              n(y, f[1]) - n(y, f[2]) !== d && josa(N(f[1]), '이', '가') + ' ' + N(f[2]) + '보다 ' + d + '개 더 많은지 비교해 봐!');
+          }, answer: [ans] }; },
+      function (r) { var f = foods(r, 2), a = int(r, 7, 9), k = int(r, 2, 3), c = int(r, 2, 3), b = a - k;
+        return { text: '도시락 1에는 음식 {' + a + '}개, 도시락 2에는 도시락 1보다 {' + k + '}개 적게 담아 주세요. 두 도시락 모두 ' + josa(N(f[0]), '은', '는') + ' {' + c + '}개씩 넣어 주세요.', boxes: 2,
+          check: function (x) {
+            return first(
+              total(x[0]) !== a && '도시락 1의 전체 개수를 다시 세어 봐!',
+              total(x[1]) !== b && '도시락 2는 도시락 1보다 ' + k + '개 적어야 해. 다시 세어 봐!',
+              n(x[0], f[0]) !== c && '도시락 1의 ' + N(f[0]) + ' 개수를 다시 세어 봐!',
+              n(x[1], f[0]) !== c && '도시락 2의 ' + N(f[0]) + ' 개수를 다시 세어 봐!');
+          }, answer: [two(f[0], c, f[1], a - c), two(f[0], c, f[1], b - c)] }; }
+    ],
+    // 5학년 분수: 단위분수(⅓·¼) / 단위분수가 아닌 분수(⅖·⅗·⅔·¾) / 도시락마다 ¼·½, 나머지 자유
+    5: [
+      function (r) { var q = pick(r, [['1/3', 3, [9, 12, 15]], ['1/4', 4, [8, 12, 16]]]);
+        return fracOrder(foods(r, 2), pick(r, q[2]), q[1], 1, FRAC[q[0]]); },
+      function (r) { var q = pick(r, [['2/5', 5, 2, [10]], ['3/5', 5, 3, [10]], ['2/3', 3, 2, [9, 12]], ['3/4', 4, 3, [8, 12]]]);
+        return fracOrder(foods(r, 2), pick(r, q[3]), q[1], q[2], FRAC[q[0]]); },
+      function (r) { var f = foods(r, 4), t = pick(r, [8, 12]), q = t / 4, h = t / 2, a1 = two(f[0], q, f[1], h), a2 = two(f[0], q, f[1], h);
+        a1[f[2]] = t - q - h; a2[f[3]] = t - q - h;
+        return { text: '도시락 두 개에 음식을 {' + t + '}개씩 담아 주세요. 도시락마다 {¼}은 ' + N(f[0]) + ', {½}은 ' + N(f[1]) + ', 나머지는 자유예요.', boxes: 2,
+          check: function (x) {
+            for (var i = 0; i < 2; i++) {
+              var y = x[i], p = '도시락 ' + (i + 1) + '의 ';
+              if (total(y) !== t) return p + '전체 개수가 ' + t + '개인지 다시 세어 봐!';
+              if (n(y, f[0]) !== q) return p + josa(N(f[0]), '이', '가') + ' ' + t + '개의 ¼인지 살펴봐!';
+              if (n(y, f[1]) !== h) return p + josa(N(f[1]), '이', '가') + ' ' + t + '개의 ½인지 살펴봐!';
+            }
+            return null;
+          }, answer: [a1, a2] }; }
+    ],
+    // 6학년 비: 두 수의 합이 5·7인 비로 10~15개 / 한쪽이 1인 비로 9~16개 / 두 도시락 같은 비, 개수 다르게
+    6: [
+      function (r) { var f = foods(r, 2), q = pick(r, [[2, 3, 3], [3, 2, 3], [1, 4, 3], [2, 3, 2], [3, 4, 2]]), a = q[0], b = q[1], t = (a + b) * q[2];
+        return { text: ratioText(f, a, b) + ', 모두 {' + t + '}개 담아 주세요.', boxes: 1,
+          check: ratio(0, f[0], f[1], a, b, t), answer: [two(f[0], a * q[2], f[1], b * q[2])] }; },
+      function (r) { var f = foods(r, 2), q = pick(r, [[3, 1, 3], [1, 3, 3], [3, 1, 4], [2, 1, 4], [1, 2, 5]]), a = q[0], b = q[1], t = (a + b) * q[2];
+        return { text: ratioText(f, a, b) + ', 모두 {' + t + '}개 담아 주세요.', boxes: 1,
+          check: ratio(0, f[0], f[1], a, b, t), answer: [two(f[0], a * q[2], f[1], b * q[2])] }; },
+      function (r) { var f = foods(r, 2), q = pick(r, [[1, 2, 2, 3], [2, 1, 2, 3], [1, 3, 2, 3], [1, 2, 3, 2]]), a = q[0], b = q[1], s = a + b, t1 = s * q[2], t2 = s * q[3];
+        return { text: '두 도시락 모두 ' + ratioText(f, a, b) + ' 담아 주세요. 도시락 1에는 {' + t1 + '}개, 도시락 2에는 {' + t2 + '}개예요.', boxes: 2,
+          check: function (x) { return first(ratio(0, f[0], f[1], a, b, t1)(x), ratio(1, f[0], f[1], a, b, t2)(x)); },
+          answer: [two(f[0], a * q[2], f[1], b * q[2]), two(f[0], a * q[3], f[1], b * q[3])] }; }
+    ]
+  };
+  /* 한 판(주문 3개) 만들기. first=true 면 위 예시 주문 그대로(처음 하는 학년 — 하는 법 설명과 맞춤).
+     avoid: 바로 전 판 주문 문장들(같은 문장은 다시 내지 않음). 예시 주문과 똑같은 문장도 피함 */
+  function makeRound(g, opts) {
+    opts = opts || {};
+    if (opts.first) return ORDERS[g].slice();
+    var rng = opts.rng || Math.random, avoid = opts.avoid || [], fixed = ORDERS[g].map(function (o) { return o.text; });
+    return GEN[g].map(function (make) {
+      var o;
+      for (var t = 0; t < 40; t++) { o = make(rng); if (avoid.indexOf(o.text) < 0 && fixed.indexOf(o.text) < 0) break; }
+      return o;
+    });
+  }
+
   // 공통 판정: 빈 도시락 → 안내, 아니면 주문의 check
   function judge(order, boxes) {
     if (allTotal(boxes) === 0) return { ok: false, hint: '도시락이 비어 있어요. 아래 재료를 눌러 담아 봐!' };
@@ -187,7 +333,7 @@
     return out;
   }
 
-  var api = { FOODS: FOODS, NAME: NAME, BOX_MAX: BOX_MAX, ORDERS: ORDERS, judge: judge, startBoxes: startBoxes, total: total };
+  var api = { FOODS: FOODS, NAME: NAME, BOX_MAX: BOX_MAX, ORDERS: ORDERS, GEN: GEN, makeRound: makeRound, judge: judge, startBoxes: startBoxes, total: total };
   root.MP_PICNIC = api;
   if (typeof module !== 'undefined' && module.exports) module.exports = api;
 })(typeof window !== 'undefined' ? window : globalThis);
