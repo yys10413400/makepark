@@ -11,7 +11,7 @@
 (function (root) {
   'use strict';
   var CONFIG = {
-    bpm: 80,                 // 연습 기본 속도(학년군 bpm 이 없으면 이 값)
+    bpm: 72,                 // 연습 기본 속도(학년군 bpm 이 없으면 이 값)
     windowMs: 250,           // 성공 판정 범위: 목표 박자 전후 ±250ms (박자 간격의 45%를 넘지 않게 자동으로 줄임)
     perfectRatio: 0.4,       // 판정 범위의 이 비율 안이면 '좋아요', 밖이면 '조금 빨랐어요/늦었어요'(둘 다 성공)
     setPassRatio: 0.75,      // 세트 성공: 박자의 75% 이상 성공(4개 중 3개, 8개 중 6개)
@@ -26,8 +26,8 @@
   };
 
   var GRADES = {
-    low:    { label: '1~2학년', bpm: 80, showNext: true,  hide: [0, 0, 0],        guide: '다음 동작을 미리 보여 줘요' },
-    middle: { label: '3~4학년', bpm: 88, showNext: false, hide: [0, 0, 0],        guide: '여덟 박자 · 같은 동작 반복과 쉼' },
+    low:    { label: '1~2학년', bpm: 72, showNext: true,  hide: [0, 0, 0],        guide: '느린 박자 · 다음 동작을 미리 보여 줘요' },
+    middle: { label: '3~4학년', bpm: 78, showNext: true,  hide: [0, 0, 0],        guide: '여덟 박자 · 같은 동작 반복과 쉼 · 다음 동작 미리 보기' },
     high:   { label: '5~6학년', bpm: 84, showNext: false, hide: [0, 0.25, 0.5],   guide: '기억 도전 · 2세트부터 카드가 조금씩 숨어요' }
   };
 
@@ -41,7 +41,7 @@
     middle: [
       { id: 'mid-1', title: '두 번씩 스텝', goal: '같은 동작을 두 번, 쉼표에선 가만히', pattern: [L, L, R, R, J, _, F, _] },
       { id: 'mid-2', title: '왔다 갔다', goal: '왼오왼오 다음 점프 두 번', pattern: [L, R, L, R, J, J, F, _] },
-      { id: 'mid-3', title: '쉼표 댄스', goal: '쉬는 박을 기억해요', pattern: [R, _, R, J, L, _, L, F] }
+      { id: 'mid-3', title: '쉼표 댄스', goal: '한 번 움직이고 한 번 쉬어요', pattern: [R, _, L, _, J, _, F, _] }
     ],
     high: [
       { id: 'high-1', title: '기억 무대', goal: '앞 네 박을 한 번 더 해요', pattern: [L, R, J, F, L, R, J, F] },

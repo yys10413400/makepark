@@ -331,3 +331,4 @@ kbd { font-family: inherit; font-size: 0.75em; padding: 0 0.4em; border-radius: 
   left: 30%; top: 85.5%; width: 40%; height: 8%; z-index: 4; display: flex; align-items: center; justify-content: center;
   border-radius: 99px; font-size: 1.5cqw; color: #4a2370; background: rgba(255, 248, 234, 0.92); border: 0.16cqw solid #d9b878;
 }
+.gk-pick-list { margin-bottom: 0.8cqw; }

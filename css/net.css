@@ -87,7 +87,7 @@ html.teacher-mode .install-app { display: none; }
 .play-with:disabled { background: #8f78a8; box-shadow: 0 4px 0 #5d4a72; cursor: default; animation: none; }
 @keyframes play-bob { 50% { transform: translate(-50%, -3px); } }
 .invite-card {
-  position: fixed; left: 50%; top: 50%; transform: translate(-50%, -50%); z-index: 40; width: min(380px, calc(100% - 32px));
+  position: fixed; left: 50%; top: 50%; transform: translate(-50%, -50%); z-index: 50; width: min(380px, calc(100% - 32px));
   padding: 18px 20px 16px; border-radius: 18px; text-align: center;
   background: #fbf1dc; color: #3b2410; border: 3px solid #e2b357; box-shadow: 0 6px 0 rgba(40, 10, 60, 0.45), 0 18px 40px rgba(20, 10, 40, 0.35);
   animation: invite-pop 0.25s ease-out;
@@ -100,3 +100,6 @@ html.teacher-mode .install-app { display: none; }
 .invite-yes { background: #6a3d9a; color: #fff6e0; border: 2px solid #f3e3bd; box-shadow: 0 3px 0 #3d1f5c; }
 .invite-no { background: #fff8e8; color: #4a2370; border: 2px solid #d9b878; box-shadow: 0 3px 0 #b79a63; }
 @media (prefers-reduced-motion: reduce) { .play-with, .invite-card { animation: none; } }
+
+/* 유령의 집 안에서도 알림·초대 카드가 보이게 */
+body.gate-open .toast { z-index: 45; }

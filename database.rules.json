@@ -126,6 +126,18 @@
             },
             "f": {
               ".validate": "newData.isString() && newData.val().length <= 12"
+            },
+            "rx": {
+              ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 2000"
+            },
+            "ry": {
+              ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 2000"
+            },
+            "rd": {
+              ".validate": "newData.val() === 'up' || newData.val() === 'down' || newData.val() === 'left' || newData.val() === 'right'"
+            },
+            "rm": {
+              ".validate": "newData.val() === 0 || newData.val() === 1"
             }
           }
         },

@@ -31,6 +31,7 @@
       : a.kind === 'new' ? '🎟 새 문제 티켓 1장을 받았어요! (오늘 ' + g.day.n + ' / ' + DAY_MAX + ')'
       : '오늘 받을 수 있는 새 문제 티켓(' + DAY_MAX + '장)은 다 받았어요. 내일 또 받아요!';
   }
+  var TIP = '방향키나 바닥을 눌러 걸어가서, 문 앞 문지기 유령에게 말을 걸어 봐요';
   var GHOST_SAYS = '어떤 손님이 이 문을 지날 수 있을까? 내 기록을 보고 비밀 규칙을 찾아봐!';
   var FIRST_GUIDE = '네 손님의 기록을 살펴보고, 다음 손님이 지나갈 수 있을지 골라봐.';
   var NAMES = { star: '별 배지', moon: '달 배지', none: '배지 없음', key: '열쇠', lantern: '호박등', empty: '빈손' };
@@ -122,7 +123,7 @@
     ui.talk.innerHTML = '말 걸기 <kbd>스페이스</kbd>'; ui.talk.hidden = true;
     ui.leave = btn('gk-prompt gk-prompt-exit', '', function () { close(); });
     ui.leave.innerHTML = '공원으로 나가기 <kbd>스페이스</kbd>'; ui.leave.hidden = true;
-    ui.tip = el('p', 'gk-tip', '방향키나 바닥을 눌러 걸어가서, 문 앞 문지기 유령에게 말을 걸어 봐요');
+    ui.tip = el('p', 'gk-tip', TIP);
     ui.lobbyExit = btn('gk-pill gk-exit', '공원으로', function () { close(); });
     lobby.appendChild(ui.talk); lobby.appendChild(ui.leave); lobby.appendChild(ui.tip); lobby.appendChild(ui.lobbyExit);
     buildDialog(lobby);
@@ -194,6 +195,7 @@
     var nm = el('p', 'gk-dialog-name', '문지기 유령'); nm.id = 'gkDlgName';
     body.appendChild(nm);
     body.appendChild(el('p', 'gk-dialog-text', GHOST_SAYS));
+    var main = ui.dlgMain = el('div', 'gk-dialog-main');
     var gr = el('div', 'gk-grades'); gr.setAttribute('role', 'radiogroup'); gr.setAttribute('aria-label', '난이도 학년');
     gr.appendChild(el('span', 'gk-grades-label', '난이도'));
     ui.gradeBtns = [];
@@ -203,14 +205,16 @@
         b.setAttribute('role', 'radio'); ui.gradeBtns.push(b); gr.appendChild(b);
       })(g);
     }
-    body.appendChild(gr);
-    ui.gradeNote = el('p', 'gk-grade-note'); body.appendChild(ui.gradeNote);
+    main.appendChild(gr);
+    ui.gradeNote = el('p', 'gk-grade-note'); main.appendChild(ui.gradeNote);
     var acts = el('div', 'gk-dialog-acts');
     ui.soloBtn = btn('gk-choice', '혼자 추리하기', function () { startSolo(); });
     ui.friendBtn = btn('gk-choice', '친구랑 문지기', function () { startFriend(); });
     acts.appendChild(ui.soloBtn); acts.appendChild(ui.friendBtn);
     acts.appendChild(btn('gk-choice light', '나중에 할래', function () { closeDialog(); }));
-    body.appendChild(acts);
+    main.appendChild(acts);
+    body.appendChild(main);
+    ui.pick = el('div', 'gk-pick'); ui.pick.hidden = true; body.appendChild(ui.pick);
     d.appendChild(body);
     parent.appendChild(d);
   }
@@ -224,6 +228,7 @@
     if (S.dialog) return;
     S.dialog = true; S.keys = {}; S.dest = null; S.me.moving = false;
     ui.dialog.hidden = false; ui.talk.hidden = true; ui.leave.hidden = true;
+    ui.pick.hidden = true; ui.dlgMain.hidden = false;
     setGrade(S.grade);
     ui.soloBtn.focus();
   }
@@ -242,6 +247,7 @@
     showScene('lobby');
     S.me = { x: 836, y: 822, dir: 'up', moving: false };   // 계단 위(카펫 끝)에서 시작
     S.dest = null; S.keys = {}; S.dialog = false; ui.dialog.hidden = true;
+    ui.tip.textContent = TIP;
     S.last = performance.now();
     cancelAnimationFrame(S.raf);
     S.raf = requestAnimationFrame(loop);
@@ -369,7 +375,11 @@
       } },
       { y: S.me.y, draw: function () { drawMe(c, t); } }
     ];
+    // 같은 반에서 유령의 집 로비에 있는 친구들(js/net/multiplayer.js)
+    var mates = window.MPMulti && MPMulti.roomOthers ? MPMulti.roomOthers('ghost', S.frameDt) : [];
+    mates.forEach(function (m) { items.push({ y: m.y, draw: function () { drawMate(c, t, m); } }); });
     items.sort(function (a, b) { return a.y - b.y; }).forEach(function (i) { i.draw(); });
+    mates.forEach(function (m) { mateTag(c, m, now()); });
     if (DEBUG) {
       c.strokeStyle = 'lime'; c.lineWidth = 3; c.beginPath();
       FLOOR.forEach(function (p, i) { if (i) c.lineTo(p[0], p[1]); else c.moveTo(p[0], p[1]); }); c.closePath(); c.stroke();
@@ -380,8 +390,40 @@
   // 로비 조명에 맞춰 그리기(캐릭터 그림 파일은 그대로, 로비에서만):
   //  색을 조금 빼고 보라빛을 얹은 뒤 머리 쪽에 촛불빛, 아래에 흐릿한 보라 그림자와 반짝이는 바닥에 비친 모습
   var off = document.createElement('canvas'), offR = document.createElement('canvas');
-  function drawMe(c, t) {
-    var me = S.me, h = charH(me.y), sid = api().character ? api().character().sid : 'F1';
+  function now() { return performance.now(); }
+  function drawMe(c, t) { drawPerson(c, t, S.me, api().character ? api().character().sid : 'F1'); }
+  // 친구: 학생 캐릭터는 나와 같은 조명으로, 선생님(동물)은 공원 그림을 로비 크기로 키워서
+  function drawMate(c, t, m) {
+    if (!m.tc && m.sid) { drawPerson(c, t, m, m.sid); return; }
+    if (!m.walker) return;
+    var k = charH(m.y) / 60;
+    c.save(); c.translate(m.x, m.y); c.scale(k, k);
+    m.walker.draw(c, 0, 0, m.dir, m.moving, t);
+    c.restore();
+  }
+  // 친구 이름표(+말풍선 대신 짧게 보이는 말)
+  function mateTag(c, m, tnow) {
+    var h = charH(m.y), fs = Math.round(h * 0.16), text = (m.tc ? 'GM ' : '') + m.nick;
+    c.save();
+    c.font = '400 ' + fs + 'px "Malgun Gothic", "Apple SD Gothic Neo", "Noto Sans KR", sans-serif';
+    c.textAlign = 'center'; c.textBaseline = 'middle';
+    var w = c.measureText(text).width + fs, hh = fs * 1.45, x = m.x, y = m.y - h - hh * 0.4;
+    c.fillStyle = 'rgba(255,255,255,0.92)';
+    c.beginPath(); c.roundRect ? c.roundRect(x - w / 2, y - hh / 2, w, hh, hh / 2) : c.rect(x - w / 2, y - hh / 2, w, hh); c.fill();
+    c.fillStyle = '#4a2370'; c.fillText(text, x, y + 1);
+    if (m.say && m.say.until > tnow) {
+      var st = m.say.text, sf = Math.round(fs * (m.say.emoji ? 1.8 : 1.1));
+      c.font = '400 ' + sf + 'px "Malgun Gothic", "Apple SD Gothic Neo", "Noto Sans KR", sans-serif';
+      var sw = c.measureText(st).width + sf, sh = sf * 1.6, sy = y - hh / 2 - sh / 2 - fs * 0.4;
+      c.globalAlpha = Math.max(0, Math.min(1, (m.say.until - tnow) / 400));
+      c.fillStyle = '#fff'; c.strokeStyle = 'rgba(226,179,87,0.9)'; c.lineWidth = 2;
+      c.beginPath(); c.roundRect ? c.roundRect(x - sw / 2, sy - sh / 2, sw, sh, sh / 2) : c.rect(x - sw / 2, sy - sh / 2, sw, sh); c.fill(); c.stroke();
+      c.fillStyle = '#1f2b5e'; c.fillText(st, x, sy + 1);
+    }
+    c.restore();
+  }
+  function drawPerson(c, t, me, sid) {
+    var h = charH(me.y);
     // 부드러운 그림자
     var sw = h * 0.3, g = c.createRadialGradient(me.x, me.y, 0, me.x, me.y, sw);
     g.addColorStop(0, 'rgba(30,8,50,0.55)'); g.addColorStop(1, 'rgba(30,8,50,0)');
@@ -426,7 +468,7 @@
   }
   function loop(now) {
     if (!S.open) return;
-    var dt = Math.min(0.05, (now - S.last) / 1000); S.last = now;
+    var dt = Math.min(0.05, (now - S.last) / 1000); S.last = now; S.frameDt = dt;
     if (S.scene === 'lobby') { step(dt); drawLobby(now / 1000); }
     S.raf = requestAnimationFrame(loop);
   }
@@ -762,7 +804,38 @@
 
   // ---------- 친구랑 문지기: 카드 1장 또는 2장 + 연결 ----------
   function defaultParts() { return { link: 'one', card: 'star', badge: 'star', item: 'key' }; }
+  // 반 공원에 들어와 있으면: 같은 반 친구를 골라 각자 기기로 같이 하기(초대) / 한 기기로 둘이 하기
   function startFriend() {
+    var list = window.MPMulti && MPMulti.inviteList ? MPMulti.inviteList() : null;
+    if (list) { showFriendPicker(list); return; }
+    startLocalFriend();
+  }
+  // 유령 대화창 안에서 바로 친구 고르기(로비에는 검문대 안내창이 없으므로)
+  function showFriendPicker(list) {
+    var box = ui.pick; box.textContent = '';
+    ui.dlgMain.hidden = true; box.hidden = false;
+    box.appendChild(el('p', 'gk-dialog-text', list.length
+      ? '누구랑 할까? 친구를 누르면 초대가 가. 각자 기기로 하는 거야!'
+      : '지금 우리 반 공원에 같이 할 친구가 없어. 친구가 들어오면 다시 말을 걸어 줘!'));
+    var acts = el('div', 'gk-dialog-acts gk-pick-list');
+    list.forEach(function (f) {
+      var b = btn('gk-choice', '👋 ' + f.nick + (f.here ? ' (유령의 집)' : ''), function () {
+        closeDialog();
+        if (window.MPMulti.invite(f.pid)) say2('💌 ' + josa(f.nick, '에게', '에게') + ' 초대를 보냈어요. 대답을 기다려요…');
+      });
+      if (f.busy) { b.disabled = true; b.textContent += ' · 다른 놀이 중'; }
+      acts.appendChild(b);
+    });
+    box.appendChild(acts);
+    var row = el('div', 'gk-dialog-acts');
+    row.appendChild(btn('gk-choice light', '한 기기로 둘이 하기', function () { startLocalFriend(); }));
+    row.appendChild(btn('gk-choice light', '뒤로', function () { backToMain(); }));
+    box.appendChild(row);
+    var first = box.querySelector('button:not([disabled])'); if (first) first.focus();
+  }
+  function backToMain() { ui.pick.hidden = true; ui.dlgMain.hidden = false; ui.soloBtn.focus(); }
+  function say2(text) { ui.tip.textContent = text; ui.tip.hidden = false; }
+  function startLocalFriend() {
     closeDialog();
     S.mode = 'friend'; S.run = null; S.friend.maker = 1; S.friend.parts = defaultParts();
     openBuilder();
@@ -1075,6 +1148,10 @@
   }
   window.MPGate = { open: open, close: close, _state: S, _ui: ui, _walkable: walkable,
     // 같이 노는 친구 닉네임(공원 쪽에서 선생님 화면에 '○○와 함께' 표시용)
-    onlinePartner: function () { return S.online && S.online.game ? onlinePartnerNick() : null; } };
+    onlinePartner: function () { return S.online && S.online.game ? onlinePartnerNick() : null; },
+    // 로비에서 걷는 내 위치(같은 반 친구 화면의 로비에 보이게). 검문대·친구 놀이 중이면 null
+    lobbyPos: function () { return S.open && S.scene === 'lobby' && !S.online ? { x: Math.round(S.me.x), y: Math.round(S.me.y), dir: S.me.dir, moving: !!S.me.moving } : null; },
+    // 친구 초대를 받을 수 있나(로비에 있고 다른 놀이 중이 아님)
+    canInvite: function () { return S.open && S.scene === 'lobby' && !S.online; } };
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init); else init();
 })();

@@ -3,6 +3,7 @@
  * ------------------------------------------------------------
  * 입장 흐름: 첫 화면(닉네임·학년) → '어디로 갈까요?' 창(반 코드 입장 / 혼자 둘러보기) → (처음이면 캐릭터 고르기) → 공원
  * 공원에서: 같은 반 친구들이 자기 캐릭터로 걸어 다니고 머리 위에 닉네임이 보임. 놀이기구 안에 있는 친구는 공원에서 안 보임.
+ * 건물 안(유령의 집 로비): 같은 건물 로비에 있는 친구도 보임 — 로비 위치는 rx·ry·rd·rm 으로 따로 보냄
  * 선생님 명령: 모두 모으기(분수 광장으로 순간 이동, 놀이기구에서도 나옴) · 내보내기 · 공원 닫기
  * 선생님 설정(반 공원 meta): 계절(season) — 모든 학생 화면이 같은 계절로 · 대화 끄기(chatOff)
  * 대화: 화면 아래에서 정해진 이모지·문장만 골라 말함 → 캐릭터 머리 위 말풍선(4초). 글자를 직접 쓰지 않음
@@ -167,7 +168,7 @@
   function onEnter() {
     leave();
     if (!S.code) { setChip(); if (api().setSeason) api().setSeason(null); return; }   // 혼자 둘러보기: 기본 계절
-    S.pid = NET.myId(); S.others = {}; S.joinedAt = Date.now(); S.lastCmd = null; S.lastMate = '';   // 같은 컴퓨터라도 탭마다 다른 사람
+    S.pid = NET.myId(); S.others = {}; S.joinedAt = Date.now(); S.lastCmd = null; S.lastMate = ''; S.lastRoom = null; S.lastRoomSend = 0;   // 같은 컴퓨터라도 탭마다 다른 사람
     S.handle = NET.join(S.code, S.pid, snapshot(true));
     S.last = snapshot(true); S.lastSend = performance.now();
     S.handle.onPlayer(function (pid, data) {
@@ -192,7 +193,7 @@
       var c = S.lastCmd;
       if (!S.isTeacher && c && c.type === 'kick' && c.target === S.pid) { api().closeRide && api().closeRide(); kickOut('선생님이 공원에서 내보냈어요.'); return; }
       if (S.handle.rejoin) S.handle.rejoin();
-      S.last = {}; S.lastSend = 0; S.lastMate = '';   // 다음 tick 에 전체 정보를 다시 보냄
+      S.last = {}; S.lastSend = 0; S.lastMate = ''; S.lastRoom = null; S.lastRoomSend = 0;   // 다음 tick 에 전체 정보를 다시 보냄
     };
     S.handle.onMeta(function (meta) {
       if (!S.handle) return;
@@ -249,7 +250,7 @@
   }
   function tick() {
     if (!S.handle) return;
-    var now = performance.now(), cur = snapshot(true), last = S.last || {};
+    var now = performance.now(), cur = snapshot(true), last = S.last || {}, me = api().player();
     var changed = ['x', 'y', 'd', 'm', 'w'].some(function (k) { return cur[k] !== last[k]; });
     var who = ['n', 'g', 's', 'gd'].some(function (k) { return cur[k] !== last[k]; });
     if ((changed && now - S.lastSend >= SEND_MS) || who || now - S.lastSend >= BEAT_MS) {
@@ -262,6 +263,13 @@
     var mate = window.MPGate && MPGate.onlinePartner ? MPGate.onlinePartner() || '' : '';
     if (mate !== S.lastMate && (mate || S.lastMate)) { S.handle.update({ f: mate }); }
     S.lastMate = mate;
+    // 건물 안(유령의 집 로비) 위치: 위치와 따로(규칙이 예전 것이어도 공원 위치는 막히지 않게)
+    var lp = me.ride === 'ghost' && window.MPGate && MPGate.lobbyPos ? MPGate.lobbyPos() : null;
+    var rk = lp ? [lp.x, lp.y, lp.dir, lp.moving ? 1 : 0].join(',') : '';
+    if (rk !== S.lastRoom && (now - S.lastRoomSend >= SEND_MS || !lp)) {
+      S.handle.update(lp ? { rx: lp.x, ry: lp.y, rd: lp.dir, rm: lp.moving ? 1 : 0 } : { rx: null, ry: null, rd: null, rm: null });
+      S.lastRoom = rk; S.lastRoomSend = now;
+    }
     updatePlayBtn();
   }
 
@@ -465,7 +473,8 @@
     if (!v || v.reply) { if (!v || (inv.cardInv && inv.cardInv.id === v.id)) closeCard(); return; }
     if (inv.cardInv && inv.cardInv.id === v.id) return;
     var me = api().player();
-    if (me.ride || inv.out || document.body.classList.contains('gate-open')) { NET.shared.update(S.code, 'invites/' + S.pid, { reply: 'busy' }); return; }
+    var lobbyOk = me.ride === 'ghost' && window.MPGate && MPGate.canInvite && MPGate.canInvite();
+    if ((me.ride && !lobbyOk) || inv.out || (!lobbyOk && document.body.classList.contains('gate-open'))) { NET.shared.update(S.code, 'invites/' + S.pid, { reply: 'busy' }); return; }
     showCard(v);
   }
   function showCard(v) {
@@ -553,6 +562,38 @@
   window.MPMulti = {
     askRoom: askRoom, onEnter: onEnter, leave: leave, tick: tick, drawOthers: drawOthers, drawNames: drawNames,
     active: function () { return !!S.handle; }, say: say,
+    // 건물 안에 같이 있는 친구(유령의 집 로비): 부드럽게 따라가는 위치 + 그릴 캐릭터
+    roomOthers: function (where, dt) {
+      if (!S.handle) return [];
+      var out = [], tnow = performance.now();
+      Object.keys(S.others).forEach(function (pid) {
+        var o = S.others[pid], d = o.data;
+        if (!d || d.w !== where || typeof d.rx !== 'number' || typeof d.ry !== 'number') return;
+        if (o.rw !== where || o.rx == null) { o.rx = d.rx; o.ry = d.ry; o.rw = where; }
+        var dx = d.rx - o.rx, dy = d.ry - o.ry, dist = Math.hypot(dx, dy);
+        if (dist > 300) { o.rx = d.rx; o.ry = d.ry; }
+        else { var k = Math.min(1, (dt || 0.016) * 10); o.rx += dx * k; o.ry += dy * k; }
+        var say = o.say && o.say.until > tnow && SAYS[o.say.i] != null ? { text: SAYS[o.say.i], emoji: o.say.i < 10, until: o.say.until } : null;
+        out.push({ pid: pid, nick: d.n || '친구', tc: !!d.tc, x: o.rx, y: o.ry, dir: d.rd || 'down', moving: d.rm === 1 || dist > 3,
+          sid: !d.tc && window.MPChars ? MPChars.spriteId(MPChars.byId(d.s) ? d.s : 'F1', d.gd === 'girl' ? 'girl' : 'boy') : null,
+          walker: o.walker, say: say });
+      });
+      return out;
+    },
+    // 같이 놀 친구 목록(반 공원에 들어와 있을 때만, 선생님 제외). 혼자 둘러보기·선생님이면 null
+    inviteList: function () {
+      if (!S.handle || S.isTeacher) return null;
+      return Object.keys(S.others).map(function (pid) {
+        var d = S.others[pid].data;
+        if (!d || d.tc) return null;
+        var here = d.w === 'ghost' && typeof d.rx === 'number';
+        return { pid: pid, nick: d.n || '친구', here: here, busy: !!d.f || (d.w !== 'park' && !here) };
+      }).filter(Boolean).sort(function (a, b) { return (b.here - a.here) || (a.busy - b.busy); });
+    },
+    invite: function (pid) {
+      if (!S.handle || inv.out || !S.others[pid]) { if (inv.out && api().toast) api().toast('초대한 친구의 대답을 기다리는 중이에요'); return false; }
+      sendInvite(pid); return true;
+    },
     // 미니맵용: 공원에 있는(놀이기구 밖) 친구·선생님 위치
     others: function () {
       return Object.keys(S.others).map(function (k) { return S.others[k]; })
