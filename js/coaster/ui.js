@@ -180,21 +180,26 @@
     if (!turtleImgs[d]) { turtleImgs[d] = new Image(); turtleImgs[d].src = BASE + 'turtle-' + d + '.webp'; }
     return turtleImgs[d];
   }
+  // 대기실 역장 대기 움직임(assets/coaster-src/turtle-idle, 384×384 고정 캔버스 8프레임: 도면을 펼쳐 보고 접은 뒤 손 흔들기)
+  // 대화 중에는 정면 자세(turtle-front) 한 장으로 멈춤. 발 위치는 프레임마다 거의 같음(아래 끝 353)
+  var IDLE = { size: 384, ms: [1200, 180, 220, 1200, 220, 180, 250, 1000], foot: 353, draw: 236 };
+  IDLE.total = IDLE.ms.reduce(function (a, b) { return a + b; }, 0);
+  function idleFrame(t) {
+    var ms = (t * 1000) % IDLE.total;
+    for (var i = 0; i < IDLE.ms.length; i++) { if (ms < IDLE.ms[i]) return i; ms -= IDLE.ms[i]; }
+    return 0;
+  }
   function drawLobby(t) {
     var c = ui.canvas.getContext('2d');
     c.clearRect(0, 0, IW, IH);
-    // 역장은 가까이 온 아이 쪽을 봄
-    var face = 'S';
-    if (S.nearTurtle || S.dialog) face = S.me.x > TURTLE.x + 60 ? 'E' : S.me.x < TURTLE.x - 60 ? 'W' : 'S';
+    if (!turtleImgs['idle-00']) IDLE.ms.forEach(function (_, i) { turtleImg('idle-0' + i); });   // 처음에 8장을 미리 받아 둠
+    var ti = turtleImg(S.dialog ? 'front' : 'idle-0' + idleFrame(t));
     var items = [
       { y: TURTLE.y, draw: function () {
-        var ti = turtleImg(face), bob = Math.sin(t * 2.4) * 3;
         c.save(); c.fillStyle = 'rgba(90,40,40,0.25)';
         c.beginPath(); c.ellipse(TURTLE.x, TURTLE.y, 62, 15, 0, 0, Math.PI * 2); c.fill(); c.restore();
-        if (ti.complete && ti.naturalWidth) {
-          var h = TURTLE.h + bob, w = h * ti.naturalWidth / ti.naturalHeight;
-          c.drawImage(ti, TURTLE.x - w / 2, TURTLE.y - h + 6, w, h);
-        }
+        var k = IDLE.draw / IDLE.size;
+        if (ti.complete && ti.naturalWidth) c.drawImage(ti, TURTLE.x - IDLE.draw / 2, TURTLE.y + 6 - IDLE.foot * k, IDLE.draw, IDLE.draw);
       } },
       { y: S.me.y, draw: function () { drawMe(c, t); } }
     ];
