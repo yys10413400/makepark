@@ -77,7 +77,7 @@ body.picnic-open #hud, body.picnic-open #enterFacility, body.picnic-open #chatBa
   background: #fff8ec; color: #7a4a20; border: 0.15cqw solid #e2b357;
 }
 .pc-grade.on { background: #c8323f; color: #fff7ea; border-color: #c8323f; box-shadow: 0 0.25cqw 0 #85202a; }
-.pc-grade-note { margin: 0.6cqw 0 1cqw; font-size: 1.2cqw; color: #8a6040; min-height: 1.6em; }
+.pc-grade-note { margin: 0.6cqw 0 0.3cqw; font-size: 1.2cqw; color: #8a6040; min-height: 1.6em; }
 .pc-acts { display: flex; gap: 1cqw; flex-wrap: wrap; justify-content: center; margin-top: 1cqw; }
 .pc-start .pc-acts { justify-content: flex-start; }
 
@@ -211,3 +211,21 @@ body.picnic-open #hud, body.picnic-open #enterFacility, body.picnic-open #chatBa
 }
 .pc-howto-tip b { display: block; font-weight: 400; color: #b02a37; margin-bottom: 0.1cqw; }
 .pc-howto-tip b::before { content: '💡 '; }
+
+/* 내 티켓 (유령의 집·코스터와 같은 모양) */
+.pc-ticket-note { margin: 0 0 0.6cqw; font-size: 1.2cqw; color: #b02a37; }
+.pc-tickets {
+  position: absolute; z-index: 9; margin: 0; display: flex; align-items: center; gap: 0.4cqw;
+  padding: 0.35cqw 1.1cqw; border-radius: 99px; font-size: 1.4cqw; white-space: nowrap;
+  background: #fff8ec; color: #5a3412; border: 0.14cqw solid #e2b357; box-shadow: 0 0.25cqw 0 rgba(90, 45, 10, 0.4);
+}
+.pc-tickets b { font-weight: 400; min-width: 1.4em; text-align: center; color: #c8323f; }
+.pc-tickets.at-lobby { left: 1.6%; top: 2.6%; }
+.pc-tickets.at-game { right: 10.4%; top: 3.1%; }
+.pc-tickets.gain { animation: pc-gain 0.5s ease-in-out infinite alternate; z-index: 9; }
+@keyframes pc-gain { to { transform: scale(1.12); box-shadow: 0 0 1.2cqw rgba(255, 210, 63, 0.9); } }
+.pc-tickets-plus {
+  position: absolute; right: 0.6cqw; top: -1.8cqw; font-size: 1.6cqw; color: #ffd23f; text-shadow: 0 0.12cqw 0 #85202a;
+  animation: pc-plus 1.6s ease-out forwards; pointer-events: none;
+}
+@keyframes pc-plus { from { transform: translateY(1cqw); opacity: 0; } 20% { opacity: 1; } to { transform: translateY(-2cqw); opacity: 0; } }

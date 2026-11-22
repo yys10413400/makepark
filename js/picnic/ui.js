@@ -119,6 +119,16 @@
     ui.modal.appendChild(ui.modalCard); game.appendChild(ui.modal);
     st.appendChild(game);
 
+    // 내 티켓(유령의 집·코스터와 같은 모양): 대기실은 왼쪽 위, 주문 화면은 오른쪽 위 진행도 옆. 받으면 숫자가 하나씩 올라감
+    ui.tickets = el('p', 'pc-tickets');
+    ui.tickets.appendChild(el('span', 'pc-tickets-icon', '🎟'));
+    ui.tickets.appendChild(document.createTextNode('티켓 '));
+    ui.ticketNum = el('b', '', '0');
+    ui.tickets.appendChild(ui.ticketNum);
+    ui.tickets.appendChild(document.createTextNode('장'));
+    ui.tickets.setAttribute('aria-live', 'polite');
+    st.appendChild(ui.tickets);
+
     ['lunchbox', 'food-onigiri', 'food-sandwich', 'food-strawberry', 'food-tomato'].forEach(function (n) { var i = new Image(); i.src = BASE + n + '.webp'; });
   }
 
@@ -144,6 +154,7 @@
     }
     body.appendChild(gr);
     ui.gradeNote = el('p', 'pc-grade-note'); body.appendChild(ui.gradeNote);
+    ui.ticketNote = el('p', 'pc-ticket-note'); body.appendChild(ui.ticketNote);
     var acts = el('div', 'pc-acts');
     ui.goBtn = btn('pc-choice', '도시락 만들기', function () { startGame(); });
     acts.appendChild(ui.goBtn);
@@ -157,7 +168,11 @@
   function setGrade(g) {
     S.grade = g;
     ui.gradeBtns.forEach(function (b, i) { b.setAttribute('aria-checked', String(i + 1 === g)); b.classList.toggle('on', i + 1 === g); });
-    var park = api().profile().grade || null;
+    var park = api().profile().grade || null, pc = save().picnic || {};
+    var day = pc.day && pc.day.date === today() ? pc.day.n : 0;
+    ui.ticketNote.textContent = '🎟 주문 3개를 다 풀면 티켓을 받아요! ' + (!(pc.done && pc.done['g' + g])
+      ? g + '학년은 처음이라 3장! (그다음부터는 한 판에 1장, 하루 ' + DAY_MAX + '장까지)'
+      : '한 판에 1장씩 (오늘 ' + day + ' / ' + DAY_MAX + '장 받았어요)');
     ui.gradeNote.textContent = g + '학년 주문: ' + KIND[g] + ' · 주문 3개' + (park && park !== g ? ' (공원 학년은 ' + park + '학년이에요)' : '');
   }
   function openStart() {
@@ -193,6 +208,25 @@
     ui.lobby.hidden = name !== 'lobby';
     ui.game.hidden = name !== 'game';
     ui.root.classList.toggle('is-game', name === 'game');
+    showTickets();
+  }
+  function ticketCount() { return save().tickets || 0; }
+  // from 을 주면 from → 지금 장수까지 하나씩 올라가며 '+N' 이 떠오름
+  function showTickets(from) {
+    var e = ui.tickets, to = ticketCount();
+    e.className = 'pc-tickets at-' + S.scene;
+    clearTimeout(S.tkTimer);
+    if (from == null || from >= to) { ui.ticketNum.textContent = String(to); return; }
+    var plus = el('span', 'pc-tickets-plus', '+' + (to - from));
+    e.appendChild(plus);
+    setTimeout(function () { if (plus.parentNode) plus.parentNode.removeChild(plus); }, 1600);
+    e.classList.add('gain');
+    var n = from;
+    (function up() {
+      n++; ui.ticketNum.textContent = String(n);
+      if (n < to) S.tkTimer = setTimeout(up, 140);
+      else setTimeout(function () { e.classList.remove('gain'); }, 500);
+    })();
   }
   function toLobby() {
     clearTimeout(S.timer); S.busy = false; ui.modal.hidden = true; S.help = false;
@@ -509,6 +543,7 @@
     row.appendChild(btn('pc-choice light', '가게로 돌아가기', function () { toLobby(); }));
     c.appendChild(row);
     ui.modal.hidden = false;
+    if (got && got.gain) showTickets(before);
     setTimeout(function () { again.focus(); }, 30);
   }
 
