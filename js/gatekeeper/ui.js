@@ -207,6 +207,7 @@
     }
     main.appendChild(gr);
     ui.gradeNote = el('p', 'gk-grade-note'); main.appendChild(ui.gradeNote);
+    ui.ticketNote = el('p', 'gk-ticket-note'); main.appendChild(ui.ticketNote);   // 이번 판에 받을 수 있는 티켓 미리 알려 주기
     var acts = el('div', 'gk-dialog-acts');
     ui.soloBtn = btn('gk-choice', '혼자 추리하기', function () { startSolo(); });
     ui.friendBtn = btn('gk-choice', '친구랑 문지기', function () { startFriend(); });
@@ -223,6 +224,10 @@
     ui.gradeBtns.forEach(function (b, i) { b.setAttribute('aria-checked', String(i + 1 === g)); b.classList.toggle('on', i + 1 === g); });
     var park = (api().profile().grade) || null;
     ui.gradeNote.textContent = (park ? '공원 학년은 ' + park + '학년이에요. ' : '') + (park && park !== g ? '바꾼 학년은 이번 놀이에만 써요.' : '다른 학년 난이도도 골라 볼 수 있어요.');
+    var gs = gateSave(), dayN = gs.day && gs.day.date === today() ? gs.day.n : 0;
+    ui.ticketNote.textContent = '🎟 한 판을 끝내면 티켓을 받아요! ' + (!(gs.done && gs.done['g' + g])
+      ? g + '학년 혼자 추리하기는 처음이라 3장! (그다음부터는 한 판에 1장, 하루 ' + DAY_MAX + '장까지)'
+      : dayN < DAY_MAX ? '한 판에 1장씩 (오늘 ' + dayN + ' / ' + DAY_MAX + '장 받았어요)' : '오늘 티켓 ' + DAY_MAX + '장은 다 받았어요. 내일 또 받아요!');
   }
   function openDialog() {
     if (S.dialog) return;

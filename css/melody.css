@@ -343,3 +343,6 @@ body.melody-open #hud, body.melody-open #enterFacility, body.melody-open #chatBa
 /* 밴드: 발끝 = 서 있는 점(y). 이름표는 발 아래에 겹쳐 놓아 발을 띄우지 않음 */
 .ml-token.band { position: absolute; }
 .ml-token.band .ml-token-name { position: absolute; top: 100%; left: 50%; transform: translateX(-50%); margin-top: 0.1cqw; font-size: max(0.85cqw, 7px); }
+
+/* 시작 대화: 이번 판에 받을 수 있는 티켓 */
+.ml-ticket-note { margin: -0.4cqw 0 0.8cqw; font-size: 1.05cqw; line-height: 1.4; color: #b3261e; }

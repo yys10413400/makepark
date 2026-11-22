@@ -222,6 +222,7 @@
     })(g);
     body.appendChild(gr);
     ui.gradeNote = el('p', 'ml-grade-note'); body.appendChild(ui.gradeNote);
+    ui.ticketNote = el('p', 'ml-ticket-note'); body.appendChild(ui.ticketNote);   // 이번 판에 받을 수 있는 티켓 미리 알려 주기
     var acts = el('div', 'ml-dialog-acts');
     ui.danceBtn = btn('ml-choice', '💃 댄스 미션', function () { closeDialog(); openMissionIntro(nextMission()); });
     acts.appendChild(ui.danceBtn);
@@ -236,6 +237,13 @@
     ui.gradeBtns.forEach(function (b, i) { b.setAttribute('aria-checked', String(i + 1 === g)); b.classList.toggle('on', i + 1 === g); });
     var park = api().profile().grade || null, G = D.GRADES[BAND_OF(g)];
     ui.gradeNote.textContent = G.label + ' · ' + G.guide + (park && park !== g ? ' (바꾼 학년은 이번 놀이에만 써요)' : '');
+    var T = D.CONFIG.tickets, ms = melSave(), band = BAND_OF(g), paid = ms.paid || {}, dayN = ms.day && ms.day.date === today() ? ms.day.n : 0;
+    var left = missionsOf(band).filter(function (m) { return !paid[m.id]; }).length;
+    ui.ticketNote.textContent = '🎟 댄스 미션을 성공하면 티켓을 받아요! ' + (!(ms.done && ms.done[band])
+      ? G.label + ' 첫 성공은 ' + T.first + '장! (그다음부터는 새 미션을 처음 성공할 때마다 ' + T.again + '장, 하루 ' + T.dayMax + '장까지)'
+      : !left ? G.label + ' 미션 티켓은 모두 받았어요. 다른 학년 미션에 도전해 봐요!'
+      : dayN < T.dayMax ? '새 미션을 성공하면 ' + T.again + '장 (아직 ' + left + '개 남았어요 · 오늘 ' + dayN + ' / ' + T.dayMax + '장)'
+      : '오늘 티켓 ' + T.dayMax + '장은 다 받았어요. 내일 또 받아요!') + ' 자유 연주는 티켓 없이 마음껏!';
   }
   function openDialog() {
     if (S.dialog) return;

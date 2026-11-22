@@ -106,6 +106,7 @@
     })(g);
     body.appendChild(gr);
     ui.gradeNote = el('p', 'cs-grade-note'); body.appendChild(ui.gradeNote);
+    ui.ticketNote = el('p', 'cs-ticket-note'); body.appendChild(ui.ticketNote);   // 이번 판에 받을 수 있는 티켓 미리 알려 주기
     var acts = el('div', 'cs-dialog-acts');
     ui.goBtn = btn('cs-choice', '선로 만들러 가기', function () { closeDialog(); openGame(pickMission(S.grade)); });
     acts.appendChild(ui.goBtn);
@@ -138,6 +139,10 @@
     var park = api().profile().grade || null, m = MS.byGrade(g), done = (buildSave().done || {})['g' + g];
     ui.gradeNote.textContent = (done ? '이번엔 새 꽃밭이 나와요(‘' + m.title + '’ 연습은 끝!) · ' : '첫 미션: ‘' + m.title + '’ · ') + (park ? '공원 학년은 ' + park + '학년이에요. ' : '') +
       (park && park !== g ? '바꾼 학년은 이번 놀이에만 써요.' : '다른 학년도 골라 볼 수 있어요.');
+    var bs = buildSave(), dayN = bs.day && bs.day.date === today() ? bs.day.n : 0;
+    ui.ticketNote.textContent = '🎟 선로를 완성하면 티켓을 받아요! ' + (!done
+      ? g + '학년 첫 미션은 3장! (그다음부터는 새 꽃밭을 처음 성공할 때마다 1장, 하루 ' + DAY_MAX + '장까지)'
+      : dayN < DAY_MAX ? '새 꽃밭을 성공하면 1장 (오늘 ' + dayN + ' / ' + DAY_MAX + '장 받았어요)' : '오늘 티켓 ' + DAY_MAX + '장은 다 받았어요. 내일 또 받아요!');
   }
   function openDialog() {
     if (S.dialog) return;
