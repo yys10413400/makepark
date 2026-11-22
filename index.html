@@ -17,6 +17,7 @@
   <link rel="stylesheet" href="css/style.css">
   <link rel="stylesheet" href="css/coaster.css">
   <link rel="stylesheet" href="css/gatekeeper.css">
+  <link rel="stylesheet" href="css/melody.css">
   <link rel="stylesheet" href="css/net.css">
   <!-- 선생님 모드(?teacher=반코드): 첫 입장 화면(닉네임 창)이 잠깐 보이지 않게 그림을 그리기 전에 표시 -->
   <script>if (/[?&]teacher=\d{5}/.test(location.search)) document.documentElement.classList.add('teacher-mode');</script>
@@ -101,6 +102,9 @@
     <!-- 유령의 집: 문지기의 비밀 규칙 (화면은 js/gatekeeper/ui.js 가 만듦) -->
     <section id="gatekeeper" class="gk-overlay" hidden aria-label="유령의 집 — 문지기의 비밀 규칙"></section>
 
+    <!-- 멜로디 스테이지: 댄스 미션·자유 연주 (화면은 js/melody/ui.js 가 만듦) -->
+    <section id="melody" class="ml-overlay" hidden aria-label="멜로디 스테이지 — 댄스 미션과 자유 연주"></section>
+
     <!-- 게임 화면 UI -->
     <div id="hud" hidden>
       <button class="chip" id="playerChip" type="button" aria-label="내 정보 바꾸기"><span class="dot"></span><span id="playerName"></span><span class="chip-grade" id="playerGrade"></span><span class="chip-edit" aria-hidden="true">✎</span></button>
@@ -180,6 +184,10 @@
   <script>document.write('<script src="js/gatekeeper/rules.js?t=' + Date.now() + '"><' + '/script>');</script>
   <script>document.write('<script src="js/gatekeeper/sprites.js?t=' + Date.now() + '"><' + '/script>');</script>
   <script>document.write('<script src="js/gatekeeper/ui.js?t=' + Date.now() + '"><' + '/script>');</script>
+  <script>document.write('<script src="js/melody/data.js?t=' + Date.now() + '"><' + '/script>');</script>
+  <script>document.write('<script src="js/melody/rhythm.js?t=' + Date.now() + '"><' + '/script>');</script>
+  <script>document.write('<script src="js/melody/audio.js?t=' + Date.now() + '"><' + '/script>');</script>
+  <script>document.write('<script src="js/melody/ui.js?t=' + Date.now() + '"><' + '/script>');</script>
   <script>document.write('<script src="js/data/teacher-sprites.js?t=' + Date.now() + '"><\/script>');</script>
   <script>document.write('<script src="js/teacher-chars.js?t=' + Date.now() + '"><' + '/script>');</script>
   <!-- 선생님 모드(?teacher=반코드): 선생님 구글 계정으로 연결 -->

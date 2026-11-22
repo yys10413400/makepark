@@ -1,0 +1,81 @@
+{
+  "canvas": [
+    320,
+    320
+  ],
+  "anchor": [
+    160,
+    298
+  ],
+  "direction": "screen coordinates",
+  "actions": {
+    "step_left": {
+      "file": "step_left.gif",
+      "frames": [
+        "step_left_00.png",
+        "step_left_01.png",
+        "step_left_02.png",
+        "step_left_03.png"
+      ],
+      "durations_ms": [
+        120,
+        120,
+        140,
+        120
+      ],
+      "loop": true,
+      "on_complete": "repeat"
+    },
+    "step_right": {
+      "file": "step_right.gif",
+      "frames": [
+        "step_right_00.png",
+        "step_right_01.png",
+        "step_right_02.png",
+        "step_right_03.png"
+      ],
+      "durations_ms": [
+        120,
+        120,
+        140,
+        120
+      ],
+      "loop": true,
+      "on_complete": "repeat"
+    },
+    "jump": {
+      "file": "jump.gif",
+      "frames": [
+        "jump_00.png",
+        "jump_01.png",
+        "jump_02.png",
+        "jump_03.png"
+      ],
+      "durations_ms": [
+        100,
+        120,
+        160,
+        120
+      ],
+      "loop": false,
+      "on_complete": "idle"
+    },
+    "freeze": {
+      "file": "freeze.gif",
+      "frames": [
+        "freeze_00.png",
+        "freeze_01.png",
+        "freeze_02.png",
+        "freeze_03.png"
+      ],
+      "durations_ms": [
+        100,
+        120,
+        140,
+        140
+      ],
+      "loop": false,
+      "on_complete": "hold_last_frame"
+    }
+  }
+}

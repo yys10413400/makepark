@@ -388,6 +388,7 @@
     var s = readSave() || {};
     if (fid === 'coaster') { var c = s.coaster || {}, st = c.stamps || {}; return !!(c.build && c.build.cleared) || Object.keys(st).some(function (k) { return st[k]; }); }
     if (fid === 'ghost') return !!(s.gate && s.gate.cleared);   // 문지기 게임 혼자 추리하기 본 게임 한 판
+    if (fid === 'melody') return !!(s.melody && s.melody.cleared);   // 멜로디 스테이지 댄스 미션 하나 성공
     return false;
   }
   // 받침에 따라 조사 고르기: josa('탐험가', '을', '를') → '탐험가를'
@@ -472,6 +473,7 @@
       ui.charMsg.textContent = d.facility === 'coaster'
         ? facilityName(d.facility) + '에서 거북이 역장과 선로 만들기 미션을 하나 끝내면 받을 수 있어요.'
         : d.facility === 'ghost' ? '유령의 집 문지기와 혼자 추리하기 한 판을 끝내면 받을 수 있어요.'
+        : d.facility === 'melody' ? '멜로디 스테이지에서 유니콘과 댄스 미션을 하나 성공하면 받을 수 있어요.'
         : josa(facilityName(d.facility), '이', '가') + ' 문을 열면 받을 수 있어요.';
       return;
     }
@@ -649,8 +651,8 @@
   function openFacility(f) {
     if (!f || state.modalFacility || state.rideOpen) return;
     stopMoving(); state.keys = {};
-    // 놀이기구 화면이 따로 있는 시설: 코스터 익스프레스(코딩), 유령의 집(문지기의 비밀 규칙)
-    var ride = f.id === 'coaster' ? window.MPCoaster : f.id === 'ghost' ? window.MPGate : null;
+    // 놀이기구 화면이 따로 있는 시설: 코스터 익스프레스(코딩), 유령의 집(문지기의 비밀 규칙), 멜로디 스테이지(댄스·자유 연주)
+    var ride = f.id === 'coaster' ? window.MPCoaster : f.id === 'ghost' ? window.MPGate : f.id === 'melody' ? window.MPMelody : null;
     if (ride) {
       state.rideOpen = f.id; state.nearby = null; ui.enter.hidden = true;
       ride.open();
@@ -1021,6 +1023,7 @@
     closeRide: function () {
       if (state.rideOpen === 'coaster' && window.MPCoaster) MPCoaster.close();
       else if (state.rideOpen === 'ghost' && window.MPGate) MPGate.close();
+      else if (state.rideOpen === 'melody' && window.MPMelody) MPMelody.close();
       if (state.modalFacility) closeFacility();
       if (state.charOpen) closeChars();
       if (state.profileOpen) closeProfile();
@@ -1055,7 +1058,8 @@
     // 공원에서 캐릭터가 화면에 그려지는 몸 키(CSS px). 유령의 집 로비도 같은 크기로 그림
     charScreenH: function () { return ((window.MPChars && MPChars.DRAW_H) || 60) * playScale(); },
     exitCoaster: function () { exitRide('coaster'); },
-    exitGate: function () { exitRide('ghost'); }
+    exitGate: function () { exitRide('ghost'); },
+    exitMelody: function () { exitRide('melody'); }
   };
 
   // 개발·검증용 핸들 (게임 동작에는 쓰이지 않음)
