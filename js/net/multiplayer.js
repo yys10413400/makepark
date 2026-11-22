@@ -167,7 +167,7 @@
   function onEnter() {
     leave();
     if (!S.code) { setChip(); if (api().setSeason) api().setSeason(null); return; }   // 혼자 둘러보기: 기본 계절
-    S.pid = NET.myId(); S.others = {}; S.joinedAt = Date.now(); S.lastCmd = null;   // 같은 컴퓨터라도 탭마다 다른 사람
+    S.pid = NET.myId(); S.others = {}; S.joinedAt = Date.now(); S.lastCmd = null; S.lastMate = '';   // 같은 컴퓨터라도 탭마다 다른 사람
     S.handle = NET.join(S.code, S.pid, snapshot(true));
     S.last = snapshot(true); S.lastSend = performance.now();
     S.handle.onPlayer(function (pid, data) {
@@ -192,7 +192,7 @@
       var c = S.lastCmd;
       if (!S.isTeacher && c && c.type === 'kick' && c.target === S.pid) { api().closeRide && api().closeRide(); kickOut('선생님이 공원에서 내보냈어요.'); return; }
       if (S.handle.rejoin) S.handle.rejoin();
-      S.last = {}; S.lastSend = 0;   // 다음 tick 에 전체 정보를 다시 보냄
+      S.last = {}; S.lastSend = 0; S.lastMate = '';   // 다음 tick 에 전체 정보를 다시 보냄
     };
     S.handle.onMeta(function (meta) {
       if (!S.handle) return;
@@ -245,20 +245,23 @@
     var p = api().player();
     var d = { x: Math.round(p.x), y: Math.round(p.y), d: p.dir, m: p.moving ? 1 : 0, w: p.ride || 'park' };
     if (full) { d.n = p.nickname; d.g = p.grade; d.s = p.charId; d.gd = p.gender; if (p.teacher) d.tc = 1; }
-    var mate = window.MPGate && MPGate.onlinePartner ? MPGate.onlinePartner() : null;
-    d.f = mate || '';   // 같이 노는 친구(선생님 화면에 '유령의 집 · ○○와 함께')
     return d;
   }
   function tick() {
     if (!S.handle) return;
     var now = performance.now(), cur = snapshot(true), last = S.last || {};
-    var changed = ['x', 'y', 'd', 'm', 'w', 'f'].some(function (k) { return cur[k] !== last[k]; });
+    var changed = ['x', 'y', 'd', 'm', 'w'].some(function (k) { return cur[k] !== last[k]; });
     var who = ['n', 'g', 's', 'gd'].some(function (k) { return cur[k] !== last[k]; });
     if ((changed && now - S.lastSend >= SEND_MS) || who || now - S.lastSend >= BEAT_MS) {
       var send = who || now - S.lastSend >= BEAT_MS ? cur : snapshot(false);
       S.handle.update(send);
       S.last = cur; S.lastSend = now;
     }
+    // 같이 노는 친구(선생님 화면에 '유령의 집 · ○○와 함께')는 위치와 따로 보냄:
+    // 서버 규칙이 아직 예전 것(f 없음)이면 위치까지 통째로 막혀 친구들 화면에서 내가 안 보이게 되므로
+    var mate = window.MPGate && MPGate.onlinePartner ? MPGate.onlinePartner() || '' : '';
+    if (mate !== S.lastMate && (mate || S.lastMate)) { S.handle.update({ f: mate }); }
+    S.lastMate = mate;
     updatePlayBtn();
   }
 
