@@ -316,8 +316,30 @@ body.melody-open #hud, body.melody-open #enterFacility, body.melody-open #chatBa
 .ml-clear { padding: 0.35cqw 0; border-radius: 0.8cqw; font-size: 1cqw; background: #fff0f3; color: #c2477a; border: 0.13cqw solid #e07b9b; }
 
 /* 유니콘 밴드(자유 연주) */
-.ml-token.band { --band-w: 9cqw; width: var(--band-w); }
+.ml-token.band { --band-w: calc(9cqw * var(--row-s, 1)); width: var(--band-w); }
 .ml-token-band { width: var(--band-w); height: var(--band-w); object-fit: contain; display: block; pointer-events: none; user-select: none; }
 .ml-pal { position: relative; }
 .ml-pal-face { position: relative; width: 3.3cqw; height: 3.3cqw; border-radius: 50%; background-color: #fff; background-repeat: no-repeat; background-size: 170%; background-position: 50% 4%; box-shadow: inset 0 0 0 0.12cqw rgba(110, 75, 47, 0.18); flex: 0 0 auto; }
 .ml-pal-badge { position: absolute; right: -0.5cqw; bottom: -0.3cqw; font-size: 1.15cqw; line-height: 1; }
+
+/* 계단식 단: 무대(나무 바닥 + 금색 테두리 + 별)와 같은 느낌 */
+.ml-riser { position: absolute; z-index: 1; pointer-events: none; filter: drop-shadow(0 0.35cqw 0.25cqw rgba(90, 40, 60, 0.28)); }
+.ml-riser-top {
+  background: linear-gradient(180deg, #e9a978 0%, #f6c596 55%, #f9d3a8 100%);
+  clip-path: polygon(2.5% 0, 97.5% 0, 100% 100%, 0 100%);
+  border-bottom: 0.18cqw solid #ffe7a3;
+}
+.ml-riser-face {
+  position: absolute; left: 0; right: 0; bottom: 0; top: auto; height: 100%;
+  background:
+    radial-gradient(circle, #fff6c8 0 18%, transparent 22%) 0 50% / 3.2cqw 100% repeat-x,
+    linear-gradient(180deg, #f2a64a 0%, #e98a3a 60%, #d0702c 100%);
+  border-top: 0.25cqw solid #ffd46a; border-bottom: 0.2cqw solid #b85d22; border-radius: 0 0 0.4cqw 0.4cqw;
+}
+.ml-riser { display: flex; flex-direction: column; }
+.ml-riser-top { flex: 0 0 auto; }
+.ml-riser-face { position: relative; flex: 1 1 auto; height: auto; }
+
+/* 밴드: 발끝 = 서 있는 점(y). 이름표는 발 아래에 겹쳐 놓아 발을 띄우지 않음 */
+.ml-token.band { position: absolute; }
+.ml-token.band .ml-token-name { position: absolute; top: 100%; left: 50%; transform: translateX(-50%); margin-top: 0.1cqw; font-size: max(0.85cqw, 7px); }

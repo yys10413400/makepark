@@ -832,8 +832,21 @@
   // 장면 3: 자유 연주
   // =====================================================================
   // 무대 위 꾸미기 영역(그림 좌표). 여기서 위치는 꾸미기용이고, 연주 시점은 아래 소리판 칸이 정함
-  var AREA = { x0: 500, x1: 1170, y0: 330, y1: 610 };
-  var SPOTS = [[640, 590], [1030, 590], [760, 610], [910, 610], [590, 470], [1080, 470], [740, 500], [930, 500]];
+  // 무대 바닥이 얕아서(그림 y 520~565) 안쪽에 계단식 단 두 개를 놓고, 세 줄(바닥·1단·2단)에만 서게 함 → 뒷줄이 떠 보이지 않음
+  // ROWS: y = 발 위치, x0~x1 = 설 수 있는 폭, s = 뒤로 갈수록 조금 작게(원근)
+  var ROWS = [
+    { y: 562, x0: 590, x1: 1110, s: 1 },      // 바닥(앞줄)
+    { y: 510, x0: 630, x1: 1080, s: 0.93 },   // 1단
+    { y: 466, x0: 710, x1: 1000, s: 0.86 }    // 2단(맨 뒤)
+  ];
+  var RISERS = [   // 그림 좌표: 윗면(top~edge) + 앞면(edge~bottom)
+    { x0: 600, x1: 1110, top: 496, edge: 520, bottom: 548 },
+    { x0: 685, x1: 1025, top: 451, edge: 476, bottom: 501 }
+  ];
+  var AREA = { x0: 590, x1: 1110, y0: 440, y1: 580 };
+  var SPOTS = [[790, 562], [930, 562], [650, 562], [1070, 562], [720, 510], [860, 510], [1000, 510], [790, 466], [925, 466]];
+  function rowOf(y) { var best = ROWS[0]; ROWS.forEach(function (r) { if (Math.abs(r.y - y) < Math.abs(best.y - y)) best = r; }); return best; }
+  function stand(p) { var r = rowOf(p.y); p.y = r.y; p.x = Math.max(r.x0, Math.min(r.x1, p.x)); return p; }
   function itemOf(id) { return D.PLAY.items.filter(function (x) { return x.id === id; })[0]; }
   function emptySong() { var n = D.PLAY.steps, a = [], b = []; for (var i = 0; i < n; i++) { a.push(null); b.push(null); } return { name: '', tempo: 'mid', backing: D.PLAY.defaultBacking, swing: false, stage: [], rhythm: a, melody: b }; }
   function cleanSong(s) {
@@ -847,7 +860,7 @@
     (Array.isArray(s.stage) ? s.stage : []).forEach(function (p) {
       if (p && itemOf(p.id) && !seen[p.id] && e.stage.length < D.PLAY.maxOnStage) {
         seen[p.id] = 1;
-        e.stage.push({ id: p.id, x: Math.max(AREA.x0, Math.min(AREA.x1, +p.x || 800)), y: Math.max(AREA.y0, Math.min(AREA.y1, +p.y || 560)) });
+        e.stage.push(stand({ id: p.id, x: Math.max(AREA.x0, Math.min(AREA.x1, +p.x || 800)), y: Math.max(AREA.y0, Math.min(AREA.y1, +p.y || 560)) }));
       }
     });
     ['rhythm', 'melody'].forEach(function (line) {
@@ -880,6 +893,15 @@
     ui.stageArea.style.width = pct(AREA.x1 - AREA.x0 + 140, IW); ui.stageArea.style.height = pct(AREA.y1 - AREA.y0 + 110, IH);
     ui.stageArea.hidden = true;
     s.appendChild(ui.stageArea);
+    // 계단식 단(무대 안쪽, 캐릭터 뒤)
+    RISERS.forEach(function (r, k) {
+      var box = el('div', 'ml-riser r' + (k + 1));
+      box.style.left = pct(r.x0, IW); box.style.top = pct(r.top, IH);
+      box.style.width = pct(r.x1 - r.x0, IW); box.style.height = pct(r.bottom - r.top, IH);
+      var top = el('div', 'ml-riser-top'); top.style.height = ((r.edge - r.top) / (r.bottom - r.top) * 100) + '%';
+      box.appendChild(top); box.appendChild(el('div', 'ml-riser-face'));
+      s.appendChild(box);
+    });
     ui.emptyHint = el('p', 'ml-empty', '아래에서 연주자·악기를 골라 무대에 올려 봐요!');
     s.appendChild(ui.emptyHint);
     ui.tokens = el('div', 'ml-tokens'); s.appendChild(ui.tokens);
@@ -980,10 +1002,10 @@
     song.stage.slice().sort(function (a, b) { return a.y - b.y; }).forEach(function (p) {
       var it = itemOf(p.id), t = el('div', 'ml-token band ' + it.line + (P.sel === p.id ? ' sel' : ''));
       t.dataset.id = p.id;
-      t.style.left = pct(p.x, IW); t.style.top = pct(p.y, IH);
+      t.style.left = pct(p.x, IW); t.style.top = pct(p.y, IH); t.style.setProperty('--row-s', rowOf(p.y).s);
       // 캔버스 320×320 그대로(자르기·확대·뒤집기 없음). 캐릭터마다 발끝 높이가 달라 아래 여백만 맞춤
       var im = el('img', 'ml-token-band'); im.alt = ''; im.draggable = false;
-      im.style.marginBottom = 'calc(var(--band-w) * ' + (-(D.PLAY.band.canvas - (D.PLAY.band.foot[it.band] || 310)) / D.PLAY.band.canvas - 0.03).toFixed(4) + ')';
+      im.style.marginBottom = 'calc(var(--band-w) * ' + (-(D.PLAY.band.canvas - (D.PLAY.band.foot[it.band] || 310)) / D.PLAY.band.canvas).toFixed(4) + ')';
       t.appendChild(im);
       if (!P.band[p.id]) P.band[p.id] = new Band(im, it.band); else { P.band[p.id].img = im; P.band[p.id].cur = ''; P.band[p.id].update(AU.heardNow()); }
       t.appendChild(el('span', 'ml-token-name', it.name));
@@ -1031,7 +1053,7 @@
       var s = SPOTS[i];
       if (!st.some(function (p) { return Math.hypot(p.x - s[0], p.y - s[1]) < 70; })) return { x: s[0], y: s[1] };
     }
-    return { x: 700 + Math.random() * 270, y: 420 + Math.random() * 160 };
+    return stand({ x: 700 + Math.random() * 300, y: ROWS[Math.floor(Math.random() * ROWS.length)].y });
   }
   function pickItem(id) {
     var P = S.play, on = P.song.stage.some(function (p) { return p.id === id; });
@@ -1206,6 +1228,8 @@
     d.moved = true;
     var p = S.play.song.stage.filter(function (x) { return x.id === d.id; })[0];
     p.x = Math.max(AREA.x0, Math.min(AREA.x1, d.ox + dx)); p.y = Math.max(AREA.y0, Math.min(AREA.y1, d.oy + dy));
+    stand(p);   // 끄는 동안에도 바닥·1단·2단 중 가까운 줄에 서게
+    d.el.style.setProperty('--row-s', rowOf(p.y).s);
     d.el.style.left = pct(p.x, IW); d.el.style.top = pct(p.y, IH); d.el.classList.add('drag');
     ui.delBtn.hidden = true; ui.stageArea.hidden = false;   // 끄는 동안만 놓을 수 있는 곳을 보여 줌
   }
