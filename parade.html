@@ -1,0 +1,79 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <title>레인보우 퍼레이드</title>
+  <!-- 레인보우 퍼레이드 새 창: 메이크파크(index.html)의 '퍼레이드 출발!'이 열고, 아이가 꾸민 현수막을 postMessage 로 보내 줍니다 -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Jua&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/parade.css">
+  <style>
+    html, body { margin: 0; height: 100%; background: #f6dcd6; overflow: hidden; }
+    :root { --font: 'Jua', sans-serif; }
+    .pr-wait { left: 50%; top: 45%; transform: translateX(-50%); font-size: 2cqw; color: #8b3a48; }
+  </style>
+</head>
+<body>
+  <main class="pr-overlay">
+    <div class="pr-stage">
+      <div class="pr-scene pr-show">
+        <canvas id="show" class="pr-full" aria-label="리리, 모모와 루루가 내 현수막을 들고 행진해요"></canvas>
+        <p id="wait" class="pr-wait" role="status">현수막을 받아 오는 중…</p>
+        <div id="end" class="pr-end" hidden>
+          <p class="pr-end-title">멋진 퍼레이드였어요!</p>
+          <div class="pr-end-row">
+            <button id="replay" class="pr-choice" type="button">🔁 다시 보기</button>
+            <button id="back" class="pr-choice light" type="button">🖍️ 꾸미기로 돌아가기</button>
+          </div>
+        </div>
+        <button id="skip" class="pr-pill pr-exit" type="button">꾸미기로 돌아가기</button>
+      </div>
+    </div>
+  </main>
+  <script src="js/parade/show.js"></script>
+  <script>
+  (function () {
+    'use strict';
+    var end = document.getElementById('end'), skip = document.getElementById('skip'), wait = document.getElementById('wait'), show = null;
+    function start(img) {
+      wait.hidden = true;
+      show = MPParadeShow.create({ canvas: document.getElementById('show'), base: 'assets/parade/', banner: img,
+        onEnd: function () { end.hidden = false; skip.hidden = true; document.getElementById('replay').focus(); } });
+      show.play();
+    }
+    // 같은 작품으로 처음부터
+    document.getElementById('replay').addEventListener('click', function () { end.hidden = true; skip.hidden = false; if (show) show.play(); });
+    // 꾸미기로 돌아가기: 메이크파크 창을 앞으로 부르고 이 창을 닫음(그리던 그림·되돌리기 기록은 메이크파크 창에 그대로)
+    function back() {
+      try { if (window.opener) window.opener.postMessage({ type: 'parade-back' }, '*'); } catch (e) { /* 무시 */ }
+      window.close();
+      setTimeout(function () { wait.hidden = false; wait.textContent = '이 창을 닫으면 메이크파크에서 계속 꾸밀 수 있어요.'; }, 300);
+    }
+    document.getElementById('back').addEventListener('click', back);
+    document.getElementById('skip').addEventListener('click', back);
+    window.addEventListener('keydown', function (e) { if (e.code === 'Escape') back(); });
+    function useUrl(url) {
+      if (typeof url !== 'string' || url.indexOf('data:image/png') !== 0) return false;
+      var img = new Image();
+      img.onload = function () { if (show) { show.stop(); show.setBanner(img); end.hidden = true; skip.hidden = false; show.play(); } else start(img); };
+      img.src = url;
+      return true;
+    }
+    window.addEventListener('message', function (e) {
+      var d = e.data;
+      if (!d || d.type !== 'parade-banner' || e.source !== window.opener) return;
+      useUrl(d.url);
+    });
+    // 메이크파크 창이 보내 주는 현수막을 기다리고, 그 창을 못 찾으면 저장해 둔 현수막(같은 주소의 저장소)으로
+    function stored() { try { return localStorage.getItem('makepark.parade.banner'); } catch (e) { return null; } }
+    var opener = null;
+    try { opener = window.opener; } catch (e) { opener = null; }
+    if (opener) {
+      opener.postMessage({ type: 'parade-ready' }, '*');
+      setTimeout(function () { if (!show) useUrl(stored()); }, 1500);
+    } else if (!useUrl(stored())) wait.textContent = '메이크파크의 레인보우 퍼레이드에서 ‘퍼레이드 출발!’을 눌러 열어 주세요.';
+  })();
+  </script>
+</body>
+</html>

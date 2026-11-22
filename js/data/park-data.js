@@ -85,7 +85,7 @@ window.MP_PARK = {
   facilities: [
     { id: 'coaster', name: '코스터 익스프레스', desc: '구불구불 레일 위를 달리는 신나는 롤러코스터예요.',
       entrance: { x: 335, y: 392 }, radius: 60, pin: { x: 340, y: 266 } },
-    { id: 'parade', name: '레인보우 퍼레이드', desc: '알록달록 꽃차가 공원을 누비는 퍼레이드예요.',
+    { id: 'parade', name: '레인보우 퍼레이드', desc: '현수막을 꾸미면 리리·모모·루루가 들고 행진하는 퍼레이드예요.',
       entrance: { x: 300, y: 822 }, radius: 60, pin: { x: 300, y: 716 } },
     { id: 'melody', name: '멜로디 스테이지', desc: '음악과 공연이 가득한 야외 무대예요.',
       entrance: { x: 250, y: 600 }, radius: 60, pin: { x: 255, y: 461 } },
