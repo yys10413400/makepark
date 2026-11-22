@@ -1,0 +1,193 @@
+/* 피크닉 가게 — 소풍 한 바구니
+   배경 그림(1672×941) 기준 %로 놓고, 글자는 화면 폭 기준(cqw)이라 창 크기가 바뀌어도 함께 커지고 작아집니다.
+   색: 크림(#fbf1e2) · 옅은 나무(#ecc995) · 딸기빛(#c8323f) · 금테(#e2b357) */
+.pc-overlay {
+  position: fixed; inset: 0; z-index: 40; display: flex; align-items: center; justify-content: center;
+  background: #4a2a16; font-family: var(--font);
+}
+/* 주문 화면: 화면 비율이 달라 위아래가 남으면 위는 크림, 아래는 나무색으로 이어지게 */
+.pc-overlay.is-game { background: linear-gradient(#fbf1e2 40%, #ebc58f 40%); }
+body.picnic-open #hud, body.picnic-open #enterFacility, body.picnic-open #chatBar { display: none !important; }
+.pc-stage {
+  position: relative; container-type: inline-size; overflow: hidden;
+  width: min(100vw, calc(100dvh * 1672 / 941)); aspect-ratio: 1672 / 941;
+  color: #4a2a14; user-select: none; -webkit-user-select: none; word-break: keep-all;
+}
+.pc-scene { position: absolute; inset: 0; background: center / 100% 100% no-repeat; }
+.pc-scene > * { position: absolute; margin: 0; }
+.pc-stage button { font-family: inherit; cursor: pointer; }
+.pc-stage button:focus-visible { outline: 0.3cqw solid #ffd15c; outline-offset: 0.2cqw; }
+.pc-stage kbd { font-family: inherit; font-size: 0.75em; padding: 0 0.4em; border-radius: 0.4em; background: rgba(255, 255, 255, 0.25); }
+
+/* 공통 버튼 */
+.pc-pill {
+  padding: 0.5cqw 1.4cqw; border-radius: 99px; font-size: 1.35cqw; line-height: 1.2;
+  background: #fff8ec; color: #8f2430; border: 0.14cqw solid #e2b357; box-shadow: 0 0.25cqw 0 rgba(90, 45, 10, 0.4);
+}
+.pc-pill:hover { background: #fffdf6; }
+.pc-exit { right: 1.6%; top: 2.6%; z-index: 6; }
+.pc-choice {
+  padding: 0.8cqw 2cqw; border-radius: 1.2cqw; font-size: 1.6cqw; line-height: 1.2;
+  background: #c8323f; color: #fff7ea; border: 0.16cqw solid #f3d68e; box-shadow: 0 0.3cqw 0 #85202a;
+}
+.pc-choice:hover:not(:disabled) { background: #d63f4c; }
+.pc-choice.light { background: #fff8ec; color: #8f2430; border-color: #e2b357; box-shadow: 0 0.3cqw 0 #c9a062; }
+
+/* ---------- 대기실 ---------- */
+.pc-canvas { inset: 0; width: 100%; height: 100%; display: block; touch-action: none; cursor: pointer; }
+.pc-prompt {
+  transform: translate(-50%, 0); z-index: 3; white-space: nowrap;
+  padding: 0.6cqw 1.5cqw; border-radius: 99px; font-size: 1.6cqw;
+  background: #c8323f; color: #fff7ea; border: 0.16cqw solid #f3d68e; box-shadow: 0 0.3cqw 0 #85202a;
+  animation: pc-bounce 1.2s ease-in-out infinite;
+}
+.pc-prompt-exit { background: #2e7d5b; box-shadow: 0 0.3cqw 0 #174a34; }
+@keyframes pc-bounce { 50% { transform: translate(-50%, -0.4cqw); } }
+.pc-tip {
+  left: 50%; top: 2.6%; transform: translateX(-50%); white-space: nowrap;
+  padding: 0.45cqw 1.4cqw; border-radius: 99px; font-size: 1.25cqw;
+  background: rgba(74, 38, 14, 0.72); color: #fff4dc;
+}
+
+/* 시작 창 / 완료 창 */
+.pc-modal {
+  inset: 0; z-index: 8; display: flex; align-items: center; justify-content: center;
+  background: rgba(60, 28, 8, 0.45);
+}
+.pc-card {
+  position: relative; width: 50%; max-height: 92%; overflow: auto; box-sizing: border-box;
+  padding: 2cqw 2.6cqw; border-radius: 2cqw; text-align: center;
+  background: #fbf1e2; border: 0.3cqw solid #e2b357; box-shadow: 0 0.7cqw 0 rgba(90, 45, 10, 0.45);
+}
+.pc-start-card { width: 62%; display: flex; gap: 2cqw; align-items: center; text-align: left; }
+.pc-start-face {
+  flex: none; width: 14cqw; aspect-ratio: 1; border-radius: 50%; overflow: hidden;
+  background: radial-gradient(circle at 50% 40%, #fff8ec 0 55%, #f6dcc0 56%); border: 0.25cqw solid #e2b357;
+}
+.pc-start-face img { width: 100%; height: 100%; object-fit: cover; transform: scale(1.5) translateY(14%); }
+.pc-done-face { margin: 0 auto 0.6cqw; width: 11cqw; }
+.pc-start-body { flex: 1; min-width: 0; }
+.pc-start-name { margin: 0; font-size: 1.25cqw; color: #a0662a; }
+.pc-card-title { margin: 0.1cqw 0 0.4cqw; font-size: 2.6cqw; color: #b02a37; font-weight: 400; }
+.pc-start-text { margin: 0 0 1cqw; font-size: 1.6cqw; line-height: 1.4; }
+.pc-card-line { margin: 0.4cqw 0; font-size: 1.55cqw; line-height: 1.4; }
+.pc-grades { display: grid; grid-template-columns: repeat(6, 1fr); gap: 0.6cqw; }
+.pc-grade {
+  padding: 0.6cqw 0; border-radius: 1cqw; font-size: 1.5cqw;
+  background: #fff8ec; color: #7a4a20; border: 0.15cqw solid #e2b357;
+}
+.pc-grade.on { background: #c8323f; color: #fff7ea; border-color: #c8323f; box-shadow: 0 0.25cqw 0 #85202a; }
+.pc-grade-note { margin: 0.6cqw 0 1cqw; font-size: 1.2cqw; color: #8a6040; min-height: 1.6em; }
+.pc-acts { display: flex; gap: 1cqw; flex-wrap: wrap; justify-content: center; margin-top: 1cqw; }
+.pc-start .pc-acts { justify-content: flex-start; }
+
+/* ---------- 주문 화면 ---------- */
+.pc-game { background: #fbf1e2; }
+.pc-counter {
+  left: 0; right: 0; top: 40%; bottom: 0; z-index: 1;
+  background:
+    repeating-linear-gradient(180deg, rgba(160, 100, 40, 0) 0 7.5cqw, rgba(160, 100, 40, 0.13) 7.5cqw 7.65cqw),
+    linear-gradient(180deg, #f0d2a4 0%, #ebc58f 100%);
+  box-shadow: inset 0 0.5cqw 0 #f7e2c0, 0 -0.2cqw 0.6cqw rgba(120, 70, 20, 0.15);
+}
+.pc-back {
+  left: 1.8%; top: 2.4%; width: 6.4%; height: 7.6%; z-index: 4; border-radius: 99px; display: flex; align-items: center; justify-content: center;
+  background: #fff8ec; border: 0.2cqw solid #e2b357; box-shadow: 0 0.25cqw 0 #c9a062;
+}
+.pc-back svg { width: 45%; fill: #5a3412; }
+.pc-rule { top: 6%; height: 0.18cqw; background: #d9a95a; z-index: 2; }
+.pc-rule-l { left: 9.8%; right: 66%; }
+.pc-rule-r { left: 66%; right: 13%; }
+.pc-title {
+  left: 50%; top: 1.4%; transform: translateX(-50%); z-index: 3; white-space: nowrap; font-weight: 400;
+  padding: 0.5cqw 4cqw; border-radius: 99px; font-size: 2.8cqw; line-height: 1.25;
+  background: linear-gradient(#d23b47, #b52a36); color: #fff7ea; border: 0.25cqw solid #e2b357; box-shadow: 0 0.35cqw 0 #85202a;
+}
+.pc-progress {
+  right: 1.8%; top: 2.4%; z-index: 3; padding: 0.4cqw 1.8cqw; border-radius: 99px; font-size: 2cqw;
+  background: #fff8ec; border: 0.2cqw solid #e2b357; color: #4a2a14; box-shadow: 0 0.25cqw 0 #c9a062;
+}
+/* 토리: 계산대 뒤에 서서 허리 아래는 계산대에 가려짐 */
+.pc-gtori { left: 5%; top: 9%; height: 37%; aspect-ratio: 1; z-index: 0; transform-origin: 50% 90%; }
+.pc-gtori.cheer { animation: pc-hop 0.45s ease-in-out 2; }
+@keyframes pc-hop { 50% { transform: translateY(-5%); } }
+.pc-order {
+  left: 25.5%; right: 3%; top: 11.5%; min-height: 12%; z-index: 3; box-sizing: border-box;
+  display: flex; align-items: center; justify-content: center; flex-wrap: wrap; text-align: center;
+  padding: 0.8cqw 2.4cqw; border-radius: 3cqw; font-size: 2.2cqw; line-height: 1.35;
+  background: #fffaf1; border: 0.22cqw solid #e2b357; box-shadow: 0 0.3cqw 0 rgba(160, 110, 40, 0.3);
+}
+.pc-order::before {
+  content: ''; position: absolute; left: -1.6cqw; top: 52%; width: 2.2cqw; height: 1.4cqw;
+  background: #fffaf1; border-left: 0.22cqw solid #e2b357; border-bottom: 0.22cqw solid #e2b357;
+  transform: skewY(-25deg); border-bottom-left-radius: 0.8cqw;
+}
+.pc-order.long { font-size: 1.85cqw; padding: 0.7cqw 2cqw; }
+.pc-order.pop { animation: pc-pop 0.3s ease-out; }
+@keyframes pc-pop { from { transform: scale(0.95); opacity: 0.4; } to { transform: none; opacity: 1; } }
+.pc-nw { white-space: nowrap; }
+.pc-num { color: #d0303d; font-size: 1.3em; font-weight: 400; margin: 0 0.06em; }
+.pc-feedback {
+  left: 50%; top: 28.4%; transform: translateX(-50%); z-index: 5; max-width: 70%; text-align: center;
+  padding: 0.45cqw 1.6cqw; border-radius: 99px; font-size: 1.75cqw; line-height: 1.3;
+  background: #fff1d6; color: #9a3a12; border: 0.18cqw solid #f0a34a; box-shadow: 0 0.25cqw 0 rgba(150, 80, 20, 0.3);
+}
+.pc-feedback::before { content: '💡 '; }
+.pc-feedback.good { background: #eaf6dd; color: #2f6a24; border-color: #8cc26a; }
+.pc-feedback.good::before { content: '🎉 '; }
+.pc-feedback.pop { animation: pc-pop 0.25s ease-out; }
+
+/* 도시락: 한 개는 가운데 크게, 두 개는 나란히 */
+.pc-boxes {
+  left: 6%; right: 6%; top: 34%; height: 32%; z-index: 2;
+  display: flex; align-items: center; justify-content: center; gap: 3%;
+}
+.pc-boxwrap { position: relative; width: 56%; display: flex; flex-direction: column; align-items: center; gap: 0.4cqw; }
+.pc-boxes.two .pc-boxwrap { width: 46%; }
+.pc-box { position: relative; width: 100%; aspect-ratio: 1000 / 336; border-radius: 2.4cqw; transition: transform 0.15s; }
+.pc-box-img { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; filter: drop-shadow(0 0.4cqw 0.3cqw rgba(110, 60, 20, 0.28)); }
+.pc-boxes.two .pc-box { cursor: pointer; }
+.pc-boxes.two .pc-boxwrap:not(.sel) .pc-box:hover { transform: translateY(-0.3cqw); }
+.pc-boxwrap.sel .pc-box { box-shadow: 0 0 0 0.45cqw #ffd15c, 0 0 1.6cqw rgba(255, 196, 60, 0.85); }
+.pc-boxes.two .pc-boxwrap:not(.sel) { opacity: 0.86; }
+.pc-boxtag {
+  padding: 0.25cqw 1.4cqw; border-radius: 99px; font-size: 1.5cqw;
+  background: #fff8ec; color: #7a4a20; border: 0.15cqw solid #e2b357;
+}
+.pc-boxwrap.sel .pc-boxtag { background: #c8323f; color: #fff7ea; border-color: #f3d68e; box-shadow: 0 0.2cqw 0 #85202a; }
+.pc-boxtag-on { font-size: 0.85em; }
+/* 도시락 안쪽 바닥(그림 기준) 칸: 재료가 겹치지 않게 줄 맞춰 놓음 */
+.pc-items {
+  position: absolute; left: 7%; right: 7%; top: 14%; bottom: 23%;
+  display: flex; flex-wrap: wrap; align-content: center; justify-content: center;
+}
+.pc-item {
+  width: var(--cw); height: var(--rh); padding: 0; border: 0; background: none; display: flex; align-items: center; justify-content: center;
+}
+.pc-item img { max-width: 88%; max-height: 88%; filter: drop-shadow(0 0.15cqw 0.1cqw rgba(90, 45, 10, 0.3)); pointer-events: none; transition: transform 0.12s; }
+.pc-item:hover img { transform: scale(0.9) rotate(-6deg); opacity: 0.75; }
+.pc-item.pop img { animation: pc-drop 0.3s ease-out; }
+@keyframes pc-drop { from { transform: translateY(-40%) scale(1.25); opacity: 0; } to { transform: none; opacity: 1; } }
+.pc-boxes.shake { animation: pc-shake 0.35s ease-in-out; }
+@keyframes pc-shake { 25% { transform: translateX(-0.8%); } 75% { transform: translateX(0.8%); } }
+.pc-boxes.sent .pc-box { animation: pc-send 1.3s ease-in forwards; }
+@keyframes pc-send { 30% { transform: translateY(-4%) scale(1.03); } 100% { transform: translateY(-60%) scale(0.6); opacity: 0; } }
+
+/* 재료 버튼 */
+.pc-foods { left: 8.5%; right: 8.5%; top: 66.5%; height: 19.5%; z-index: 2; display: grid; grid-template-columns: repeat(4, 1fr); grid-template-rows: minmax(0, 1fr); gap: 2.4%; }
+.pc-food {
+  min-height: 0; overflow: hidden; box-sizing: border-box; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 0.2cqw;
+  border-radius: 2cqw; padding: 0.6cqw 0;
+  background: #fffaf1; border: 0.25cqw solid #e2b357; box-shadow: 0 0.35cqw 0 #c9a062;
+}
+.pc-food:hover { background: #fffdf8; transform: translateY(-0.15cqw); }
+.pc-food:active { transform: translateY(0.2cqw); box-shadow: 0 0.15cqw 0 #c9a062; }
+.pc-food-img { flex: 1 1 0; min-height: 0; max-height: 72%; max-width: 70%; object-fit: contain; pointer-events: none; }
+.pc-food-name { flex: none; font-size: 2cqw; line-height: 1.2; color: #4a2a14; }
+.pc-deliver {
+  left: 50%; top: 88%; transform: translateX(-50%); width: 25%; height: 9.6%; z-index: 2;
+  border-radius: 99px; font-size: 2.8cqw;
+  background: linear-gradient(#d23b47, #b52a36); color: #fff7ea; border: 0.28cqw solid #e2b357; box-shadow: 0 0.4cqw 0 #85202a;
+}
+.pc-deliver:hover:not(:disabled) { background: linear-gradient(#dc4652, #bf313d); }
+.pc-deliver:disabled { opacity: 0.6; cursor: default; }

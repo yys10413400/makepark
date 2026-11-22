@@ -651,8 +651,8 @@
   function openFacility(f) {
     if (!f || state.modalFacility || state.rideOpen) return;
     stopMoving(); state.keys = {};
-    // 놀이기구 화면이 따로 있는 시설: 코스터 익스프레스(코딩), 유령의 집(문지기의 비밀 규칙), 멜로디 스테이지(댄스·자유 연주)
-    var ride = f.id === 'coaster' ? window.MPCoaster : f.id === 'ghost' ? window.MPGate : f.id === 'melody' ? window.MPMelody : null;
+    // 놀이기구 화면이 따로 있는 시설: 코스터 익스프레스(코딩), 유령의 집(문지기의 비밀 규칙), 멜로디 스테이지(댄스·자유 연주), 피크닉 가게(소풍 한 바구니)
+    var ride = f.id === 'coaster' ? window.MPCoaster : f.id === 'ghost' ? window.MPGate : f.id === 'melody' ? window.MPMelody : f.id === 'picnic' ? window.MPPicnic : null;
     if (ride) {
       state.rideOpen = f.id; state.nearby = null; ui.enter.hidden = true;
       ride.open();
@@ -1024,6 +1024,7 @@
       if (state.rideOpen === 'coaster' && window.MPCoaster) MPCoaster.close();
       else if (state.rideOpen === 'ghost' && window.MPGate) MPGate.close();
       else if (state.rideOpen === 'melody' && window.MPMelody) MPMelody.close();
+      else if (state.rideOpen === 'picnic' && window.MPPicnic) MPPicnic.close();
       if (state.modalFacility) closeFacility();
       if (state.charOpen) closeChars();
       if (state.profileOpen) closeProfile();
@@ -1059,7 +1060,8 @@
     charScreenH: function () { return ((window.MPChars && MPChars.DRAW_H) || 60) * playScale(); },
     exitCoaster: function () { exitRide('coaster'); },
     exitGate: function () { exitRide('ghost'); },
-    exitMelody: function () { exitRide('melody'); }
+    exitMelody: function () { exitRide('melody'); },
+    exitPicnic: function () { exitRide('picnic'); }
   };
 
   // 개발·검증용 핸들 (게임 동작에는 쓰이지 않음)

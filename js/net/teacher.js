@@ -11,7 +11,7 @@
   var NET = window.MPNet, PARK = window.MP_PARK;
   var $ = function (id) { return document.getElementById(id); };
   var S = { user: null, code: null, meta: null, handle: null, players: {}, owner: false };
-  var WHERE = { park: '공원', coaster: '코스터 익스프레스', ghost: '유령의 집' };
+  var WHERE = { park: '공원', coaster: '코스터 익스프레스', ghost: '유령의 집', melody: '멜로디 스테이지', picnic: '피크닉 가게' };
   function msg(id, text) { $(id).textContent = text || ''; }
 
   // 화면 안 확인창: 브라우저의 confirm·prompt·alert 는 '이 페이지의 대화상자 막기'를 한 번 체크하면
