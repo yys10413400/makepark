@@ -84,8 +84,7 @@
     if (!ui.dlg) buildDialog();
     pending = { entry: entry, proceed: proceed };
     ui.hello.textContent = entry.name + '님, 선생님이 알려 준 반 코드를 넣어요.';
-    var s = api().readSave() || {};
-    ui.code.value = s.roomCode || '';
+    ui.code.value = '';   // 반 코드도 기억해 두지 않고 매번 넣음
     ui.err.textContent = ''; ui.go.disabled = false;
     ui.dlg.hidden = false;
     setTimeout(function () { (ui.code.value ? ui.go : ui.code).focus(); }, 30);
@@ -98,7 +97,6 @@
         ui.go.disabled = false;
         if (!meta) { ui.err.textContent = '그런 반 공원이 없어요. 코드를 다시 확인해 주세요.'; return; }
         if (!meta.open) { ui.err.textContent = '지금은 닫힌 공원이에요. 선생님께 여쭤보세요.'; return; }
-        api().patchSave({ roomCode: code });
         S.code = code; S.teacher = meta.teacher || '선생님'; S.className = meta.name || (code + '반');
         return askPin(code, entry);
       }).then(null, function (err) {
@@ -109,7 +107,12 @@
         console.error('반 공원 입장 실패', err);
       });
     };
-    ui.solo.onclick = function () { S.code = null; S.studentKey = null; api().setSaveSlot(null); ui.dlg.hidden = true; pending.proceed(); };
+    // 혼자 둘러보기: 이 기기에 남은 예전 기록(다른 사람이 놀던 것일 수 있음) 대신 매번 새로 시작하는 연습 칸
+    ui.solo.onclick = function () {
+      S.code = null; S.studentKey = null;
+      api().setSaveSlot('solo', { version: 1, nickname: entry.name, grade: entry.grade });
+      ui.dlg.hidden = true; pending.proceed();
+    };
     ui.back.onclick = function () { ui.dlg.hidden = true; api().cancelEntry && api().cancelEntry(); };
     showStep('code');
   }

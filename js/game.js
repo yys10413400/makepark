@@ -232,12 +232,6 @@
   function validGrade(g) { g = Number(g); return Number.isInteger(g) && g >= 1 && g <= 6 ? g : null; }
   // 학년군(난이도): 1~2 low, 3~4 middle, 5~6 high. 학년 원본 값과 따로 둡니다.
   function gradeBand(g) { return g <= 2 ? 'low' : g <= 4 ? 'middle' : 'high'; }
-  function loadProfile() {
-    var s = readSave() || {};
-    var n = checkNick(s.nickname);
-    // 손상되거나 범위를 벗어난 값만 비움(예전 '3-4' 같은 학년군 값은 미선택으로)
-    return { nickname: n.ok ? n.value : '', grade: validGrade(s.grade) };
-  }
   function saveProfile(nickname, grade) {
     patchSave({ nickname: nickname, grade: grade, updatedAt: new Date().toISOString() });
   }
@@ -258,10 +252,9 @@
   var saved = readSave();
   // 계절은 선생님이 반 공원마다 고름(js/net/multiplayer.js 가 MP_API.setSeason 으로 바꿈). 혼자 둘러보기는 기본 계절
   setSeason(PARK.defaultSeason, false);
-  var profile = loadProfile();
-  ui.nickname.value = profile.nickname;
-  setGradeRadios('grade', profile.grade);  // 첫 방문은 미선택
-  if (profile.nickname) { ui.welcome.textContent = profile.nickname + '님, 다시 만나서 반가워요!'; ui.welcome.hidden = false; }
+  // 들어올 때마다 새로 로그인: 이 기기에 남은 닉네임·학년을 미리 채우지 않음(같은 기기를 여럿이 써도 남의 기록으로 들어가지 않게)
+  ui.nickname.value = '';
+  setGradeRadios('grade', null);
   guardIme(ui.nickname);
   var titleTouched = false;
   function updateTitle() {
