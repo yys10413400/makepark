@@ -1,4 +1,4 @@
-// 소풍 한 바구니 주문 판정 검증: node tools/verify_picnic.js
+// 토리네 도시락 주문 판정 검증: node tools/verify_picnic.js
 // 학년마다 주문 3개, 정답 예시는 통과하고 틀린 예시는 힌트가 나오는지, 도시락 하나 주문은 모든 조합을 훑어 정답 개수를 셉니다.
 'use strict';
 var P = require('../js/picnic/orders.js');

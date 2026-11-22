@@ -1,5 +1,5 @@
 /*
- * 피크닉 가게 — 소풍 한 바구니 화면 (예전 매표소 자리)
+ * 토리네 도시락 화면 (예전 매표소 자리)
  * ------------------------------------------------------------
  * 장면 1 대기실(assets/picnic/lobby.webp): 공원 캐릭터로 바닥을 걸어 다니다 아기 다람쥐 토리에게 '말 걸기'
  *        → 시작 창(학년 1~6 고르기 → '도시락 만들기')
@@ -17,6 +17,15 @@
   var TIP = '방향키나 바닥을 눌러 걸어가서, 아기 다람쥐 토리에게 말을 걸어 봐요';
   var TORI_SAYS = '어서 오세요! 소풍 손님들 주문이 밀려 있어요. 주문대로 도시락을 같이 만들어 줄래요?';
   var KIND = { 1: '개수 세기', 2: '더 담기와 빼기', 3: '똑같이 나누기', 4: '여러 조건 맞추기', 5: '전체의 분수', 6: '비' };
+  // 하는 법 창의 학년별 도움말(학년 놀이에 맞는 생각하는 방법)
+  var GRADE_TIP = {
+    1: '하나, 둘, 셋… 소리 내어 세면서 하나씩 담아 봐요.',
+    2: '처음부터 담겨 있는 재료를 먼저 세어 봐요. 더 담을 때는 재료 버튼, 뺄 때는 도시락 안 재료를 눌러요.',
+    3: '두 도시락에 하나씩 번갈아 담으면 똑같이 나눌 수 있어요. 다 담고 나서 두 도시락을 비교해 봐요.',
+    4: '조건을 하나씩 확인해요. 조건만 맞으면 다른 재료는 마음대로 골라도 돼요. 정답이 여러 가지예요!',
+    5: '전체를 똑같은 묶음으로 나눠 생각해요. 12개의 ⅓ → 12개를 3묶음으로 나눈 것 중 1묶음!',
+    6: '2:3은 딸기 2개와 방울토마토 3개가 한 묶음이라는 뜻이에요. 그 묶음을 몇 번 담으면 될까요?'
+  };
   var PRAISE = ['고마워요! 주문대로 딱 맞아요!', '와, 맛있겠다! 손님이 좋아할 거예요!', '완벽해요! 다음 손님 주문도 부탁해요!'];
 
   var S = {
@@ -69,7 +78,7 @@
     var lobby = ui.lobby = el('div', 'pc-scene pc-lobby');
     lobby.style.backgroundImage = 'url(' + BASE + 'lobby.webp)';
     ui.canvas = el('canvas', 'pc-canvas'); ui.canvas.width = IW; ui.canvas.height = IH;
-    ui.canvas.setAttribute('aria-label', '피크닉 가게 대기실. 방향키나 화면을 눌러 걸어요');
+    ui.canvas.setAttribute('aria-label', '토리네 도시락 대기실. 방향키나 화면을 눌러 걸어요');
     lobby.appendChild(ui.canvas);
     ui.talk = btn('pc-prompt', '', function () { openStart(); });
     ui.talk.innerHTML = '말 걸기 <kbd>스페이스</kbd>'; ui.talk.hidden = true;
@@ -88,8 +97,8 @@
     back.setAttribute('aria-label', '가게로 돌아가기');
     back.innerHTML = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 11H7.8l5.6-5.6L12 4l-8 8 8 8 1.4-1.4L7.8 13H20z"/></svg>';
     game.appendChild(back);
-    game.appendChild(el('div', 'pc-rule pc-rule-l')); game.appendChild(el('div', 'pc-rule pc-rule-r'));
-    game.appendChild(el('h2', 'pc-title', '소풍 한 바구니'));
+    ui.helpBtn = btn('pc-pill pc-help', '? 하는 법', function () { openHelp(false); });
+    game.appendChild(ui.helpBtn);
     ui.progress = el('p', 'pc-progress', '1 / 3'); game.appendChild(ui.progress);
     ui.gTori = img('tori-idle-00', 'pc-gtori', '아기 다람쥐 토리'); game.appendChild(ui.gTori);
     ui.order = el('p', 'pc-order'); ui.order.setAttribute('aria-live', 'polite'); game.appendChild(ui.order);
@@ -121,7 +130,7 @@
     var face = el('div', 'pc-start-face'); face.appendChild(img('tori-idle-00', '', '토리'));
     c.appendChild(face);
     var body = el('div', 'pc-start-body');
-    var h = el('h2', 'pc-card-title', '소풍 한 바구니'); h.id = 'pcStartTitle';
+    var h = el('h2', 'pc-card-title', '토리네 도시락'); h.id = 'pcStartTitle';
     body.appendChild(el('p', 'pc-start-name', '아기 다람쥐 토리'));
     body.appendChild(h);
     body.appendChild(el('p', 'pc-start-text', TORI_SAYS));
@@ -186,7 +195,7 @@
     ui.root.classList.toggle('is-game', name === 'game');
   }
   function toLobby() {
-    clearTimeout(S.timer); S.busy = false; ui.modal.hidden = true;
+    clearTimeout(S.timer); S.busy = false; ui.modal.hidden = true; S.help = false;
     showScene('lobby');
     // 토리 앞에 서서 바로 다시 말을 걸 수 있게
     S.me = { x: TORI_POS.x + 40, y: TORI_POS.y + 110, dir: 'up', moving: false };
@@ -314,6 +323,53 @@
     S.idx = 0; S.done = false;
     showScene('game');
     loadOrder();
+    var pc = save().picnic;
+    if (!(pc && pc.howto)) openHelp(true);   // 처음 한 번은 하는 법을 먼저 보여 줌
+  }
+  // ---------- 하는 법 (유령의 집·코스터처럼 처음 한 번 + '? 하는 법' 버튼) ----------
+  function howTo() {
+    var box = el('div', 'pc-howto');
+    function row(num, title, node) {
+      var r = el('div', 'pc-howto-row');
+      r.appendChild(el('span', 'pc-howto-num', num));
+      var t = el('div', 'pc-howto-text');
+      t.appendChild(el('p', 'pc-howto-title', title));
+      if (node) t.appendChild(node);
+      r.appendChild(t); box.appendChild(r);
+    }
+    function sub(text) { return el('p', 'pc-howto-sub', text); }
+    var ex = el('p', 'pc-howto-sub');
+    richText(ex, '예) 주먹밥 {2}개랑 딸기 {3}개 → 주먹밥 2번, 딸기 3번 누르기');
+    row('1', '토리의 주문을 끝까지 읽어요. 빨간 숫자가 중요해요!', ex);
+    var pics = el('div', 'pc-howto-pics');
+    P.FOODS.forEach(function (f) { var c = el('span', 'pc-howto-chip'); c.appendChild(img('food-' + f, '')); c.appendChild(document.createTextNode(P.NAME[f])); pics.appendChild(c); });
+    row('2', '아래 재료 버튼을 한 번 누르면 도시락에 하나 들어가요', pics);
+    row('3', '잘못 담았으면 도시락 안의 재료를 눌러요. 하나만 쏙 빠져요', null);
+    row('4', '도시락이 두 개면, 담을 도시락을 먼저 눌러 골라요', sub('금빛 테두리와 ‘여기에 담아요’가 보이는 도시락에 들어가요.'));
+    row('5', '다 담았으면 ‘전달하기’! 틀려도 괜찮아요', sub('담은 건 그대로 두고 토리가 힌트를 줘요. 고쳐서 다시 전달하면 돼요.'));
+    var tip = el('div', 'pc-howto-tip');
+    tip.appendChild(el('b', '', S.grade + '학년 ' + KIND[S.grade] + ' 도움말'));
+    tip.appendChild(el('span', '', GRADE_TIP[S.grade]));
+    box.appendChild(tip);
+    return box;
+  }
+  function openHelp(first) {
+    if (S.scene !== 'game' || S.done) return;
+    var c = ui.modalCard; c.textContent = '';
+    c.classList.add('pc-help-card');
+    c.appendChild(el('h2', 'pc-card-title', first ? '토리랑 도시락을 만들어요!' : '어떻게 해요?'));
+    c.appendChild(howTo());
+    var row = el('div', 'pc-acts');
+    var go = btn('pc-choice', first ? '시작!' : '알겠어!', closeHelp);
+    row.appendChild(go); c.appendChild(row);
+    ui.modal.hidden = false; S.help = true;
+    setTimeout(function () { go.focus(); }, 30);
+  }
+  function closeHelp() {
+    if (!S.help) return;
+    S.help = false; ui.modal.hidden = true; ui.modalCard.classList.remove('pc-help-card');
+    var pc = save().picnic;
+    if (!(pc && pc.howto) && api()) { pc = pc && typeof pc === 'object' ? pc : {}; pc.howto = true; api().patchSave({ picnic: pc }); }
   }
   function loadOrder() {
     var o = S.order = P.ORDERS[S.grade][S.idx];
@@ -394,7 +450,13 @@
     ui.feedback.hidden = false;
     void ui.feedback.offsetWidth; ui.feedback.classList.add('pop');
   }
-  function hideFeedback() { ui.feedback.hidden = true; }
+  // 힌트·칭찬이 없을 때는 지금 할 일을 짧게 알려 주는 안내 줄
+  function hideFeedback() {
+    var two = S.boxes.length > 1;
+    ui.feedback.textContent = two ? '담을 도시락을 먼저 누르고, 아래 재료를 눌러 담아요' : '재료를 누르면 담기고, 도시락 안 재료를 누르면 빠져요';
+    ui.feedback.className = 'pc-feedback guide';
+    ui.feedback.hidden = false;
+  }
   function deliver() {
     if (S.busy) return;
     var res = P.judge(S.order, S.boxes);
@@ -437,7 +499,7 @@
       : got.kind === 'new' ? '🎟 티켓 1장을 받았어요! (오늘 ' + pc.day.n + ' / ' + DAY_MAX + ')'
       : '오늘 받을 수 있는 티켓(' + DAY_MAX + '장)은 다 받았어요. 내일 또 받아요!');
     if (!saved) lines.push('이 기기에는 저장할 수 없어서 기록이 남지 않아요.');
-    var c = ui.modalCard; c.textContent = '';
+    var c = ui.modalCard; c.textContent = ''; c.classList.remove('pc-help-card'); S.help = false;
     var face = el('div', 'pc-start-face pc-done-face'); face.appendChild(img('tori-idle-03', '', '기뻐하는 토리')); c.appendChild(face);
     c.appendChild(el('h2', 'pc-card-title', '주문 완료!'));
     lines.forEach(function (l) { c.appendChild(el('p', 'pc-card-line', l)); });
@@ -464,7 +526,8 @@
     }
     if (!down) return;
     if (S.start && e.code === 'Escape') { e.preventDefault(); closeStart(); return; }
-    if (S.scene === 'game' && e.code === 'Escape') { e.preventDefault(); toLobby(); }
+    if (S.help && e.code === 'Escape') { e.preventDefault(); closeHelp(); return; }
+    if (S.scene === 'game' && e.code === 'Escape' && ui.modal.hidden) { e.preventDefault(); toLobby(); }
   }
 
   function init() {

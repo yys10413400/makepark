@@ -1,4 +1,4 @@
-/* 피크닉 가게 — 소풍 한 바구니
+/* 토리네 도시락 (예전 매표소 자리)
    배경 그림(1672×941) 기준 %로 놓고, 글자는 화면 폭 기준(cqw)이라 창 크기가 바뀌어도 함께 커지고 작아집니다.
    색: 크림(#fbf1e2) · 옅은 나무(#ecc995) · 딸기빛(#c8323f) · 금테(#e2b357) */
 .pc-overlay {
@@ -95,14 +95,6 @@ body.picnic-open #hud, body.picnic-open #enterFacility, body.picnic-open #chatBa
   background: #fff8ec; border: 0.2cqw solid #e2b357; box-shadow: 0 0.25cqw 0 #c9a062;
 }
 .pc-back svg { width: 45%; fill: #5a3412; }
-.pc-rule { top: 6%; height: 0.18cqw; background: #d9a95a; z-index: 2; }
-.pc-rule-l { left: 9.8%; right: 66%; }
-.pc-rule-r { left: 66%; right: 13%; }
-.pc-title {
-  left: 50%; top: 1.4%; transform: translateX(-50%); z-index: 3; white-space: nowrap; font-weight: 400;
-  padding: 0.5cqw 4cqw; border-radius: 99px; font-size: 2.8cqw; line-height: 1.25;
-  background: linear-gradient(#d23b47, #b52a36); color: #fff7ea; border: 0.25cqw solid #e2b357; box-shadow: 0 0.35cqw 0 #85202a;
-}
 .pc-progress {
   right: 1.8%; top: 2.4%; z-index: 3; padding: 0.4cqw 1.8cqw; border-radius: 99px; font-size: 2cqw;
   background: #fff8ec; border: 0.2cqw solid #e2b357; color: #4a2a14; box-shadow: 0 0.25cqw 0 #c9a062;
@@ -133,6 +125,8 @@ body.picnic-open #hud, body.picnic-open #enterFacility, body.picnic-open #chatBa
   background: #fff1d6; color: #9a3a12; border: 0.18cqw solid #f0a34a; box-shadow: 0 0.25cqw 0 rgba(150, 80, 20, 0.3);
 }
 .pc-feedback::before { content: '💡 '; }
+.pc-feedback.guide { background: rgba(255, 250, 241, 0.85); color: #8a6040; border-color: #e6cf9c; box-shadow: none; font-size: 1.5cqw; }
+.pc-feedback.guide::before { content: '👆 '; }
 .pc-feedback.good { background: #eaf6dd; color: #2f6a24; border-color: #8cc26a; }
 .pc-feedback.good::before { content: '🎉 '; }
 .pc-feedback.pop { animation: pc-pop 0.25s ease-out; }
@@ -191,3 +185,29 @@ body.picnic-open #hud, body.picnic-open #enterFacility, body.picnic-open #chatBa
 }
 .pc-deliver:hover:not(:disabled) { background: linear-gradient(#dc4652, #bf313d); }
 .pc-deliver:disabled { opacity: 0.6; cursor: default; }
+
+/* 하는 법 */
+.pc-help { left: 9.6%; top: 3.1%; z-index: 4; }
+.pc-help-card { width: 64%; padding: 1.6cqw 2.4cqw; }
+.pc-howto { text-align: left; margin: 0.4cqw 0 0.4cqw; }
+.pc-howto-row { display: flex; gap: 1cqw; align-items: flex-start; padding: 0.55cqw 0; border-bottom: 0.1cqw dashed #e6cf9c; }
+.pc-howto-num {
+  flex: none; width: 2.2cqw; height: 2.2cqw; border-radius: 50%; background: #c8323f; color: #fff7ea;
+  font-size: 1.3cqw; display: flex; align-items: center; justify-content: center;
+}
+.pc-howto-text { flex: 1; min-width: 0; }
+.pc-howto-title { margin: 0.2cqw 0 0.2cqw; font-size: 1.5cqw; color: #4a2a14; }
+.pc-howto-sub { margin: 0; font-size: 1.2cqw; line-height: 1.45; color: #8a6040; }
+.pc-howto-sub .pc-num { font-size: 1.15em; }
+.pc-howto-pics { display: flex; gap: 0.6cqw; flex-wrap: wrap; }
+.pc-howto-chip {
+  display: inline-flex; align-items: center; gap: 0.3cqw; padding: 0.15cqw 0.8cqw 0.15cqw 0.3cqw; border-radius: 99px;
+  font-size: 1.15cqw; background: #fffaf1; border: 0.12cqw solid #e2b357;
+}
+.pc-howto-chip img { height: 2.2cqw; }
+.pc-howto-tip {
+  margin-top: 0.8cqw; padding: 0.7cqw 1.2cqw; border-radius: 1.2cqw; background: #fff1d6; border: 0.14cqw solid #f0c070;
+  font-size: 1.3cqw; line-height: 1.45; color: #7a4a20;
+}
+.pc-howto-tip b { display: block; font-weight: 400; color: #b02a37; margin-bottom: 0.1cqw; }
+.pc-howto-tip b::before { content: '💡 '; }

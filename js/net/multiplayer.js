@@ -16,7 +16,7 @@
   if (!NET) return;
   var SEND_MS = 200, BEAT_MS = 3000;   // 움직일 때 1초에 5번, 가만히 있으면 3초마다
   var GATHER = { x: 690, y: 600 };      // 모두 모으기: 분수 광장 앞
-  var WHERE = { coaster: '코스터 익스프레스', ghost: '유령의 집', melody: '멜로디 스테이지', picnic: '피크닉 가게' };
+  var WHERE = { coaster: '코스터 익스프레스', ghost: '유령의 집', melody: '멜로디 스테이지', picnic: '토리네 도시락' };
 
   var S = { code: null, handle: null, pid: null, others: {}, last: null, lastSend: 0, joinedAt: 0, mySay: null, chatOff: false, lastSay: 0 };
   // 보낼 수 있는 말(번호로만 주고받음 — 번호를 바꾸면 예전 기기와 뜻이 달라지므로 끝에만 더하기)

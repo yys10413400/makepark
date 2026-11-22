@@ -99,8 +99,8 @@ window.MP_PARK = {
       entrance: { x: 1180, y: 410 }, radius: 60, pin: { x: 1170, y: 282 } },
     { id: 'mypark', name: '마이파크', desc: '내가 만든 놀이기구를 세울 나만의 공원이에요.',
       entrance: { x: 1130, y: 232 }, radius: 60, pin: { x: 1130, y: 150 } },
-    // 예전 매표소 건물 → 피크닉 가게(아기 다람쥐 토리의 '소풍 한 바구니'). 지도 그림·가림 레이어(occluders 'ticket')는 그대로
-    { id: 'picnic', name: '피크닉 가게', desc: '아기 다람쥐 토리와 소풍 도시락을 만드는 가게예요.',
+    // 예전 매표소 건물 → 토리네 도시락(아기 다람쥐 토리와 도시락 주문 수학 놀이). 지도 그림·가림 레이어(occluders 'ticket')는 그대로
+    { id: 'picnic', name: '토리네 도시락', desc: '아기 다람쥐 토리와 소풍 도시락을 만드는 가게예요.',
       entrance: { x: 605, y: 320 }, radius: 55, pin: { x: 605, y: 207 } },
     { id: 'shop', name: '기념품 가게', desc: '메이크파크 기념품이 가득한 가게예요.',
       entrance: { x: 850, y: 368 }, radius: 60, pin: { x: 850, y: 272 } }
