@@ -9,7 +9,10 @@
  *   rooms/{code}/meta           { teacher, open, created, season?, chatOff? }  반 공원(code: 5자리 숫자) · 선생님이 고른 계절 · 대화 끄기
  *   rooms/{code}/cmd            { id, type, target?, at }          선생님 명령: gather(모두 모으기) · kick(내보내기) · close(공원 닫기)
  *   rooms/{code}/players/{pid}  { n, g, s, x, y, d, m, w, t, sy?, st? }  닉네임·학년·캐릭터 그림·위치·방향·걷는 중·있는 곳(park|coaster|ghost)·시각
- *                                                                   · 마지막으로 한 말(정해진 이모지·문장 번호 sy, 말한 때 st)
+ *                                                                   · 마지막으로 한 말(정해진 이모지·문장 번호 sy, 말한 때 st) · 같이 노는 친구 닉네임 f
+ *   rooms/{code}/invites/{pid}  { from, fromNick, fromGrade, id, at, reply?, gid? }   같이 놀기 초대(받는 사람 pid)
+ *   rooms/{code}/games/{gid}    { a, b, aNick, bNick, band, maker, stage, round, rule? }  같이 하는 '친구랑 문지기'
+ *   rooms/{code}/gameviews/{gid}  판정하는 친구 화면 모습(규칙 만든 친구가 구경)
  *
  * 쓰는 법
  *   MPNet.ready().then(...)                    연결 준비
@@ -408,7 +411,7 @@
         return;
       }
       var u = {}, base = 'rooms/' + code + '/';
-      ['players', 'cmd', 'names', 'students', 'claims', 'meta'].forEach(function (k) { u[base + k] = null; });   // meta 는 마지막(권한 확인에 씀)
+      ['players', 'cmd', 'names', 'students', 'claims', 'invites', 'games', 'gameviews', 'meta'].forEach(function (k) { u[base + k] = null; });   // meta 는 마지막(권한 확인에 씀)
       return fb.ref().update(u).then(function () { return fbRef('teachers/' + uid + '/rooms/' + code).remove(); });
     });
   }
@@ -432,6 +435,84 @@
     });
   }
 
+  // ---------- 같이 놀기: 반 공원 안의 작은 공용 칸 ----------
+  // 경로(반 공원 기준): invites/{받는 사람} 초대 · games/{gid} 같이 하는 놀이 · gameviews/{gid} 판정하는 친구 화면(구경용)
+  // MPNet.shared.set/update/remove(code, path, …) · on(code, path, fn(value|null)) → 그만 듣기 함수 · dropOnLeave(code, path) → 취소 함수
+  var KKEY = 'makepark.net.kv', kvSubs = [], kvHooked = false;
+  function kvAll() { try { return JSON.parse(localStorage.getItem(KKEY)) || {}; } catch (e) { return {}; } }
+  function kvSave(v) { try { localStorage.setItem(KKEY, JSON.stringify(v)); } catch (e) { /* 저장 안 됨 */ } }
+  function kvGet(full) { var v = kvAll()[full]; return v == null ? null : v; }
+  // 바뀐 값을 소식에 같이 실어 보냄(다른 탭이 저장소를 너무 빨리 읽어 예전 값을 보지 않게)
+  function kvNotify(full) {
+    var v = kvGet(full);
+    bcast({ k: 'kv', p: full, v: v });
+    kvSubs.forEach(function (sub) { if (sub.p === full) sub.fn(v); });
+  }
+  function kvHook() {
+    if (kvHooked) return; kvHooked = true;
+    localSubs.push(function (msg) {
+      if (msg.k !== 'kv') return;
+      var v = 'v' in msg ? msg.v : kvGet(msg.p);
+      kvSubs.forEach(function (sub) { if (sub.p === msg.p) sub.fn(v == null ? null : v); });
+    });
+  }
+  function full(code, path) { return 'rooms/' + code + '/' + path; }
+  var shared = {
+    set: function (code, path, val) {
+      var f = full(code, path);
+      return ready().then(function () {
+        if (mode === 'local') { var all = kvAll(); all[f] = val; kvSave(all); kvNotify(f); return; }
+        return fbRef(f).set(val);
+      });
+    },
+    update: function (code, path, patch) {
+      var f = full(code, path);
+      return ready().then(function () {
+        if (mode === 'local') { var all = kvAll(); if (all[f] == null) return; all[f] = Object.assign({}, all[f], patch); kvSave(all); kvNotify(f); return; }
+        return fbRef(f).update(patch);
+      });
+    },
+    remove: function (code, path) {
+      var f = full(code, path);
+      return ready().then(function () {
+        if (mode === 'local') { var all = kvAll(); if (!(f in all)) return; delete all[f]; kvSave(all); kvNotify(f); return; }
+        return fbRef(f).remove();
+      });
+    },
+    on: function (code, path, fn) {
+      var f = full(code, path), stop = false, off = function () { stop = true; };
+      ready().then(function () {
+        if (stop) return;
+        if (mode === 'local') {
+          kvHook();
+          var sub = { p: f, fn: fn }; kvSubs.push(sub);
+          off = function () { kvSubs = kvSubs.filter(function (x) { return x !== sub; }); };
+          fn(kvGet(f));
+          return;
+        }
+        var ref = fbRef(f), cb = function (snap) { fn(snap.val()); };
+        ref.on('value', cb, function (err) { console.warn('같이 놀기 연결 오류', f, err); });
+        off = function () { ref.off('value', cb); };
+      });
+      return function () { off(); };
+    },
+    // 창을 닫거나 연결이 끊기면 이 칸을 지움(같이 하던 친구 화면에 '친구가 나갔어요')
+    dropOnLeave: function (code, path) {
+      var f = full(code, path), cancel = function () {};
+      ready().then(function () {
+        if (mode === 'local') {
+          var h = function () { var all = kvAll(); delete all[f]; kvSave(all); bcast({ k: 'kv', p: f, v: null }); };
+          window.addEventListener('pagehide', h);
+          cancel = function () { window.removeEventListener('pagehide', h); };
+          return;
+        }
+        var od = fbRef(f).onDisconnect(); od.remove();
+        cancel = function () { od.cancel(); };
+      });
+      return function () { cancel(); };
+    }
+  };
+
   function myId() {
     if (mode === 'firebase') return uid;
     try {
@@ -447,6 +528,7 @@
     studentKey: studentKey, studentExists: studentExists, studentLogin: studentLogin, studentSave: studentSave,
     listStudents: listStudents, resetPin: resetPin, clearStudents: clearStudents, validPin: validPin,
     teacher: teacher, myRooms: myRooms, deleteRoom: deleteRoom, renameRoom: renameRoom, countStudents: countStudents,
-    isOwner: function (meta) { return !!(meta && uid && meta.owner === uid); }
+    isOwner: function (meta) { return !!(meta && uid && meta.owner === uid); },
+    shared: shared
   };
 })();

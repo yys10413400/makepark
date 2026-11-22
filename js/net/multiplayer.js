@@ -6,6 +6,7 @@
  * 선생님 명령: 모두 모으기(분수 광장으로 순간 이동, 놀이기구에서도 나옴) · 내보내기 · 공원 닫기
  * 선생님 설정(반 공원 meta): 계절(season) — 모든 학생 화면이 같은 계절로 · 대화 끄기(chatOff)
  * 대화: 화면 아래에서 정해진 이모지·문장만 골라 말함 → 캐릭터 머리 위 말풍선(4초). 글자를 직접 쓰지 않음
+ * 같이 놀기: 공원에서 친구 가까이 가면 '👋 ○○와 같이 놀기' → 초대 → 친구가 '좋아' → 둘이 유령의 집 '친구랑 문지기'를 각자 기기로
  * 연결: js/net/net.js (MPNet) / 게임과의 창구: window.MP_API (game.js)
  */
 (function () {
@@ -202,9 +203,11 @@
     });
     setChip();
     showChat(true);
+    startInvites();
     api().toast && api().toast(S.className + ' 공원에 들어왔어요!');
   }
   function leave() {
+    stopInvites();
     if (S.handle) { S.handle.leave(); S.handle = null; }
     S.others = {}; S.mySay = null;
     setChip();
@@ -242,18 +245,21 @@
     var p = api().player();
     var d = { x: Math.round(p.x), y: Math.round(p.y), d: p.dir, m: p.moving ? 1 : 0, w: p.ride || 'park' };
     if (full) { d.n = p.nickname; d.g = p.grade; d.s = p.charId; d.gd = p.gender; if (p.teacher) d.tc = 1; }
+    var mate = window.MPGate && MPGate.onlinePartner ? MPGate.onlinePartner() : null;
+    d.f = mate || '';   // 같이 노는 친구(선생님 화면에 '유령의 집 · ○○와 함께')
     return d;
   }
   function tick() {
     if (!S.handle) return;
     var now = performance.now(), cur = snapshot(true), last = S.last || {};
-    var changed = ['x', 'y', 'd', 'm', 'w'].some(function (k) { return cur[k] !== last[k]; });
+    var changed = ['x', 'y', 'd', 'm', 'w', 'f'].some(function (k) { return cur[k] !== last[k]; });
     var who = ['n', 'g', 's', 'gd'].some(function (k) { return cur[k] !== last[k]; });
     if ((changed && now - S.lastSend >= SEND_MS) || who || now - S.lastSend >= BEAT_MS) {
       var send = who || now - S.lastSend >= BEAT_MS ? cur : snapshot(false);
       S.handle.update(send);
       S.last = cur; S.lastSend = now;
     }
+    updatePlayBtn();
   }
 
   // ---------- 그리기 ----------
@@ -383,6 +389,119 @@
       chat.bar.classList.add('cooling');
       setTimeout(function () { chat.bar.classList.remove('cooling'); }, SAY_GAP);
     }
+  }
+
+  // ---------- 같이 놀기: 친구 가까이 → 초대 → '좋아' → 둘이 유령의 집 '친구랑 문지기' ----------
+  var NEAR = 60, INVITE_MS = 20000;
+  var inv = { off: null, out: null, card: null, cardInv: null, btn: null };
+  function josa(w, a, b) { var c = String(w).charCodeAt(String(w).length - 1) - 0xAC00, has = c >= 0 && c <= 11171 && c % 28 !== 0; return w + (has ? a : b); }
+  function bandOf(g) { g = Number(g) || 1; return g <= 2 ? 'low' : g <= 4 ? 'middle' : 'high'; }
+  function myNick() { return api().player().nickname; }
+  function playBtn() {
+    if (inv.btn) return inv.btn;
+    var b = inv.btn = el('button', 'play-with'); b.type = 'button'; b.hidden = true;
+    b.addEventListener('click', function () { if (b.dataset.pid) sendInvite(b.dataset.pid); b.blur(); });
+    document.getElementById('app').appendChild(b);
+    return b;
+  }
+  // 가장 가까운 친구(공원에 있는, 선생님 말고)
+  function nearestFriend() {
+    var me = api().player(), best = null, bd = NEAR;
+    Object.keys(S.others).forEach(function (pid) {
+      var o = S.others[pid], d = o.data;
+      if (!d || d.tc || d.w !== 'park') return;
+      var dist = Math.hypot(o.x - me.x, o.y - me.y);
+      if (dist < bd) { bd = dist; best = { pid: pid, nick: d.n || '친구' }; }
+    });
+    return best;
+  }
+  function updatePlayBtn() {
+    var b = playBtn(), me = api().player();
+    var busy = !S.handle || S.isTeacher || me.ride || inv.card || document.body.classList.contains('gate-open');
+    var f = busy ? null : nearestFriend();
+    if (inv.out) { b.hidden = false; b.disabled = true; b.textContent = '💌 ' + josa(inv.out.nick, '에게', '에게') + ' 초대를 보냈어요…'; return; }
+    b.disabled = false;
+    if (!f) { b.hidden = true; delete b.dataset.pid; return; }
+    b.hidden = false; b.dataset.pid = f.pid;
+    b.textContent = '👋 ' + josa(f.nick, '과', '와') + ' 같이 놀기';
+  }
+  function sendInvite(to) {
+    var o = S.others[to]; if (!o || !o.data || inv.out) return;
+    var id = NET.newId(8), nick = o.data.n || '친구';
+    inv.out = { to: to, nick: nick, id: id };
+    var me = api().player();
+    NET.shared.set(S.code, 'invites/' + to, { from: S.pid, fromNick: me.nickname, fromGrade: me.grade || 1, id: id, at: Date.now() });
+    var done = function (msg) {
+      if (!inv.out || inv.out.id !== id) return;
+      clearTimeout(inv.out.timer); if (inv.out.off) inv.out.off();
+      inv.out = null;
+      if (msg && api().toast) api().toast(msg);
+      updatePlayBtn();
+    };
+    inv.out.timer = setTimeout(function () { NET.shared.remove(S.code, 'invites/' + to); done(josa(nick, '이', '가') + ' 대답이 없어요. 다음에 다시 불러 봐요.'); }, INVITE_MS);
+    inv.out.off = NET.shared.on(S.code, 'invites/' + to, function (v) {
+      if (!v || v.id !== id || !v.reply) return;
+      NET.shared.remove(S.code, 'invites/' + to);
+      if (v.reply === 'yes' && v.gid) { done(null); joinGame(v.gid); }
+      else done(v.reply === 'busy' ? josa(nick, '은', '는') + ' 지금 다른 놀이 중이에요.' : josa(nick, '은', '는') + ' 다음에 같이 놀재요.');
+    });
+    updatePlayBtn();
+  }
+  function startInvites() {
+    stopInvites();
+    if (S.isTeacher) return;
+    inv.off = NET.shared.on(S.code, 'invites/' + S.pid, onInvite);
+  }
+  function stopInvites() {
+    if (inv.off) { inv.off(); inv.off = null; }
+    if (inv.out) { clearTimeout(inv.out.timer); if (inv.out.off) inv.out.off(); NET.shared.remove(S.code, 'invites/' + inv.out.to); inv.out = null; }
+    closeCard();
+    if (inv.btn) inv.btn.hidden = true;
+  }
+  function onInvite(v) {
+    if (!v || v.reply) { if (!v || (inv.cardInv && inv.cardInv.id === v.id)) closeCard(); return; }
+    if (inv.cardInv && inv.cardInv.id === v.id) return;
+    var me = api().player();
+    if (me.ride || inv.out || document.body.classList.contains('gate-open')) { NET.shared.update(S.code, 'invites/' + S.pid, { reply: 'busy' }); return; }
+    showCard(v);
+  }
+  function showCard(v) {
+    closeCard();
+    inv.cardInv = v;
+    var wrap = inv.card = el('section', 'invite-card'); wrap.setAttribute('role', 'alertdialog'); wrap.setAttribute('aria-label', '같이 놀기 초대');
+    wrap.appendChild(el('p', 'invite-title', '👋 ' + josa(v.fromNick, '이', '가') + ' 같이 놀재요!'));
+    wrap.appendChild(el('p', 'invite-sub', '유령의 집 ‘친구랑 문지기’ — 한 명은 비밀 규칙을 만들고, 한 명은 문지기가 돼요. 각자 기기로 해요.'));
+    var row = el('div', 'invite-btns');
+    var yes = el('button', 'invite-yes', '좋아'); yes.type = 'button';
+    var no = el('button', 'invite-no', '다음에'); no.type = 'button';
+    row.appendChild(yes); row.appendChild(no); wrap.appendChild(row);
+    document.getElementById('app').appendChild(wrap);
+    setTimeout(function () { yes.focus(); }, 30);
+    inv.cardTimer = setTimeout(function () { if (inv.cardInv && inv.cardInv.id === v.id) closeCard(); }, INVITE_MS);
+    no.addEventListener('click', function () { NET.shared.update(S.code, 'invites/' + S.pid, { reply: 'no' }); closeCard(); });
+    yes.addEventListener('click', function () {
+      yes.disabled = no.disabled = true;
+      var me = api().player(), gid = NET.newId(10);
+      var game = { a: v.from, b: S.pid, aNick: v.fromNick, bNick: me.nickname, band: bandOf(Math.min(Number(v.fromGrade) || 1, Number(me.grade) || 1)),
+        maker: v.from, stage: 'build', round: 1, at: Date.now() };   // 초대한 친구가 먼저 규칙을 만듦
+      NET.shared.set(S.code, 'games/' + gid, game)
+        .then(function () { return NET.shared.update(S.code, 'invites/' + S.pid, { reply: 'yes', gid: gid }); })
+        .then(function () { closeCard(); joinGame(gid); }, function (err) {
+          console.error('같이 놀기 시작 실패', err); closeCard();
+          if (api().toast) api().toast('같이 놀기를 시작하지 못했어요. 다시 해 봐요.');
+        });
+    });
+  }
+  function closeCard() {
+    clearTimeout(inv.cardTimer);
+    if (inv.card && inv.card.parentNode) inv.card.parentNode.removeChild(inv.card);
+    inv.card = null; inv.cardInv = null;
+  }
+  // 둘 다 유령의 집 검문대로(로비를 건너뜀)
+  function joinGame(gid) {
+    if (!api().openRide) return;
+    api().openRide('ghost', { online: { code: S.code, gid: gid, me: S.pid } });
+    S.lastSend = 0;
   }
 
   // ---------- 위쪽 반 표시 ----------

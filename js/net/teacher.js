@@ -248,7 +248,7 @@
     var tb = $('tList'); tb.textContent = '';
     ids.forEach(function (pid) {
       var d = S.players[pid], tr = document.createElement('tr');
-      [(d.tc ? 'GM ' : '') + (d.n || '?'), d.tc ? '선생님' : (d.g || '?') + '학년', WHERE[d.w] || d.w || '공원'].forEach(function (t) { var td = document.createElement('td'); td.textContent = t; tr.appendChild(td); });
+      [(d.tc ? 'GM ' : '') + (d.n || '?'), d.tc ? '선생님' : (d.g || '?') + '학년', (WHERE[d.w] || d.w || '공원') + (d.f ? ' · ' + d.f + (/[가-힣]$/.test(d.f) && (d.f.charCodeAt(d.f.length - 1) - 0xAC00) % 28 ? '과' : '와') + ' 함께' : '')].forEach(function (t) { var td = document.createElement('td'); td.textContent = t; tr.appendChild(td); });
       var td = document.createElement('td');
       if (S.owner && !d.tc) {
         var b = document.createElement('button');

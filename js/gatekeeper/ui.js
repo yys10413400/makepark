@@ -152,7 +152,7 @@
     ui.bubble = el('p', 'gk-bubble'); ui.bubble.setAttribute('role', 'status'); ui.bubble.setAttribute('aria-live', 'polite');
     gate.appendChild(ui.bubble);
     ui.info = el('p', 'gk-info'); gate.appendChild(ui.info);
-    ui.gateExit = btn('gk-pill gk-exit', '로비로', function () { toLobby(); });
+    ui.gateExit = btn('gk-pill gk-exit', '로비로', function () { if (S.online) askEndOnline(); else toLobby(); });
     gate.appendChild(ui.gateExit);
     ui.helpBtn = btn('gk-pill gk-help', '? 어떻게 해요', openHelp);
     gate.appendChild(ui.helpBtn);
@@ -232,7 +232,7 @@
   }
 
   // ---------- 열기·닫기 ----------
-  function open() {
+  function open(opts) {
     if (!ui.root) return;
     var prof = api().profile();
     S.grade = prof.grade || 1;   // 공원에서 고른 학년이 기본. 여기서 바꾼 학년은 이번 놀이에만
@@ -246,8 +246,10 @@
     cancelAnimationFrame(S.raf);
     S.raf = requestAnimationFrame(loop);
     ui.canvas.focus && ui.canvas.focus();
+    if (opts && opts.online) startOnline(opts.online);   // 공원에서 친구와 '같이 놀기' — 로비 없이 바로
   }
   function close() {
+    if (S.online) endOnline(true);
     S.open = false; cancelAnimationFrame(S.raf); clearTimeout(S.timer);
     ui.root.hidden = true;
     document.body.classList.remove('gate-open');
@@ -471,9 +473,10 @@
     var lines = [tip];
     if (domainNote(R)) lines.push(domainNote(R));   // 배지 없는 손님·빈손인 손님도 오는지
     lines.push(FIRST_GUIDE);
-    var title = S.mode === 'friend' ? '친구가 만든 비밀 규칙' : S.run.stage + '단계';
+    var title = S.online ? josa(onlineMakerNick(), '이', '가') + ' 만든 비밀 규칙' : S.mode === 'friend' ? '친구가 만든 비밀 규칙' : S.run.stage + '단계';
     showModal(title, lines, [{ text: '시작!', main: true, fn: function () { hideModal(); nextGuest(); } }], null,
       withHowTo ? howTo() : S.mode === 'solo' ? stamps() : null);
+    pub('intro');
   }
   // 단계 도장 ★★3
   function stamps() {
@@ -511,7 +514,7 @@
     ui.logList.scrollLeft = ui.logList.scrollWidth;
   }
   function updateInfo() {
-    var R = S.round, head = S.mode === 'friend' ? '친구 규칙' : S.run.stage + '단계 / ' + STAGES;
+    var R = S.round, head = S.online ? '👥 ' + josa(onlinePartnerNick(), '과', '와') + ' 함께' : S.mode === 'friend' ? '친구 규칙' : S.run.stage + '단계 / ' + STAGES;
     ui.info.textContent = head + ' · 손님 ' + Math.min(R.count, R.total) + ' / ' + R.total;
   }
   function setGhost(pose) { ui.ghost.src = SPR.base + 'ghost-' + pose + '.webp'; ui.ghost.dataset.pose = pose; }
@@ -548,6 +551,7 @@
     ui.guestWrap.className = 'gk-guest';
     S.busy = false;
     setJudgeEnabled(true);
+    pub('play');
   }
   function judge(answer) {
     if (S.busy || !S.guest || !S.round) return;
@@ -561,6 +565,7 @@
       res.hint.show.forEach(function (k) { if (k.el) k.el.classList.add('is-hint'); });
       var b = answer ? ui.passBtn : ui.stopBtn;
       b.classList.remove('shake'); void b.offsetWidth; b.classList.add('shake');
+      pub('play', { hints: res.hint.show, wrong: answer ? 'pass' : 'stop' });
       return;
     }
     if (S.firstTry) { if (S.run) S.run.first++; S.streak++; }
@@ -574,6 +579,7 @@
     ui.guestSay.textContent = g.pass ? '야호!' : '히잉…';
     ui.guestSay.className = 'gk-guest-say ' + (g.pass ? 'pass' : 'stop');
     ui.guestSay.hidden = false;
+    pub('play', { said: ui.guestSay.textContent, leaving: g.pass ? 'pass' : 'stop' });
     S.timer = setTimeout(function () {
       ui.guestSay.hidden = true;
       ui.guestWrap.className = 'gk-guest ' + (g.pass ? 'leave-pass' : 'leave-stop');
@@ -591,13 +597,15 @@
     ui.guestWrap.textContent = '';
     say('손님은 여기까지! 내 규칙이 뭔지 맞혀 볼래?');
     var box = el('div', 'gk-quiz');
-    R.quiz().forEach(function (rule) {
+    S.lastQuiz = R.quiz();
+    S.lastQuiz.forEach(function (rule) {
       var b = btn('gk-quiz-opt', '', function () { answerQuiz(rule); });
       b.appendChild(formula(rule));
       b.appendChild(el('span', 'gk-quiz-text', G.describe(rule)));
       box.appendChild(b);
     });
     showModal('내 규칙이 뭘까? 기록을 보면서 골라 봐!', [], [], null, box, 'log');
+    pub('quiz', { quiz: S.lastQuiz });
   }
   function answerQuiz(rule) {
     if (S.quizDone) return;
@@ -605,6 +613,7 @@
     var R = S.round, combos = G.domainCombos(R.domain);
     var right = G.maskOf(rule, combos) === G.maskOf(R.rule, combos);
     if (right && S.run) S.run.stars++;
+    S.lastPick = rule;
     reveal(right);
   }
   function reveal(right) {
@@ -617,8 +626,9 @@
     if (S.mode === 'solo' && S.run.stage < STAGES) btns.push({ text: '다음 단계', main: true, fn: function () { hideModal(); nextStage(false); } });
     else btns.push({ text: '결과 보기', main: true, fn: function () { hideModal(); finishRound(); } });
     var f = formula(R.rule); f.classList.add('big');
-    var title = S.mode === 'friend' ? (S.friend.maker === 1 ? '친구 1이' : '친구 2가') + ' 만든 비밀 규칙' : '비밀 규칙!';
+    var title = S.online ? josa(onlineMakerNick(), '이', '가') + ' 만든 비밀 규칙' : S.mode === 'friend' ? (S.friend.maker === 1 ? '친구 1이' : '친구 2가') + ' 만든 비밀 규칙' : '비밀 규칙!';
     showModal(title, lines, btns, R.text, f, 'log');
+    pub('reveal', { right: right, pick: S.lastPick || null });
   }
   // 규칙에 쓰인 배지·소품을 기록 카드에서 반짝이게
   function spotlight(rule) {
@@ -687,12 +697,18 @@
         if (gain) showTickets(before2);
         lines.push(ticketLine(got2, gsave2));
       }
-      var maker = S.friend.maker;
-      btns.push({ text: '역할 바꾸기', main: true, fn: function () { hideModal(); S.friend.maker = maker === 1 ? 2 : 1; S.friend.parts = defaultParts(); openBuilder(); } });
-      btns.push({ text: '로비로', fn: function () { hideModal(); toLobby(); } });
+      if (S.online) {
+        btns.push({ text: '역할 바꾸기', main: true, fn: function () { hideModal(); swapOnline(); } });
+        btns.push({ text: '그만하기', fn: function () { hideModal(); endOnline(false); close(); } });
+      } else {
+        var maker = S.friend.maker;
+        btns.push({ text: '역할 바꾸기', main: true, fn: function () { hideModal(); S.friend.maker = maker === 1 ? 2 : 1; S.friend.parts = defaultParts(); openBuilder(); } });
+        btns.push({ text: '로비로', fn: function () { hideModal(); toLobby(); } });
+      }
     }
     if (!saved) lines.push('이 기기에는 저장되지 않았어요. 기록은 이번에만 남아요.');
     showModal(S.mode === 'solo' ? '3단계 모두 통과!' : '친구랑 문지기 끝!', lines, btns, null, extra);
+    pub('done');
   }
 
   function showModal(title, lines, btns, ruleText, extra, variant) {
@@ -758,14 +774,16 @@
     return w;
   }
   function openBuilder() {
-    var band = BAND_OF(S.grade), F = G.FRIEND[band], P = S.friend.parts, dom = G.DOMAINS[F.domain];
+    var band = S.online ? S.online.game.band : BAND_OF(S.grade), F = G.FRIEND[band], P = S.friend.parts, dom = G.DOMAINS[F.domain];
     if (F.links.indexOf(P.link) < 0) P.link = 'one';
     showScene('builder');
     var root = ui.builder; root.textContent = '';
     var panel = el('div', 'gk-build'); panel.setAttribute('role', 'dialog'); panel.setAttribute('aria-labelledby', 'gkBuildTitle');
-    var h = el('h2', 'gk-build-title', '규칙 만드는 사람: 친구 ' + S.friend.maker); h.id = 'gkBuildTitle';
+    var h = el('h2', 'gk-build-title', S.online ? '내가 비밀 규칙을 만들 차례!' : '규칙 만드는 사람: 친구 ' + S.friend.maker); h.id = 'gkBuildTitle';
     panel.appendChild(h);
-    panel.appendChild(el('p', 'gk-build-sub', '카드를 골라 비밀 규칙을 만들어 봐. 문지기 친구에게는 보여 주지 마! (' + BAND_LABEL[band] + ')'));
+    panel.appendChild(el('p', 'gk-build-sub', S.online
+      ? josa(onlinePartnerNick(), '이', '가') + ' 문지기예요. 카드를 골라 규칙을 만들고 봉인하면 친구 화면에 손님이 와요. (' + BAND_LABEL[band] + ')'
+      : '카드를 골라 비밀 규칙을 만들어 봐. 문지기 친구에게는 보여 주지 마! (' + BAND_LABEL[band] + ')'));
     if (F.links.length > 1) {
       var lrow = el('div', 'gk-build-row'); lrow.appendChild(el('span', 'gk-build-label', '규칙 모양'));
       F.links.forEach(function (l) {
@@ -806,10 +824,10 @@
     panel.appendChild(read);
     panel.appendChild(el('p', 'gk-build-msg', chk.ok ? '' : chk.msg));
     var acts = el('div', 'gk-card-btns');
-    var seal = btn('gk-choice', '규칙 봉인하기', function () { if (chk.ok) sealRule(rule); });
+    var seal = btn('gk-choice', '규칙 봉인하기', function () { if (chk.ok) { if (S.online) sealOnline(rule); else sealRule(rule); } });
     seal.disabled = !chk.ok;
     acts.appendChild(seal);
-    acts.appendChild(btn('gk-choice light', '로비로', function () { toLobby(); }));
+    acts.appendChild(S.online ? btn('gk-choice light', '그만하기', askEndOnline) : btn('gk-choice light', '로비로', function () { toLobby(); }));
     panel.appendChild(acts);
     root.appendChild(panel);
   }
@@ -833,6 +851,187 @@
     box.appendChild(ready);
     h.appendChild(box);
     setTimeout(function () { ready.focus(); }, 30);
+  }
+
+  // ---------- 같이 놀기: 공원에서 초대한 친구와 각자 기기로 '친구랑 문지기' ----------
+  // 서버 칸(js/net/net.js MPNet.shared): games/{gid} { a, b, aNick, bNick, band, maker, stage: build|play, round, rule }
+  //   · gameviews/{gid} 판정하는 친구 화면 모습(규칙 만든 친구가 그대로 구경)
+  // 규칙 만든 친구 = maker, 판정하는 친구 = judge. 끝나면 '역할 바꾸기'(maker 를 바꾸고 다시 build) 또는 '그만하기'(칸을 지움 → 친구도 공원으로)
+  function josa(w, a, b) { var c = String(w).charCodeAt(String(w).length - 1) - 0xAC00, has = c >= 0 && c <= 11171 && c % 28 !== 0; return w + (has ? a : b); }
+  function NETS() { return window.MPNet && MPNet.shared; }
+  function onlinePartnerNick() { var o = S.online, g = o && o.game; return g ? (g.a === o.me ? g.bNick : g.aNick) || '친구' : '친구'; }
+  function onlineMakerNick() { var g = S.online && S.online.game; return g ? (g.maker === g.a ? g.aNick : g.bNick) || '친구' : '친구'; }
+  function startOnline(o) {
+    if (!NETS()) return;
+    S.online = { code: o.code, gid: o.gid, me: o.me, game: null, lastKey: '', viewRound: 0, rewarded: 0, offs: [] };
+    S.mode = 'friend'; S.run = null;
+    ui.gateExit.textContent = '그만하기';
+    showWaiting('친구를 기다리는 중…', '');
+    S.online.offs.push(NETS().on(o.code, 'games/' + o.gid, onGame));
+    S.online.offs.push(NETS().on(o.code, 'gameviews/' + o.gid, onView));
+    S.online.offs.push(NETS().dropOnLeave(o.code, 'games/' + o.gid));   // 창을 닫으면 친구 화면에 '친구가 나갔어요'
+  }
+  function onGame(g) {
+    var o = S.online; if (!o) return;
+    if (!g) { if (o.seen) partnerGone(); return; }   // 친구가 그만하거나 나감
+    o.seen = true; o.game = g;
+    o.role = g.maker === o.me ? 'maker' : 'judge';
+    var key = g.stage + ':' + g.round;
+    if (key === o.lastKey) return;
+    o.lastKey = key;
+    hideModal();
+    if (g.stage === 'build') {
+      if (o.role === 'maker') { S.friend.parts = defaultParts(); openBuilder(); }
+      else showWaiting('🔒 ' + josa(onlinePartnerNick(), '이', '가') + ' 비밀 규칙을 만드는 중이에요…', '이번엔 내가 문지기! 규칙이 봉인되면 손님이 와요.');
+    } else if (g.stage === 'play' && g.rule) {
+      var F = G.FRIEND[g.band];
+      if (o.role === 'judge') {
+        S.friendRewarded = false;
+        ui.passBtn.hidden = ui.stopBtn.hidden = false; watchNote('');
+        beginStage(G.newRound({ rule: g.rule, domain: F.domain, shapes: F.shapes, guests: FRIEND_GUESTS }),
+          josa(onlineMakerNick(), '이', '가') + ' 만든 규칙이야. 기록을 잘 봐!', false);
+      } else {
+        // 구경: 판정하는 친구 화면을 그대로 따라 그림
+        S.round = null; showScene('gate'); setJudgeEnabled(false);
+        ui.passBtn.hidden = ui.stopBtn.hidden = true;
+        ui.guestWrap.textContent = ''; ui.logList.textContent = ''; ui.slots.forEach(function (sl) { sl.textContent = ''; });
+        setGhost('think'); say(josa(onlinePartnerNick(), '이', '가') + ' 기록을 살펴보는 중이에요…');
+        ui.info.textContent = '👀 ' + josa(onlinePartnerNick(), '이', '가') + ' 판정하는 중';
+        watchNote('👀 ' + josa(onlinePartnerNick(), '이', '가') + ' ‘통과’와 ‘잠깐!’을 고르는 중이에요');
+      }
+    }
+  }
+  function sealOnline(rule) {
+    var o = S.online; if (!o || !o.game) return;
+    ui.builder.textContent = '';
+    showWaiting('🔒 비밀 규칙을 봉인했어!', onlinePartnerNick() + ' 화면에 손님이 와요. 같이 지켜봐요!');
+    NETS().update(o.code, 'games/' + o.gid, { rule: rule, stage: 'play' });
+  }
+  function swapOnline() {
+    var o = S.online; if (!o || !o.game) return;
+    var g = o.game, next = g.maker === g.a ? g.b : g.a;
+    NETS().remove(o.code, 'gameviews/' + o.gid);
+    NETS().update(o.code, 'games/' + o.gid, { maker: next, stage: 'build', rule: null, round: (g.round || 1) + 1 });
+  }
+  function askEndOnline() {
+    // 안내창은 검문대 화면 안에 있음 → 규칙 만들기·기다림 화면이면 잠깐 검문대로 바꿨다가 '계속하기'면 되돌림
+    var back = S.scene === 'builder' || S.scene === 'handoff';
+    if (back) showScene('gate');
+    showModal('그만할까요?', [josa(onlinePartnerNick(), '도', '도') + ' 함께 공원으로 돌아가요.'],
+      [{ text: '그만하기', main: true, fn: function () { hideModal(); endOnline(false); close(); } },
+       { text: '계속하기', fn: function () { hideModal(); if (back && S.online) { S.online.lastKey = ''; onGame(S.online.game); } } }]);
+  }
+  // 같이 놀기 끝: 서버 칸을 지우면 친구 화면도 공원으로
+  function endOnline(quiet) {
+    var o = S.online; if (!o) return;
+    S.online = null;
+    o.offs.forEach(function (off) { try { off(); } catch (e) { /* 무시 */ } });
+    if (NETS()) { NETS().remove(o.code, 'games/' + o.gid); NETS().remove(o.code, 'gameviews/' + o.gid); }
+    ui.gateExit.textContent = '로비로';
+    ui.passBtn.hidden = ui.stopBtn.hidden = false; watchNote('');
+    S.mode = 'solo';
+  }
+  function partnerGone() {
+    var nick = onlinePartnerNick();
+    endOnline(true);
+    showScene('gate'); setJudgeEnabled(false); setGhost('stop');
+    showModal(josa(nick, '이', '가') + ' 나갔어요', ['같이 놀기가 끝났어요. 공원에서 또 불러 봐요!'],
+      [{ text: '공원으로', main: true, fn: function () { hideModal(); close(); } }]);
+  }
+  // 구경하는 쪽: 판정 버튼 자리에 안내 한 줄
+  function watchNote(text) {
+    if (!ui.watch) { ui.watch = el('p', 'gk-watch'); ui.gate.appendChild(ui.watch); }
+    ui.watch.textContent = text || ''; ui.watch.hidden = !text;
+  }
+  // 기다림 화면(규칙 만드는 중 · 봉인함)
+  function showWaiting(title, sub) {
+    showScene('handoff');
+    var h = ui.handoff; h.textContent = '';
+    var box = el('div', 'gk-handoff-box');
+    box.appendChild(img('ghost-hello', 'gk-handoff-ghost'));
+    box.appendChild(el('p', 'gk-handoff-text', title));
+    if (sub) box.appendChild(el('p', 'gk-handoff-sub', sub));
+    box.appendChild(btn('gk-choice light', '그만하기', askEndOnline));
+    h.appendChild(box);
+  }
+
+  // 판정하는 친구: 지금 화면 모습을 보냄
+  function pack(k) { return { b: k.badge, i: k.item, p: !!k.pass, x: !!k.extra, l: k.look || null }; }
+  function pub(phase, extra) {
+    var o = S.online; if (!o || o.role !== 'judge' || !S.round) return;
+    var R = S.round, recs = R.records, more = R.known.filter(function (k) { return recs.indexOf(k) < 0; });
+    var v = {
+      round: o.game.round, phase: phase, at: Date.now(),
+      records: recs.map(pack), more: more.map(pack),
+      guest: S.guest && phase === 'play' ? pack(S.guest) : null,
+      ghost: ui.ghost.dataset.pose || 'think', bubble: ui.bubble.textContent || '', count: R.count, total: R.total
+    };
+    if (extra && extra.hints) v.hints = extra.hints.map(function (k) { return R.known.indexOf(k); }).filter(function (i) { return i >= 0; });
+    if (extra && extra.said) { v.said = extra.said; v.leaving = extra.leaving; }
+    if (extra && extra.wrong) v.wrong = extra.wrong;
+    if (phase === 'quiz') v.quiz = (extra && extra.quiz) || [];
+    if (phase === 'reveal') { v.right = !!extra.right; v.pick = extra.pick; v.rule = R.rule; }
+    if (phase === 'done') v.rule = R.rule;
+    NETS().set(o.code, 'gameviews/' + o.gid, v);
+  }
+  // 규칙 만든 친구: 받은 모습을 그대로 그림
+  function unpack(x) { return { badge: x.b, item: x.i, pass: !!x.p, extra: !!x.x, look: x.l || guestLook([]) }; }
+  function onView(v) {
+    var o = S.online; if (!o || o.role !== 'maker' || !v || !o.game || v.round !== o.game.round || o.game.stage !== 'play') return;
+    var recs = (v.records || []).map(unpack), more = (v.more || []).map(unpack);
+    S.round = { records: recs, known: recs.concat(more), count: v.count || 0, total: v.total || FRIEND_GUESTS, rule: v.rule || o.game.rule, looks: [] };
+    if (S.scene !== 'gate') showScene('gate');
+    ui.passBtn.hidden = ui.stopBtn.hidden = true;
+    renderBoard(); renderLog();
+    clearMarks();
+    (v.hints || []).forEach(function (i) { var k = S.round.known[i]; if (k && k.el) k.el.classList.add('is-hint'); });
+    setGhost(v.ghost || 'think');
+    say(v.bubble || '');
+    ui.info.textContent = '👀 ' + josa(onlinePartnerNick(), '이', '가') + ' 판정하는 중 · 손님 ' + Math.min(v.count || 0, v.total || 0) + ' / ' + (v.total || 0);
+    // 손님
+    var gk = v.guest ? JSON.stringify(v.guest) : '';
+    if (gk !== o.lastGuest) {
+      o.lastGuest = gk; ui.guestWrap.textContent = '';
+      if (v.guest) {
+        var gg = unpack(v.guest);
+        ui.guestWrap.appendChild(figure('full', gg.look, gg));
+        ui.guestWrap.className = 'gk-guest enter'; void ui.guestWrap.offsetWidth; ui.guestWrap.className = 'gk-guest';
+      }
+    }
+    if (v.said) { ui.guestSay.textContent = v.said; ui.guestSay.className = 'gk-guest-say ' + (v.leaving || 'pass'); ui.guestSay.hidden = false; }
+    else ui.guestSay.hidden = true;
+    var partner = onlinePartnerNick();
+    if (v.phase === 'quiz') {
+      var box = el('div', 'gk-quiz');
+      (v.quiz || []).forEach(function (rule) {
+        var b = btn('gk-quiz-opt', ''); b.disabled = true;
+        b.appendChild(formula(rule)); b.appendChild(el('span', 'gk-quiz-text', G.describe(rule))); box.appendChild(b);
+      });
+      showModal(josa(partner, '이', '가') + ' 내 규칙을 맞히는 중이에요…', [], [], null, box, 'log');
+    } else if (v.phase === 'reveal') {
+      spotlight(v.rule);
+      var f = formula(v.rule); f.classList.add('big');
+      showModal(v.right ? '🎉 ' + josa(partner, '이', '가') + ' 내 규칙을 맞혔어요!' : josa(partner, '이', '가') + ' 아쉽게 못 맞혔어요',
+        [v.right ? '내 규칙을 잘 찾았어요!' : '기록에서 반짝이는 곳을 보면 규칙이 보여요.'], [], G.describe(v.rule), f, 'log');
+    } else if (v.phase === 'done') {
+      makerDone(v);
+    } else hideModal();
+  }
+  // 규칙 만든 친구도 판이 끝나면 티켓(하루 한도 안에서 판마다 1장)
+  function makerDone(v) {
+    var o = S.online, lines = [];
+    if (o.rewarded !== v.round) {
+      o.rewarded = v.round;
+      var before = ticketCount(), got = null, gs = null, gain = 0;
+      patchGate(function (g) { g.rounds = (g.rounds || 0) + 1; got = award(g, null); gs = g; gain = got.gain; return gain ? { tickets: (save().tickets || 0) + gain } : {}; });
+      if (gain) showTickets(before);
+      o.lastTicketLine = ticketLine(got, gs);
+    }
+    lines.push(o.lastTicketLine || '');
+    showModal('친구랑 문지기 끝!', lines, [
+      { text: '역할 바꾸기', main: true, fn: function () { hideModal(); swapOnline(); } },
+      { text: '그만하기', fn: function () { hideModal(); endOnline(false); close(); } }
+    ]);
   }
 
   // ---------- 입력 ----------
@@ -874,6 +1073,8 @@
       S.dest = p;
     });
   }
-  window.MPGate = { open: open, close: close, _state: S, _ui: ui, _walkable: walkable };
+  window.MPGate = { open: open, close: close, _state: S, _ui: ui, _walkable: walkable,
+    // 같이 노는 친구 닉네임(공원 쪽에서 선생님 화면에 '○○와 함께' 표시용)
+    onlinePartner: function () { return S.online && S.online.game ? onlinePartnerNick() : null; } };
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init); else init();
 })();

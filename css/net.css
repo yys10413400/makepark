@@ -76,3 +76,27 @@ html.teacher-mode .install-app { display: none; }
   #hud .room-chip { margin: 0 0 0 auto; max-width: calc(50% - 4px); font-size: 13px; }
   #hud .hud-right { order: 3; width: 100%; justify-content: flex-end; flex-wrap: wrap; }
 }
+
+/* 같이 놀기: 친구 가까이 가면 위쪽 가운데 버튼, 초대 카드 */
+.play-with {
+  position: fixed; left: 50%; top: calc(max(12px, env(safe-area-inset-top)) + 64px); transform: translateX(-50%); z-index: 15;
+  padding: 9px 18px; border-radius: 99px; font: inherit; font-size: 16px; cursor: pointer; white-space: nowrap;
+  background: #6a3d9a; color: #fff6e0; border: 2px solid #f3e3bd; box-shadow: 0 4px 0 #3d1f5c;
+  animation: play-bob 1.4s ease-in-out infinite;
+}
+.play-with:disabled { background: #8f78a8; box-shadow: 0 4px 0 #5d4a72; cursor: default; animation: none; }
+@keyframes play-bob { 50% { transform: translate(-50%, -3px); } }
+.invite-card {
+  position: fixed; left: 50%; top: 50%; transform: translate(-50%, -50%); z-index: 40; width: min(380px, calc(100% - 32px));
+  padding: 18px 20px 16px; border-radius: 18px; text-align: center;
+  background: #fbf1dc; color: #3b2410; border: 3px solid #e2b357; box-shadow: 0 6px 0 rgba(40, 10, 60, 0.45), 0 18px 40px rgba(20, 10, 40, 0.35);
+  animation: invite-pop 0.25s ease-out;
+}
+@keyframes invite-pop { from { transform: translate(-50%, -50%) scale(0.9); opacity: 0; } }
+.invite-title { margin: 0 0 6px; font-size: 21px; color: #4a2370; }
+.invite-sub { margin: 0 0 14px; font-size: 14px; line-height: 1.45; color: #6e4b2f; }
+.invite-btns { display: flex; gap: 10px; justify-content: center; }
+.invite-btns button { min-width: 110px; padding: 9px 16px; border-radius: 12px; font: inherit; font-size: 17px; cursor: pointer; }
+.invite-yes { background: #6a3d9a; color: #fff6e0; border: 2px solid #f3e3bd; box-shadow: 0 3px 0 #3d1f5c; }
+.invite-no { background: #fff8e8; color: #4a2370; border: 2px solid #d9b878; box-shadow: 0 3px 0 #b79a63; }
+@media (prefers-reduced-motion: reduce) { .play-with, .invite-card { animation: none; } }

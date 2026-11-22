@@ -325,3 +325,9 @@ kbd { font-family: inherit; font-size: 0.75em; padding: 0 0.4em; border-radius: 
   .is-hint { box-shadow: 0 0 0 0.6cqw rgba(255, 214, 90, 0.95); }
   .gk-guest { transition: none; }
 }
+
+/* 같이 놀기: 구경하는 쪽은 판정 버튼 자리에 안내 */
+.gk-watch {
+  left: 30%; top: 85.5%; width: 40%; height: 8%; z-index: 4; display: flex; align-items: center; justify-content: center;
+  border-radius: 99px; font-size: 1.5cqw; color: #4a2370; background: rgba(255, 248, 234, 0.92); border: 0.16cqw solid #d9b878;
+}

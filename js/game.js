@@ -1008,6 +1008,16 @@
       state.player.x = t.x; state.player.y = t.y; state.player.dir = 'down';
       stopMoving(); snapCamera(); updateNearby(); writeSave();
     },
+    // 같이 놀기(js/net/multiplayer.js): 다른 창을 닫고 놀이기구를 바로 엶(유령의 집은 로비 없이 검문대로)
+    openRide: function (id, opts) {
+      var ride = id === 'coaster' ? window.MPCoaster : id === 'ghost' ? window.MPGate : null;
+      if (!ride || state.phase !== 'play') return false;
+      window.MP_API.closeRide();
+      stopMoving(); state.keys = {};
+      state.rideOpen = id; state.nearby = null; ui.enter.hidden = true;
+      ride.open(opts);
+      return true;
+    },
     closeRide: function () {
       if (state.rideOpen === 'coaster' && window.MPCoaster) MPCoaster.close();
       else if (state.rideOpen === 'ghost' && window.MPGate) MPGate.close();
