@@ -54,9 +54,15 @@ print('lobby', lobby.size)
 
 # 거북이 4방향: 왼쪽 위=앞(아래를 봄 S), 오른쪽 위=뒤(위를 봄 N), 왼쪽 아래=왼쪽(W), 오른쪽 아래=오른쪽(E)
 t4 = clean(load('turtle-4dir.webp'))
-hw, hh = t4.width // 2, t4.height // 2
-for d, (x, y) in {'S': (0, 0), 'N': (1, 0), 'W': (0, 1), 'E': (1, 1)}.items():
-    save(fit_h(bbox_crop(t4.crop((x * hw, y * hh, (x + 1) * hw, (y + 1) * hh))), 240), 'turtle-' + d)
+# 위·아래, 왼쪽·오른쪽을 가운데 근처의 '그림이 가장 적은 줄'에서 나눔(옆 칸 그림 끝이 섞이지 않게)
+al = np.array(t4)[..., 3] > 30
+def gap(sums, n):
+    lo, hi = int(n * 0.35), int(n * 0.65)
+    return lo + int(np.argmin(sums[lo:hi]))
+hy, hx = gap(al.sum(axis=1), t4.height), gap(al.sum(axis=0), t4.width)
+boxes = {'S': (0, 0, hx, hy), 'N': (hx, 0, t4.width, hy), 'W': (0, hy, hx, t4.height), 'E': (hx, hy, t4.width, t4.height)}
+for d, b in boxes.items():
+    save(fit_h(bbox_crop(t4.crop(b)), 240), 'turtle-' + d)
 
 # 레일
 st = clean(load('rail-straight.webp'))           # 1254 정사각형, 레일 가운데 y≈625
