@@ -183,7 +183,7 @@
     st.appendChild(ui.tickets);
 
     // 그림 미리 불러오기
-    ['ghost-idle', 'ghost-hello', 'ghost-think', 'ghost-pass', 'ghost-stop', 'ghost-cheer'].forEach(function (n) { var i = new Image(); i.src = SPR.base + n + '.webp'; });
+    ['ghost-float-00', 'ghost-float-01', 'ghost-float-02', 'ghost-float-03', 'ghost-float-04', 'ghost-float-05', 'ghost-float-06', 'ghost-float-07', 'ghost-float-idle', 'ghost-hello', 'ghost-think', 'ghost-pass', 'ghost-stop', 'ghost-cheer'].forEach(function (n) { var i = new Image(); i.src = SPR.base + n + '.webp'; });
   }
 
   // ---------- 로비 대화: 첫 대사 → 학년 → 놀이 고르기 ----------
@@ -362,16 +362,25 @@
     if (!ghostImgs[n]) { ghostImgs[n] = new Image(); ghostImgs[n].src = SPR.base + 'ghost-' + n + '.webp'; }
     return ghostImgs[n];
   }
+  // 로비 유령 대기 움직임(assets/gatekeeper-src/ghost-float, 384×384 고정 캔버스 8프레임 — 떠오르기가 그림에 들어 있어 따로 흔들지 않음)
+  // 대화 중에는 정면 자세(ghost-float-idle) 한 장으로 멈춤. bottom: 프레임마다 유령 아래 끝(그림자 크기용)
+  var FLOAT = { size: 384, ms: [500, 300, 300, 300, 500, 300, 300, 500], bottom: [346, 335, 322, 319, 320, 326, 341, 348], base: 346, draw: 253 };
+  FLOAT.total = FLOAT.ms.reduce(function (a, b) { return a + b; }, 0);
+  function floatFrame(t) {
+    var ms = (t * 1000) % FLOAT.total;
+    for (var i = 0; i < FLOAT.ms.length; i++) { if (ms < FLOAT.ms[i]) return i; ms -= FLOAT.ms[i]; }
+    return 0;
+  }
   function drawLobby(t) {
     var c = ui.canvas.getContext('2d');
     c.clearRect(0, 0, IW, IH);
-    var pose = S.nearGhost || S.dialog ? 'hello' : 'idle', gi = ghostImg(pose), gm = SPR.ghost[pose];
+    var fi = S.dialog ? -1 : floatFrame(t), gi = ghostImg(fi < 0 ? 'float-idle' : 'float-0' + fi);
     var items = [
       { y: GHOST.y, draw: function () {
-        var bob = Math.sin(t * 2.2) * 8, w = GHOST.h * gm.w / gm.h;
+        var k = FLOAT.draw / FLOAT.size, lift = (FLOAT.base - (fi < 0 ? FLOAT.base : FLOAT.bottom[fi])) * k;
         c.save(); c.fillStyle = 'rgba(20,0,40,0.28)';
-        c.beginPath(); c.ellipse(GHOST.x, GHOST.y, 50 - bob * 0.6, 12, 0, 0, Math.PI * 2); c.fill(); c.restore();
-        if (gi.complete && gi.naturalWidth) c.drawImage(gi, GHOST.x - w / 2, GHOST.y - GHOST.h - 18 + bob * 0.7, w, GHOST.h);
+        c.beginPath(); c.ellipse(GHOST.x, GHOST.y, 50 - lift * 0.5, 12 - lift * 0.08, 0, 0, Math.PI * 2); c.fill(); c.restore();
+        if (gi.complete && gi.naturalWidth) c.drawImage(gi, GHOST.x - FLOAT.draw / 2, GHOST.y - 20 - FLOAT.base * k, FLOAT.draw, FLOAT.draw);
       } },
       { y: S.me.y, draw: function () { drawMe(c, t); } }
     ];
