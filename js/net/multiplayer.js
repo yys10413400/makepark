@@ -16,7 +16,7 @@
   if (!NET) return;
   var SEND_MS = 200, BEAT_MS = 3000;   // 움직일 때 1초에 5번, 가만히 있으면 3초마다
   var GATHER = { x: 690, y: 600 };      // 모두 모으기: 분수 광장 앞
-  var WHERE = { coaster: '코스터 익스프레스', ghost: '유령의 집' };
+  var WHERE = { coaster: '코스터 익스프레스', ghost: '유령의 집', melody: '멜로디 스테이지', picnic: '피크닉 가게' };
 
   var S = { code: null, handle: null, pid: null, others: {}, last: null, lastSend: 0, joinedAt: 0, mySay: null, chatOff: false, lastSay: 0 };
   // 보낼 수 있는 말(번호로만 주고받음 — 번호를 바꾸면 예전 기기와 뜻이 달라지므로 끝에만 더하기)
@@ -61,7 +61,10 @@
     // 2단계: 비밀번호 4자리 (반 공원에 저장된 내 기록 불러오기)
     var q = ui.pinForm = card('pinTitle', '🔒 비밀번호'); q.hidden = true;
     ui.pinText = el('p', 'join-line'); q.appendChild(ui.pinText);
-    ui.pin = el('input', 'join-input'); ui.pin.id = 'joinPin'; ui.pin.inputMode = 'numeric'; ui.pin.maxLength = 4; ui.pin.autocomplete = 'off';
+    // type=password·name 을 쓰지 않음: 브라우저·비밀번호 관리자가 저장했다가 다음 접속 때 자동으로 채우지 못하게(항상 직접 입력)
+    ui.pin = el('input', 'join-input'); ui.pin.id = 'joinPin'; ui.pin.type = 'text'; ui.pin.inputMode = 'numeric'; ui.pin.maxLength = 4; ui.pin.autocomplete = 'off';
+    ui.pin.setAttribute('autocorrect', 'off'); ui.pin.setAttribute('autocapitalize', 'off'); ui.pin.spellcheck = false;
+    ui.pin.setAttribute('data-lpignore', 'true'); ui.pin.setAttribute('data-1p-ignore', 'true'); ui.pin.setAttribute('data-form-type', 'other');
     ui.pin.placeholder = '숫자 4자리'; ui.pin.setAttribute('aria-label', '비밀번호 숫자 4자리');
     q.appendChild(ui.pin);
     ui.pinErr = el('p', 'join-err'); ui.pinErr.setAttribute('aria-live', 'polite'); q.appendChild(ui.pinErr);
@@ -117,7 +120,7 @@
     return NET.studentExists(code, entry.name).then(function (exists) {
       showStep('pin');
       ui.pin.value = ''; ui.pinErr.textContent = ''; ui.pinGo.disabled = false;
-      ui.pin.type = exists ? 'password' : 'text';
+      ui.pin.classList.toggle('pin-hide', exists);   // 있던 닉네임이면 점으로 가림(저장·자동 채우기 없이)
       ui.pinText.textContent = exists
         ? entry.name + '님, 다시 왔군요! 비밀번호를 넣으면 기록을 이어서 해요.'
         : '처음 왔어요! 비밀번호 4자리를 정해요. 다른 기기에서 이어 할 때 써요.';
@@ -134,6 +137,7 @@
             ui.pinErr.textContent = res.reason === 'pin' ? '비밀번호가 달라요. 잊어버렸으면 선생님께 말해 주세요.' : '등록하지 못했어요. 다시 눌러 주세요.';
             ui.pin.select(); return;
           }
+          ui.pin.value = '';   // 확인이 끝나면 입력칸에 남기지 않음
           useClassSave(code, res.key, res.save, entry);
           ui.dlg.hidden = true;
           pending.proceed();
@@ -162,6 +166,8 @@
     NET.studentSave(S.code, S.studentKey, d).then(null, function (err) { console.error('반 기록 저장 실패', err); });
   }
   window.addEventListener('pagehide', flush);
+  // 뒤로 가기·앱 다시 열기로 예전 화면이 그대로 되살아나면(bfcache) 반 공원에 들어가 있던 상태가 남음 → 새로 불러와 다시 로그인하게
+  window.addEventListener('pageshow', function (e) { if (e.persisted && S.studentKey) location.reload(); });
   document.addEventListener('visibilitychange', function () { if (document.hidden) flush(); });
 
   // ---------- 공원 입장 / 나가기 ----------

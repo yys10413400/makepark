@@ -13,6 +13,8 @@
   font: inherit; font-size: 28px; letter-spacing: 0.3em; text-align: center; color: #3b2410;
   background: #fff; border: 2px dashed #d9b878;
 }
+/* 비밀번호 가리기: type=password 를 쓰면 브라우저가 비밀번호를 저장했다가 다음에 자동으로 채워 줘서, 글자 칸을 점으로만 보이게 함 */
+.join-input.pin-hide { -webkit-text-security: disc; text-security: disc; }
 .join-input::placeholder { font-size: 18px; letter-spacing: 0; color: #b09670; }
 .join-input:focus { border-style: solid; border-color: #6a3d9a; box-shadow: 0 0 0 3px rgba(106, 61, 154, 0.2); }
 .join-err { min-height: 20px; margin: 6px 0 0; font-size: 14px; color: #c0392b; }
