@@ -1,0 +1,147 @@
+{
+  "canvas": [
+    320,
+    320
+  ],
+  "duration_ms": 400,
+  "frame_durations_ms": [
+    80,
+    80,
+    140,
+    100
+  ],
+  "loop": false,
+  "on_complete": "idle",
+  "characters": {
+    "bass_drum": {
+      "label": "큰북",
+      "track": "rhythm",
+      "idle": "bass_drum/idle.png",
+      "gif": "bass_drum/play.gif",
+      "frames": [
+        "bass_drum/frame_00.png",
+        "bass_drum/frame_01.png",
+        "bass_drum/frame_02.png",
+        "bass_drum/frame_03.png"
+      ],
+      "strip": "bass_drum/strip.png"
+    },
+    "small_drum": {
+      "label": "작은북",
+      "track": "rhythm",
+      "idle": "small_drum/idle.png",
+      "gif": "small_drum/play.gif",
+      "frames": [
+        "small_drum/frame_00.png",
+        "small_drum/frame_01.png",
+        "small_drum/frame_02.png",
+        "small_drum/frame_03.png"
+      ],
+      "strip": "small_drum/strip.png"
+    },
+    "clap": {
+      "label": "박수",
+      "track": "rhythm",
+      "idle": "clap/idle.png",
+      "gif": "clap/play.gif",
+      "frames": [
+        "clap/frame_00.png",
+        "clap/frame_01.png",
+        "clap/frame_02.png",
+        "clap/frame_03.png"
+      ],
+      "strip": "clap/strip.png"
+    },
+    "bells": {
+      "label": "방울",
+      "track": "rhythm",
+      "idle": "bells/idle.png",
+      "gif": "bells/play.gif",
+      "frames": [
+        "bells/frame_00.png",
+        "bells/frame_01.png",
+        "bells/frame_02.png",
+        "bells/frame_03.png"
+      ],
+      "strip": "bells/strip.png"
+    },
+    "do_keyboard": {
+      "label": "도 · 건반",
+      "track": "melody",
+      "idle": "do_keyboard/idle.png",
+      "gif": "do_keyboard/play.gif",
+      "frames": [
+        "do_keyboard/frame_00.png",
+        "do_keyboard/frame_01.png",
+        "do_keyboard/frame_02.png",
+        "do_keyboard/frame_03.png"
+      ],
+      "strip": "do_keyboard/strip.png"
+    },
+    "re_guitar": {
+      "label": "레 · 기타",
+      "track": "melody",
+      "idle": "re_guitar/idle.png",
+      "gif": "re_guitar/play.gif",
+      "frames": [
+        "re_guitar/frame_00.png",
+        "re_guitar/frame_01.png",
+        "re_guitar/frame_02.png",
+        "re_guitar/frame_03.png"
+      ],
+      "strip": "re_guitar/strip.png"
+    },
+    "mi_trumpet": {
+      "label": "미 · 트럼펫",
+      "track": "melody",
+      "idle": "mi_trumpet/idle.png",
+      "gif": "mi_trumpet/play.gif",
+      "frames": [
+        "mi_trumpet/frame_00.png",
+        "mi_trumpet/frame_01.png",
+        "mi_trumpet/frame_02.png",
+        "mi_trumpet/frame_03.png"
+      ],
+      "strip": "mi_trumpet/strip.png"
+    },
+    "sol_sax": {
+      "label": "솔 · 색소폰",
+      "track": "melody",
+      "idle": "sol_sax/idle.png",
+      "gif": "sol_sax/play.gif",
+      "frames": [
+        "sol_sax/frame_00.png",
+        "sol_sax/frame_01.png",
+        "sol_sax/frame_02.png",
+        "sol_sax/frame_03.png"
+      ],
+      "strip": "sol_sax/strip.png"
+    },
+    "la_violin": {
+      "label": "라 · 바이올린",
+      "track": "melody",
+      "idle": "la_violin/idle.png",
+      "gif": "la_violin/play.gif",
+      "frames": [
+        "la_violin/frame_00.png",
+        "la_violin/frame_01.png",
+        "la_violin/frame_02.png",
+        "la_violin/frame_03.png"
+      ],
+      "strip": "la_violin/strip.png"
+    },
+    "high_do": {
+      "label": "높은 도 · 주인공",
+      "track": "melody",
+      "idle": "high_do/idle.png",
+      "gif": "high_do/play.gif",
+      "frames": [
+        "high_do/frame_00.png",
+        "high_do/frame_01.png",
+        "high_do/frame_02.png",
+        "high_do/frame_03.png"
+      ],
+      "strip": "high_do/strip.png"
+    }
+  }
+}

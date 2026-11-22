@@ -71,6 +71,25 @@
     this.action = null; return D.ANIM.idle;
   };
   Uni.prototype.update = function (now) { this.show(this.frame(now || performance.now())); };
+  // 유니콘 밴드 재생기(자유 연주): 오디오 시계 기준. hitAt(t) = t 에 소리가 들릴 때 frame_02(연주 자세)가 보이게
+  // leadMs 먼저 0번(=idle)부터 한 번 재생 → 끝나면 idle. 같은 캐릭터가 다시 연주하면 그 예약으로 처음부터(다른 캐릭터와 따로)
+  var BF = {};
+  function bandSrc(cid, f) { return D.PLAY.band.base + cid + '/' + f + '.webp'; }
+  function preloadBand() {
+    D.PLAY.items.forEach(function (it) { D.PLAY.band.frames.forEach(function (f) { var k = it.band + '/' + f; if (!BF[k]) { BF[k] = new Image(); BF[k].src = bandSrc(it.band, f); } }); });
+  }
+  function Band(img, cid) { this.img = img; this.cid = cid; this.start = null; this.next = null; this.cur = ''; this.show('idle'); }
+  Band.prototype.show = function (f) { if (f === this.cur) return; this.cur = f; if (this.img) this.img.src = bandSrc(this.cid, f); };
+  Band.prototype.hitAt = function (t) { this.next = t - D.PLAY.band.leadMs / 1000; };
+  Band.prototype.cancel = function () { this.next = null; };
+  Band.prototype.update = function (now) {
+    var B = D.PLAY.band;
+    if (this.next != null && now >= this.next) { this.start = this.next; this.next = null; }
+    if (this.start == null) { this.show('idle'); return; }
+    var e = (now - this.start) * 1000, acc = 0;
+    for (var i = 0; i < B.frames.length; i++) { acc += B.ms[i]; if (e < acc) { this.show(B.frames[i]); return; } }
+    this.start = null; this.show('idle');
+  };
   // 그림 상자: 캔버스(320×320) 기준점(160,298)을 바닥 점(x,y)에 맞추고 크기 size(그림 px)로 고정
   function placeUni(box, x, y, size) {
     var c = D.ANIM.canvas, a = D.ANIM.anchor;
@@ -877,7 +896,9 @@
       D.PLAY.items.filter(function (x) { return x.line === L[0]; }).forEach(function (it) {
         var b = btn('ml-pal', '', function () { if (S.play.palDragged) { S.play.palDragged = false; return; } pickItem(it.id); });
         b.dataset.id = it.id;
-        b.appendChild(el('span', 'ml-pal-icon', it.icon));
+        var face = el('span', 'ml-pal-face'); face.style.backgroundImage = 'url(' + bandSrc(it.band, 'idle') + ')';
+        face.appendChild(el('span', 'ml-pal-badge', it.icon));
+        b.appendChild(face);
         b.appendChild(el('span', 'ml-pal-name', it.name));
         b.setAttribute('aria-label', it.name + ' 고르기(소리 듣기)');
         ui.palBtns[it.id] = b; row.appendChild(b);
@@ -943,7 +964,8 @@
   function openPlay() {
     stopRun();
     var ms = melSave();
-    S.play = { song: cleanSong(ms.song), sel: null, playing: false, dirty: false, drag: null, unis: {} };
+    S.play = { song: cleanSong(ms.song), sel: null, playing: false, dirty: false, drag: null, band: {} };
+    preloadBand();
     ui.nameInput.value = S.play.song.name;
     showScene('play');
     renderPlay();
@@ -956,13 +978,14 @@
     // 무대 위 요소
     ui.tokens.textContent = ''; P.tokenEls = {};
     song.stage.slice().sort(function (a, b) { return a.y - b.y; }).forEach(function (p) {
-      var it = itemOf(p.id), t = el('div', 'ml-token ' + it.line + (P.sel === p.id ? ' sel' : '') + (it.sprite ? ' sprite' : ''));
+      var it = itemOf(p.id), t = el('div', 'ml-token band ' + it.line + (P.sel === p.id ? ' sel' : ''));
       t.dataset.id = p.id;
       t.style.left = pct(p.x, IW); t.style.top = pct(p.y, IH);
-      if (it.sprite) {
-        var im = el('img', 'ml-token-uni'); im.alt = ''; im.draggable = false; t.appendChild(im);
-        if (!P.unis[p.id]) P.unis[p.id] = new Uni(im); else { P.unis[p.id].img = im; P.unis[p.id].cur = ''; P.unis[p.id].update(); }
-      } else t.appendChild(el('span', 'ml-token-icon', it.icon));
+      // 캔버스 320×320 그대로(자르기·확대·뒤집기 없음). 캐릭터마다 발끝 높이가 달라 아래 여백만 맞춤
+      var im = el('img', 'ml-token-band'); im.alt = ''; im.draggable = false;
+      im.style.marginBottom = 'calc(var(--band-w) * ' + (-(D.PLAY.band.canvas - (D.PLAY.band.foot[it.band] || 310)) / D.PLAY.band.canvas - 0.03).toFixed(4) + ')';
+      t.appendChild(im);
+      if (!P.band[p.id]) P.band[p.id] = new Band(im, it.band); else { P.band[p.id].img = im; P.band[p.id].cur = ''; P.band[p.id].update(AU.heardNow()); }
       t.appendChild(el('span', 'ml-token-name', it.name));
       t.setAttribute('role', 'button'); t.setAttribute('tabindex', '0'); t.setAttribute('aria-label', '무대 위 ' + it.name + (P.sel === p.id ? ' (골랐어요)' : ''));
       t.addEventListener('keydown', function (e) { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); selectItem(p.id, true); } if (e.key === 'Delete' || e.key === 'Backspace') { e.preventDefault(); removeItem(p.id); } });
@@ -1000,12 +1023,7 @@
     AU.unlock();
     var it = itemOf(id); if (!it) return;
     AU.play(it.sound, null, { note: it.note, vol: 0.9 });
-    bump(id);
-  }
-  function bump(id) {
-    var t = S.play.tokenEls && S.play.tokenEls[id];
-    if (t) { t.classList.remove('hit'); void t.offsetWidth; t.classList.add('hit'); }
-    if (S.play.unis[id]) S.play.unis[id].play('jump', performance.now());
+    if (S.play.band[id]) S.play.band[id].hitAt(AU.now());   // 바로 연주 자세(frame_02)부터
   }
   function freeSpot() {
     var st = S.play.song.stage;
@@ -1051,7 +1069,7 @@
     var P = S.play; if (!id) return;
     P.song.stage = P.song.stage.filter(function (p) { return p.id !== id; });
     ['rhythm', 'melody'].forEach(function (line) { P.song[line] = P.song[line].map(function (x) { return x === id ? null : x; }); });
-    delete P.unis[id];
+    delete P.band[id];
     if (P.sel === id) P.sel = null;
     dirty(); renderPlay();
     toast(itemOf(id).name + '을(를) 무대에서 뺐어요');
@@ -1073,7 +1091,7 @@
     var P = S.play;
     if (!P.song.stage.length && !P.song.name) return;
     showModal('전체 지울까요?', ['무대 위 요소와 소리판이 모두 비워져요.'], [
-      { text: '모두 지우기', main: true, fn: function () { hideModal(); stopPlayback(); var keep = P.song; P.song = emptySong(); ['name', 'tempo', 'backing', 'swing'].forEach(function (k) { P.song[k] = keep[k]; }); P.sel = null; P.unis = {}; dirty(); renderPlay(); } },
+      { text: '모두 지우기', main: true, fn: function () { hideModal(); stopPlayback(); var keep = P.song; P.song = emptySong(); ['name', 'tempo', 'backing', 'swing'].forEach(function (k) { P.song[k] = keep[k]; }); P.sel = null; P.band = {}; dirty(); renderPlay(); } },
       { text: '취소', fn: hideModal }
     ]);
   }
@@ -1117,7 +1135,7 @@
         var id = P.song[line][i], it = id && itemOf(id);
         if (!it) return;
         AU.play(it.sound, t, { note: it.note, dur: beat * 0.55, vol: 0.9 });
-        P.hits.push({ t: t, id: id });
+        if (P.band[id]) P.band[id].hitAt(t);
       });
       P.hits.push({ t: t, col: i });
     }, !!P.song.swing);
@@ -1139,7 +1157,7 @@
     ['rhythm', 'melody'].forEach(function (line) { ex[line].forEach(function (id, i) { song[line][i] = id; if (id && used.indexOf(id) < 0) used.push(id); }); });
     used.slice(0, D.PLAY.maxOnStage).forEach(function (id, k) { song.stage.push({ id: id, x: SPOTS[k % SPOTS.length][0], y: SPOTS[k % SPOTS.length][1] }); });
     song.name = P.song.name || ex.name; song.tempo = ex.tempo; song.backing = ex.backing; song.swing = ex.swing;
-    P.song = cleanSong(song); P.sel = null; P.unis = {};
+    P.song = cleanSong(song); P.sel = null; P.band = {};
     ui.nameInput.value = P.song.name;
     dirty(); renderPlay(); startPlayback();
     toast('🎼 ‘' + ex.name + '’ 예시예요. 칸을 바꿔 나만의 음악으로 만들어 봐요!');
@@ -1149,21 +1167,22 @@
     if (!P || !P.playing) return;
     P.playing = false;
     if (P.sched) P.sched.stop();
+    Object.keys(P.band).forEach(function (k) { P.band[k].cancel(); });
     ui.colHeads.forEach(function (h) { h.classList.remove('now'); });
     ['rhythm', 'melody'].forEach(function (l) { ui.cells[l].forEach(function (c) { c.classList.remove('now'); }); });
     renderPlay();
   }
   function playFrame(now) {
     var P = S.play; if (!P) return;
-    Object.keys(P.unis).forEach(function (k) { P.unis[k].update(now); });
-    if (!P.playing) return;
     var t = AU.heardNow();
+    Object.keys(P.band).forEach(function (k) { P.band[k].update(t); });
+    if (!P.playing) return;
     while (P.hits.length && P.hits[0].t <= t) {
       var h = P.hits.shift();
       if (h.col != null) {
         ui.colHeads.forEach(function (x, k) { x.classList.toggle('now', k === h.col); });
         ['rhythm', 'melody'].forEach(function (l) { ui.cells[l].forEach(function (c, k) { c.classList.toggle('now', k === h.col); }); });
-      } else bump(h.id);
+      }
     }
   }
   // 무대 위 끌기

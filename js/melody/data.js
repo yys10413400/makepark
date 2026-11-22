@@ -77,6 +77,15 @@
   var PLAY = {
     steps: 8,
     maxOnStage: 8,
+    // 유니콘 밴드(assets/melody/band/<band>/ — tools/build_melody_assets.py 가 받은 PNG 를 WebP 로 바꿈)
+    // 준비(idle=frame_00) → 예비 → 연주(frame_02, 가장 센 자세) → 복귀 → 준비. 80·80·140·100ms
+    // 소리가 나는 순간에 frame_02 가 보이게 leadMs(=80+80) 먼저 시작. 같은 캐릭터가 다시 연주하면 처음부터
+    band: {
+      base: 'assets/melody/band/', canvas: 320,
+      frames: ['idle', 'frame_01', 'frame_02', 'frame_03'], ms: [80, 80, 140, 100], leadMs: 160,
+      // 캐릭터마다 발끝 높이(320 캔버스 안 y) — 무대 위 발 위치를 맞추는 데만 씀(자르기·확대 없음)
+      foot: { bass_drum: 313, small_drum: 309, clap: 300, bells: 290, do_keyboard: 308, re_guitar: 319, mi_trumpet: 307, sol_sax: 307, la_violin: 299, high_do: 310 }
+    },
     tempos: [{ id: 'slow', label: '느리게', bpm: 84 }, { id: 'mid', label: '보통', bpm: 104 }, { id: 'fast', label: '빠르게', bpm: 126 }],
     // 함께 연주(반주): 8칸 한 바퀴마다 화음이 바뀌어 같은 가락도 다르게 들려요
     backings: [{ id: 'off', label: '내 소리만', short: '반주 끔' }, { id: 'soft', label: '포근한 반주', short: '포근' }, { id: 'pop', label: '신나는 반주', short: '신나게' }],
@@ -94,16 +103,16 @@
         rhythm: ['drum', 'snare', 'clap', 'snare', 'drum', 'snare', 'clap', 'clap'] }
     ],
     items: [
-      { id: 'drum',   line: 'rhythm', name: '큰북',     icon: '🥁', sound: 'kick' },
-      { id: 'snare',  line: 'rhythm', name: '작은북',   icon: '🪘', sound: 'snare' },
-      { id: 'clap',   line: 'rhythm', name: '박수 친구', icon: '👏', sound: 'clap' },
-      { id: 'bell',   line: 'rhythm', name: '방울',     icon: '🔔', sound: 'jingle' },
-      { id: 'piano',  line: 'melody', name: '피아노 도', icon: '🎹', sound: 'piano', note: 60 },
-      { id: 'guitar', line: 'melody', name: '기타 레',  icon: '🎸', sound: 'pluck', note: 62 },
-      { id: 'horn',   line: 'melody', name: '트럼펫 미', icon: '🎺', sound: 'horn',  note: 64 },
-      { id: 'sax',    line: 'melody', name: '색소폰 솔', icon: '🎷', sound: 'reed',  note: 67 },
-      { id: 'violin', line: 'melody', name: '바이올린 라', icon: '🎻', sound: 'bow',  note: 69 },
-      { id: 'unicorn', line: 'melody', name: '유니콘 높은 도', icon: '🦄', sound: 'chime', note: 72, sprite: true }
+      { id: 'drum',   line: 'rhythm', name: '큰북',     icon: '🥁', sound: 'kick', band: 'bass_drum' },
+      { id: 'snare',  line: 'rhythm', name: '작은북',   icon: '🪘', sound: 'snare', band: 'small_drum' },
+      { id: 'clap',   line: 'rhythm', name: '박수 친구', icon: '👏', sound: 'clap', band: 'clap' },
+      { id: 'bell',   line: 'rhythm', name: '방울',     icon: '🔔', sound: 'jingle', band: 'bells' },
+      { id: 'piano',  line: 'melody', name: '피아노 도', icon: '🎹', sound: 'piano', note: 60, band: 'do_keyboard' },
+      { id: 'guitar', line: 'melody', name: '기타 레',  icon: '🎸', sound: 'pluck', note: 62, band: 're_guitar' },
+      { id: 'horn',   line: 'melody', name: '트럼펫 미', icon: '🎺', sound: 'horn',  note: 64, band: 'mi_trumpet' },
+      { id: 'sax',    line: 'melody', name: '색소폰 솔', icon: '🎷', sound: 'reed',  note: 67, band: 'sol_sax' },
+      { id: 'violin', line: 'melody', name: '바이올린 라', icon: '🎻', sound: 'bow',  note: 69, band: 'la_violin' },
+      { id: 'unicorn', line: 'melody', name: '유니콘 높은 도', icon: '🦄', sound: 'chime', note: 72, band: 'high_do' }
     ]
   };
 
