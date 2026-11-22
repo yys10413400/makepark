@@ -873,7 +873,8 @@
       var row = el('div', 'ml-pal-row ' + L[0]);
       row.appendChild(el('span', 'ml-pal-label', L[1]));
       D.PLAY.items.filter(function (x) { return x.line === L[0]; }).forEach(function (it) {
-        var b = btn('ml-pal', '', function () { pickItem(it.id); });
+        var b = btn('ml-pal', '', function () { if (S.play.palDragged) { S.play.palDragged = false; return; } pickItem(it.id); });
+        b.dataset.id = it.id;
         b.appendChild(el('span', 'ml-pal-icon', it.icon));
         b.appendChild(el('span', 'ml-pal-name', it.name));
         b.setAttribute('aria-label', it.name + ' 고르기(소리 듣기)');
@@ -918,6 +919,7 @@
 
     // 무대 위 요소 끌어 옮기기
     ui.tokens.addEventListener('pointerdown', onTokenDown);
+    pal.addEventListener('pointerdown', onPalDown);
     window.addEventListener('pointermove', onTokenMove);
     window.addEventListener('pointerup', onTokenUp);
     window.addEventListener('pointercancel', onTokenUp);
@@ -934,7 +936,7 @@
   }
   function dirty() { S.play.dirty = true; ui.saveBtn.classList.add('dirty'); }
   function renderPlay() {
-    var P = S.play, song = P.song, onStage = {};
+    var P = S.play, song = P.song, onStage = {}, si = P.sel && itemOf(P.sel);
     song.stage.forEach(function (p) { onStage[p.id] = p; });
     // 무대 위 요소
     ui.tokens.textContent = ''; P.tokenEls = {};
@@ -955,7 +957,7 @@
     // 선택 표시 · 빼기 버튼
     var sp = P.sel && onStage[P.sel];
     ui.delBtn.hidden = !sp || P.playing;
-    if (sp) { ui.delBtn.style.left = pct(sp.x, IW); ui.delBtn.style.top = pct(Math.min(sp.y + 34, AREA.y1 + 60), IH); }
+    if (sp) { ui.delBtn.style.left = pct(sp.x, IW); ui.delBtn.style.top = pct(Math.min(sp.y + 34, AREA.y1 + 8), IH); }
     // 고르기 버튼
     D.PLAY.items.forEach(function (it) {
       var b = ui.palBtns[it.id];
@@ -968,10 +970,10 @@
         c.textContent = it ? it.icon : '';
         c.classList.toggle('filled', !!it);
         c.classList.toggle('mine', !!(it && P.sel === id));
+        c.classList.toggle('target', !it && !P.playing && !!(si && si.line === line));
         c.setAttribute('aria-label', (line === 'rhythm' ? '리듬' : '멜로디') + ' ' + (i + 1) + '번 칸: ' + (it ? it.name : '비었어요'));
       });
     });
-    var si = P.sel && itemOf(P.sel);
     ui.selInfo.textContent = si ? si.icon + ' ' + si.name + ' — ' + (si.line === 'rhythm' ? '리듬' : '멜로디') + ' 줄 칸을 눌러 넣어요(한 번 더 누르면 빼요)' : '연주자를 고른 뒤 칸을 눌러 연주 순서를 정해요';
     Object.keys(ui.tempoBtns).forEach(function (k) { ui.tempoBtns[k].classList.toggle('on', song.tempo === k); ui.tempoBtns[k].setAttribute('aria-pressed', String(song.tempo === k)); });
     ui.playBtn.textContent = P.playing ? '■ 정지' : '▶ 재생';
@@ -1002,10 +1004,30 @@
       if (P.song.stage.length >= D.PLAY.maxOnStage) { toast('무대에는 ' + D.PLAY.maxOnStage + '개까지 올릴 수 있어요'); return; }
       var sp = freeSpot();
       P.song.stage.push({ id: id, x: sp.x, y: sp.y }); dirty();
+      // 처음 올리면 그 줄의 빈 칸 하나에 바로 넣어 줌(누르자마자 재생하면 소리가 나게)
+      var it = itemOf(id), row = P.song[it.line], at = row.indexOf(null);
+      if (row.indexOf(id) < 0 && at >= 0) { row[at] = id; toast(it.icon + ' ' + (at + 1) + '번 칸에 넣었어요. 다른 칸을 눌러 더 넣어 봐요!'); }
     }
     P.sel = id;
     renderPlay();
     preview(id);
+  }
+  // 칸에 끌어다 놓기(고르기 버튼이나 무대 위 요소를 소리판 칸으로)
+  function dropOnCell(id, line, i) {
+    var P = S.play, it = itemOf(id); if (!it) return;
+    if (it.line !== line) { toast(it.name + '은(는) ' + (it.line === 'rhythm' ? '리듬' : '멜로디') + ' 줄에 넣어요'); return; }
+    if (!P.song.stage.some(function (p) { return p.id === id; })) {
+      if (P.song.stage.length >= D.PLAY.maxOnStage) { toast('무대에는 ' + D.PLAY.maxOnStage + '개까지 올릴 수 있어요'); return; }
+      var sp = freeSpot(); P.song.stage.push({ id: id, x: sp.x, y: sp.y });
+    }
+    P.song[line][i] = id; P.sel = id;
+    dirty(); renderPlay(); preview(id);
+  }
+  function cellAt(x, y) {
+    var c = document.elementFromPoint(x, y); c = c && c.closest && c.closest('.ml-cell');
+    if (!c) return null;
+    var line = c.classList.contains('rhythm') ? 'rhythm' : 'melody';
+    return { line: line, i: ui.cells[line].indexOf(c) };
   }
   function selectItem(id, sound) { S.play.sel = id; renderPlay(); if (sound) preview(id); }
   function removeItem(id) {
@@ -1062,6 +1084,11 @@
   function startPlayback() {
     var P = S.play;
     if (!AU.unlock()) { toast('이 브라우저는 소리를 낼 수 없어요'); return; }
+    if (!P.song.rhythm.concat(P.song.melody).some(Boolean)) {
+      toast('아래 칸이 비어 있어서 소리가 안 나요. 연주자를 고르고 칸을 눌러 넣어요!');
+      ['rhythm', 'melody'].forEach(function (l) { ui.cells[l].forEach(function (c) { c.classList.remove('nudge'); void c.offsetWidth; c.classList.add('nudge'); }); });
+      return;
+    }
     var bpm = D.PLAY.tempos.filter(function (t) { return t.id === P.song.tempo; })[0].bpm, beat = 60 / bpm;
     P.playing = true; P.hits = [];
     P.t0 = AU.now() + 0.12; P.beat = beat;
@@ -1113,6 +1140,7 @@
     if (t.setPointerCapture) try { t.setPointerCapture(e.pointerId); } catch (x) { /* 무시 */ }
   }
   function onTokenMove(e) {
+    if (S.play && S.play.pdrag) { onPalMove(e); return; }
     var d = S.play && S.play.drag; if (!d) return;
     var q = areaPoint(e), dx = q.x - d.sx, dy = q.y - d.sy;
     if (!d.moved && Math.hypot(dx, dy) < 12) return;
@@ -1122,11 +1150,48 @@
     d.el.style.left = pct(p.x, IW); d.el.style.top = pct(p.y, IH); d.el.classList.add('drag');
     ui.delBtn.hidden = true; ui.stageArea.hidden = false;   // 끄는 동안만 놓을 수 있는 곳을 보여 줌
   }
-  function onTokenUp() {
+  function onTokenUp(e) {
+    if (S.play && S.play.pdrag) { onPalUp(e); return; }
     var d = S.play && S.play.drag; if (!d) return;
     S.play.drag = null; ui.stageArea.hidden = true;
+    var cell = d.moved && e && e.type === 'pointerup' && cellAt(e.clientX, e.clientY);
+    if (cell) {   // 소리판 칸 위에서 놓으면: 자리는 그대로, 그 칸에 넣기
+      var p = S.play.song.stage.filter(function (x) { return x.id === d.id; })[0];
+      if (p) { p.x = d.ox; p.y = d.oy; }
+      dropOnCell(d.id, cell.line, cell.i);
+      return;
+    }
     if (d.moved) { dirty(); S.play.sel = d.id; renderPlay(); }
     else selectItem(d.id, true);
+  }
+  // 고르기 버튼을 끌어서 칸에 넣기(끌지 않고 누르면 그냥 고르기)
+  function onPalDown(e) {
+    var b = e.target.closest && e.target.closest('.ml-pal');
+    if (!b || S.scene !== 'play' || (e.button && e.button !== 0)) return;
+    S.play.palDragged = false;
+    S.play.pdrag = { id: b.dataset.id, x: e.clientX, y: e.clientY, ghost: null };
+  }
+  function onPalMove(e) {
+    var d = S.play && S.play.pdrag; if (!d) return;
+    if (!d.ghost) {
+      if (Math.hypot(e.clientX - d.x, e.clientY - d.y) < 10) return;
+      var it = itemOf(d.id);
+      d.ghost = el('div', 'ml-ghost', it.icon); document.body.appendChild(d.ghost);
+      S.play.sel = d.id; renderPlay();
+    }
+    d.ghost.style.left = e.clientX + 'px'; d.ghost.style.top = e.clientY + 'px';
+    var cell = cellAt(e.clientX, e.clientY);
+    ['rhythm', 'melody'].forEach(function (l) { ui.cells[l].forEach(function (c, k) { c.classList.toggle('over', !!cell && cell.line === l && cell.i === k); }); });
+  }
+  function onPalUp(e) {
+    var d = S.play.pdrag; S.play.pdrag = null;
+    if (!d.ghost) return;   // 끌지 않았으면 click 으로 고르기
+    d.ghost.remove(); S.play.palDragged = true;
+    setTimeout(function () { if (S.play) S.play.palDragged = false; }, 400);
+    ['rhythm', 'melody'].forEach(function (l) { ui.cells[l].forEach(function (c) { c.classList.remove('over'); }); });
+    var cell = e && e.type === 'pointerup' && cellAt(e.clientX, e.clientY);
+    if (cell) dropOnCell(d.id, cell.line, cell.i);
+    else pickItem(d.id);
   }
 
   // =====================================================================
