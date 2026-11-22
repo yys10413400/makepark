@@ -816,12 +816,14 @@
   var AREA = { x0: 500, x1: 1170, y0: 330, y1: 610 };
   var SPOTS = [[640, 590], [1030, 590], [760, 610], [910, 610], [590, 470], [1080, 470], [740, 500], [930, 500]];
   function itemOf(id) { return D.PLAY.items.filter(function (x) { return x.id === id; })[0]; }
-  function emptySong() { var n = D.PLAY.steps, a = [], b = []; for (var i = 0; i < n; i++) { a.push(null); b.push(null); } return { name: '', tempo: 'mid', stage: [], rhythm: a, melody: b }; }
+  function emptySong() { var n = D.PLAY.steps, a = [], b = []; for (var i = 0; i < n; i++) { a.push(null); b.push(null); } return { name: '', tempo: 'mid', backing: D.PLAY.defaultBacking, swing: false, stage: [], rhythm: a, melody: b }; }
   function cleanSong(s) {
     var e = emptySong();
     if (!s || typeof s !== 'object') return e;
     e.name = typeof s.name === 'string' ? s.name.slice(0, 14) : '';
     e.tempo = D.PLAY.tempos.some(function (t) { return t.id === s.tempo; }) ? s.tempo : 'mid';
+    e.backing = D.PLAY.backings.some(function (b) { return b.id === s.backing; }) ? s.backing : D.PLAY.defaultBacking;
+    e.swing = s.swing === true;
     var seen = {};
     (Array.isArray(s.stage) ? s.stage : []).forEach(function (p) {
       if (p && itemOf(p.id) && !seen[p.id] && e.stage.length < D.PLAY.maxOnStage) {
@@ -908,10 +910,23 @@
     ctl.appendChild(ui.playBtn);
     var tempos = el('div', 'ml-tempos'); ui.tempoBtns = {};
     D.PLAY.tempos.forEach(function (t) {
-      var b = btn('ml-tempo', t.label, function () { S.play.song.tempo = t.id; dirty(); renderPlay(); if (S.play.playing) { stopPlayback(); startPlayback(); } });
+      var b = btn('ml-tempo', t.label, function () { S.play.song.tempo = t.id; dirty(); renderPlay(); restartIfPlaying(); });
       ui.tempoBtns[t.id] = b; tempos.appendChild(b);
     });
     ctl.appendChild(tempos);
+    // 함께 연주(반주) · 깡총 박자 · 예시 음악 — 소리한스푼처럼 소리를 풍성하게
+    var backs = el('div', 'ml-tempos ml-backs'); ui.backBtns = {};
+    D.PLAY.backings.forEach(function (bk) {
+      var b = btn('ml-tempo', bk.short, function () { S.play.song.backing = bk.id; dirty(); renderPlay(); restartIfPlaying(); toast('🎶 ' + bk.label + (bk.id === 'off' ? '' : ' · 한 바퀴마다 화음이 바뀌어요')); });
+      b.setAttribute('aria-label', '함께 연주: ' + bk.label); b.title = bk.label;
+      ui.backBtns[bk.id] = b; backs.appendChild(b);
+    });
+    ctl.appendChild(backs);
+    var extra = el('div', 'ml-tempos');
+    ui.swingBtn = btn('ml-tempo ml-swing', '깡총 박자', function () { S.play.song.swing = !S.play.song.swing; dirty(); renderPlay(); restartIfPlaying(); });
+    extra.appendChild(ui.swingBtn);
+    extra.appendChild(btn('ml-tempo ml-example', '🎼 예시 음악', function () { openExamples(); }));
+    ctl.appendChild(extra);
     ctl.appendChild(btn('ml-clear', '전체 지우기', function () { clearAll(); }));
     bottom.appendChild(ctl);
     s.appendChild(bottom);
@@ -976,6 +991,8 @@
     });
     ui.selInfo.textContent = si ? si.icon + ' ' + si.name + ' — ' + (si.line === 'rhythm' ? '리듬' : '멜로디') + ' 줄 칸을 눌러 넣어요(한 번 더 누르면 빼요)' : '연주자를 고른 뒤 칸을 눌러 연주 순서를 정해요';
     Object.keys(ui.tempoBtns).forEach(function (k) { ui.tempoBtns[k].classList.toggle('on', song.tempo === k); ui.tempoBtns[k].setAttribute('aria-pressed', String(song.tempo === k)); });
+    Object.keys(ui.backBtns).forEach(function (k) { ui.backBtns[k].classList.toggle('on', song.backing === k); ui.backBtns[k].setAttribute('aria-pressed', String(song.backing === k)); });
+    ui.swingBtn.classList.toggle('on', !!song.swing); ui.swingBtn.setAttribute('aria-pressed', String(!!song.swing));
     ui.playBtn.textContent = P.playing ? '■ 정지' : '▶ 재생';
     ui.playBtn.classList.toggle('stop', P.playing);
   }
@@ -1056,7 +1073,7 @@
     var P = S.play;
     if (!P.song.stage.length && !P.song.name) return;
     showModal('전체 지울까요?', ['무대 위 요소와 소리판이 모두 비워져요.'], [
-      { text: '모두 지우기', main: true, fn: function () { hideModal(); stopPlayback(); var name = P.song.name, tempo = P.song.tempo; P.song = emptySong(); P.song.name = name; P.song.tempo = tempo; P.sel = null; P.unis = {}; dirty(); renderPlay(); } },
+      { text: '모두 지우기', main: true, fn: function () { hideModal(); stopPlayback(); var keep = P.song; P.song = emptySong(); ['name', 'tempo', 'backing', 'swing'].forEach(function (k) { P.song[k] = keep[k]; }); P.sel = null; P.unis = {}; dirty(); renderPlay(); } },
       { text: '취소', fn: hideModal }
     ]);
   }
@@ -1092,8 +1109,10 @@
     var bpm = D.PLAY.tempos.filter(function (t) { return t.id === P.song.tempo; })[0].bpm, beat = 60 / bpm;
     P.playing = true; P.hits = [];
     P.t0 = AU.now() + 0.12; P.beat = beat;
+    var style = P.song.backing;
     P.sched = AU.beatScheduler(P.t0, beat, function (n, t) {
       var i = n % D.PLAY.steps;
+      AU.backing(style, n, t, beat, D.PLAY.steps);
       ['rhythm', 'melody'].forEach(function (line) {
         var id = P.song[line][i], it = id && itemOf(id);
         if (!it) return;
@@ -1101,8 +1120,29 @@
         P.hits.push({ t: t, id: id });
       });
       P.hits.push({ t: t, col: i });
-    });
+    }, !!P.song.swing);
     renderPlay();
+  }
+  function restartIfPlaying() { if (S.play.playing) { stopPlayback(); startPlayback(); } }
+  // 예시 음악 골라 듣기 → 그대로 바꿔 보며 나만의 음악으로
+  function openExamples() {
+    var P = S.play, has = P.song.rhythm.concat(P.song.melody).some(Boolean);
+    var btns = D.PLAY.examples.map(function (ex) {
+      return { text: '🎵 ' + ex.name, main: true, fn: function () { hideModal(); loadExample(ex); } };
+    });
+    btns.push({ text: '취소', fn: hideModal });
+    showModal('예시 음악', ['골라서 들어 보고, 칸을 바꿔 나만의 음악으로 만들어요!', has ? '지금 소리판 대신 예시가 들어가요. (저장한 작품은 그대로예요)' : ''], btns);
+  }
+  function loadExample(ex) {
+    var P = S.play; stopPlayback();
+    var song = emptySong(), used = [];
+    ['rhythm', 'melody'].forEach(function (line) { ex[line].forEach(function (id, i) { song[line][i] = id; if (id && used.indexOf(id) < 0) used.push(id); }); });
+    used.slice(0, D.PLAY.maxOnStage).forEach(function (id, k) { song.stage.push({ id: id, x: SPOTS[k % SPOTS.length][0], y: SPOTS[k % SPOTS.length][1] }); });
+    song.name = P.song.name || ex.name; song.tempo = ex.tempo; song.backing = ex.backing; song.swing = ex.swing;
+    P.song = cleanSong(song); P.sel = null; P.unis = {};
+    ui.nameInput.value = P.song.name;
+    dirty(); renderPlay(); startPlayback();
+    toast('🎼 ‘' + ex.name + '’ 예시예요. 칸을 바꿔 나만의 음악으로 만들어 봐요!');
   }
   function stopPlayback() {
     var P = S.play;

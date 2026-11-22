@@ -303,10 +303,14 @@ body.melody-open #hud, body.melody-open #enterFacility, body.melody-open #chatBa
 @keyframes ml-nudge { 25% { transform: translateX(-0.3cqw); } 75% { transform: translateX(0.3cqw); } }
 .ml-stage .ml-pal { touch-action: none; }
 .ml-ghost { position: fixed; z-index: 9999; pointer-events: none; transform: translate(-50%, -60%); font-size: 44px; filter: drop-shadow(0 4px 6px rgba(0,0,0,0.3)); }
-.ml-ctl { flex: 0 0 11.5%; display: flex; flex-direction: column; gap: 0.5cqw; justify-content: center; }
+.ml-ctl { flex: 0 0 13.5%; display: flex; flex-direction: column; gap: 0.4cqw; justify-content: center; }
 .ml-playbtn { padding: 0.8cqw 0.6cqw; border-radius: 1.4cqw; font-size: 1.7cqw; background: #1f8a7a; color: #fff; border: 0.2cqw solid #fff3d6; box-shadow: 0 0.35cqw 0 #135a4f; }
 .ml-playbtn.stop { background: #c2477a; box-shadow: 0 0.35cqw 0 #7e2850; }
 .ml-tempos { display: flex; gap: 0.25cqw; }
 .ml-tempo { flex: 1; padding: 0.3cqw 0; border-radius: 0.7cqw; font-size: max(0.85cqw, 8px); background: #fffaf0; color: #6e4b2f; border: 0.12cqw solid #d9b878; }
 .ml-tempo.on { background: #7b4fb3; color: #fff; border-color: #7b4fb3; }
+.ml-backs .ml-tempo.on { background: #e0794a; border-color: #e0794a; }
+.ml-swing.on { background: #3fb58f; border-color: #3fb58f; }
+.ml-example { background: #fff3c4; border-color: #e6b94a; }
+.ml-tempo { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .ml-clear { padding: 0.35cqw 0; border-radius: 0.8cqw; font-size: 1cqw; background: #fff0f3; color: #c2477a; border: 0.13cqw solid #e07b9b; }

@@ -18,7 +18,10 @@
       var AC = window.AudioContext || window.webkitAudioContext;
       if (!AC) return null;
       ctx = new AC({ latencyHint: 'interactive' });
-      master = ctx.createGain(); master.gain.value = muted ? 0 : 0.9; master.connect(ctx.destination);
+      master = ctx.createGain(); master.gain.value = muted ? 0 : 0.9;
+      // 여러 소리가 겹쳐도 찢어지지 않게(반주 + 연주자 + 리듬)
+      var lim = ctx.createDynamicsCompressor(); lim.threshold.value = -12; lim.ratio.value = 6; lim.attack.value = 0.003; lim.release.value = 0.2;
+      master.connect(lim); lim.connect(ctx.destination);
       music = ctx.createGain(); music.gain.value = 0.55; music.connect(master);
       sfx = ctx.createGain(); sfx.gain.value = 0.9; sfx.connect(master);
       var len = ctx.sampleRate;
@@ -159,13 +162,32 @@
     if (b === 0) play('pad', t, { music: true, notes: ch.pad, dur: beatSec * 3 });
   }
 
+  // ---------- 자유 연주 반주(소리한스푼처럼): 8칸 한 바퀴마다 화음이 도–라–파–솔로 바뀜 ----------
+  // style: 'off' 내 소리만 · 'soft' 포근한 반주(화음 + 낮은 음) · 'pop' 신나는 반주(통통 베이스 + 반짝 아르페지오 + 찰랑)
+  var LOOP_CHORDS = [{ root: 48, tones: [60, 64, 67] }, { root: 45, tones: [57, 60, 64] }, { root: 41, tones: [57, 60, 65] }, { root: 43, tones: [55, 59, 62] }];
+  function backing(style, n, t, beatSec, steps) {
+    if (!ctx || !style || style === 'off') return;
+    var i = n % steps, ch = LOOP_CHORDS[Math.floor(n / steps) % 4];
+    if (i % 4 === 0) {
+      play('pad', t, { music: true, notes: ch.tones, dur: beatSec * 3.4, vol: style === 'pop' ? 0.8 : 1.1 });
+      play('bass', t, { music: true, note: ch.root, dur: beatSec * 0.9, vol: 0.8 });
+    }
+    if (style === 'pop') {
+      if (i % 2 === 0 && i % 4 !== 0) play('bass', t, { music: true, note: ch.root, dur: beatSec * 0.35, vol: 0.6 });
+      play('chime', t + beatSec / 2, { music: true, note: ch.tones[[0, 1, 2, 1][i % 4]] + 12, vol: 0.35 });
+      play('hat', t + beatSec / 2, { music: true, vol: 0.5 });
+    }
+  }
+
   // 박자 예약기: 오디오 시계로 t0 부터 beatSec 간격. 0.15초 앞서 onBeat(n, time) 을 부름
-  function beatScheduler(t0, beatSec, onBeat) {
+  // swing 이면 깡총 박자(앞 칸 1.2배 · 뒤 칸 0.8배, 두 칸 길이는 그대로)
+  function beatScheduler(t0, beatSec, onBeat, swing) {
     var n = 0, alive = true, timer = null;
+    function at(k) { return t0 + (swing ? Math.floor(k / 2) * 2 * beatSec + (k % 2 ? 1.2 * beatSec : 0) : k * beatSec); }
     function tick() {
       if (!alive || !ctx) return;
-      while (t0 + n * beatSec < ctx.currentTime + 0.15) {
-        var t = t0 + n * beatSec;
+      while (at(n) < ctx.currentTime + 0.15) {
+        var t = at(n);
         if (t >= ctx.currentTime - 0.02) onBeat(n, t);
         n++;
       }
@@ -177,7 +199,7 @@
 
   window.MelodyAudio = {
     unlock: unlock, ready: ready, now: now, heardNow: heardNow, eventTime: eventTime, latency: latency,
-    play: play, CUE: CUE, musicBeat: musicBeat, beatScheduler: beatScheduler,
+    play: play, CUE: CUE, musicBeat: musicBeat, beatScheduler: beatScheduler, backing: backing,
     setMuted: setMuted, isMuted: function () { return muted; }, suspend: suspend, resume: resume,
     state: function () { return ctx ? ctx.state : 'none'; }
   };

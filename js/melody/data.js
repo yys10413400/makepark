@@ -78,6 +78,21 @@
     steps: 8,
     maxOnStage: 8,
     tempos: [{ id: 'slow', label: '느리게', bpm: 84 }, { id: 'mid', label: '보통', bpm: 104 }, { id: 'fast', label: '빠르게', bpm: 126 }],
+    // 함께 연주(반주): 8칸 한 바퀴마다 화음이 바뀌어 같은 가락도 다르게 들려요
+    backings: [{ id: 'off', label: '내 소리만', short: '반주 끔' }, { id: 'soft', label: '포근한 반주', short: '포근' }, { id: 'pop', label: '신나는 반주', short: '신나게' }],
+    defaultBacking: 'soft',
+    // 예시 음악: 골라 듣고 바꿔 보기(무대 위 요소는 쓰인 것만, 최대 maxOnStage)
+    examples: [
+      { id: 'picnic', name: '소풍 가는 길', tempo: 'mid', backing: 'pop', swing: false,
+        melody: ['piano', 'horn', 'sax', null, 'violin', 'sax', 'horn', 'piano'],
+        rhythm: ['drum', null, 'clap', 'bell', 'drum', null, 'clap', 'bell'] },
+      { id: 'cloud', name: '구름 산책', tempo: 'slow', backing: 'soft', swing: false,
+        melody: ['violin', null, 'sax', null, 'horn', null, 'piano', null],
+        rhythm: ['drum', null, null, null, 'drum', null, null, null] },
+      { id: 'dance', name: '톡톡 댄스', tempo: 'fast', backing: 'pop', swing: true,
+        melody: ['piano', 'horn', 'sax', 'unicorn', 'sax', 'horn', 'piano', 'horn'],
+        rhythm: ['drum', 'snare', 'clap', 'snare', 'drum', 'snare', 'clap', 'clap'] }
+    ],
     items: [
       { id: 'drum',   line: 'rhythm', name: '큰북',     icon: '🥁', sound: 'kick' },
       { id: 'snare',  line: 'rhythm', name: '작은북',   icon: '🪘', sound: 'snare' },
