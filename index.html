@@ -21,6 +21,7 @@
   <link rel="stylesheet" href="css/picnic.css">
   <link rel="stylesheet" href="css/parade.css">
   <link rel="stylesheet" href="css/arcade.css">
+  <link rel="stylesheet" href="css/thrill.css">
   <link rel="stylesheet" href="css/net.css">
   <!-- 선생님 모드(?teacher=반코드): 첫 입장 화면(닉네임 창)이 잠깐 보이지 않게 그림을 그리기 전에 표시 -->
   <script>if (/[?&]teacher=\d{5}/.test(location.search)) document.documentElement.classList.add('teacher-mode');</script>
@@ -117,6 +118,9 @@
     <!-- 플레이 아케이드: 로비 걷기 → 별빛 팡팡(오른손·방향키로 별 받기) · 캡슐 뽑기. 화면은 js/arcade/ui.js 가 만듦 -->
     <section id="arcade" class="ac-overlay" hidden aria-label="플레이 아케이드"></section>
 
+    <!-- 짜릿 어드벤처: 토토의 범퍼카 연구소 — 광장 걷기·토토에게 말 걸기 → 학년 → 범퍼카 미션. 화면은 js/thrill/ui.js 가 만듦 -->
+    <section id="thrill" class="th-overlay" hidden aria-label="짜릿 어드벤처 — 토토의 범퍼카 연구소"></section>
+
     <!-- 게임 화면 UI -->
     <div id="hud" hidden>
       <button class="chip" id="playerChip" type="button" aria-label="내 정보 바꾸기"><span class="dot"></span><span id="playerName"></span><span class="chip-grade" id="playerGrade"></span><span class="chip-edit" aria-hidden="true">✎</span></button>
@@ -206,6 +210,9 @@
   <script>document.write('<script src="js/parade/ui.js?t=' + Date.now() + '"><' + '/script>');</script>
   <script>document.write('<script src="js/arcade/hand.js?t=' + Date.now() + '"><' + '/script>');</script>
   <script>document.write('<script src="js/arcade/ui.js?t=' + Date.now() + '"><' + '/script>');</script>
+  <script>document.write('<script src="js/thrill/physics.js?t=' + Date.now() + '"><' + '/script>');</script>
+  <script>document.write('<script src="js/thrill/missions.js?t=' + Date.now() + '"><' + '/script>');</script>
+  <script>document.write('<script src="js/thrill/ui.js?t=' + Date.now() + '"><' + '/script>');</script>
   <script>document.write('<script src="js/data/teacher-sprites.js?t=' + Date.now() + '"><\/script>');</script>
   <script>document.write('<script src="js/teacher-chars.js?t=' + Date.now() + '"><' + '/script>');</script>
   <!-- 선생님 모드(?teacher=반코드): 선생님 구글 계정으로 연결 -->
