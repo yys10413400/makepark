@@ -1,0 +1,215 @@
+/* 플레이 아케이드 — 로비 · 별빛 팡팡 창 · 캡슐 뽑기 창
+   로비·창 위치는 배경 그림(1672×941) 기준 %, 글자는 화면 폭 기준(cqw) — 코스터역·퍼레이드와 같은 방식
+   색: 남색(#1d2f6f) · 청록(#12837a) · 금테(#e2b357) · 크림(#fffaf0) */
+.ac-overlay {
+  position: fixed; inset: 0; z-index: 40; display: flex; align-items: center; justify-content: center;
+  background: #1d2f6f; font-family: var(--font); overflow: hidden;
+  user-select: none; -webkit-user-select: none; word-break: keep-all;
+}
+body.arcade-open #hud, body.arcade-open #enterFacility, body.arcade-open #chatBar { display: none !important; }
+.ac-overlay button { font-family: inherit; cursor: pointer; }
+.ac-overlay button:focus-visible { outline: 0.3cqw solid #ffd15c; outline-offset: 0.2cqw; }
+.ac-overlay kbd { font-family: inherit; font-size: 0.75em; padding: 0 0.4em; border-radius: 0.4em; background: rgba(255, 255, 255, 0.3); }
+.ac-overlay [hidden] { display: none !important; }
+
+.ac-stage {
+  position: relative; container-type: inline-size; overflow: hidden;
+  width: min(100vw, calc(100dvh * 1672 / 941)); aspect-ratio: 1672 / 941;
+}
+/* 공통 버튼 */
+.ac-pill {
+  padding: 0.5cqw 1.4cqw; border-radius: 99px; font-size: 1.35cqw; line-height: 1.2;
+  background: #fffaf0; color: #24407a; border: 0.14cqw solid #e2b357; box-shadow: 0 0.25cqw 0 rgba(30, 40, 80, 0.4);
+}
+.ac-choice {
+  padding: 0.8cqw 2cqw; border-radius: 1.2cqw; font-size: 1.7cqw; line-height: 1.2;
+  background: #12837a; color: #fff; border: 0.16cqw solid #f6e3b4; box-shadow: 0 0.35cqw 0 #0b5f58;
+}
+.ac-choice:hover:not(:disabled) { background: #169688; }
+.ac-choice.light { background: #fffaf0; color: #24407a; border-color: #d9b878; box-shadow: 0 0.35cqw 0 #b79a63; }
+.ac-choice.light:hover:not(:disabled) { background: #fff; }
+.ac-choice:disabled { opacity: 0.5; cursor: not-allowed; }
+.ac-btns { display: flex; gap: 1.2cqw; justify-content: center; flex-wrap: wrap; }
+
+/* ================= 로비 ================= */
+.ac-lobby { position: absolute; inset: 0; background: center / 100% 100% no-repeat; }
+.ac-lobby > * { position: absolute; margin: 0; }
+.ac-canvas { inset: 0; width: 100%; height: 100%; display: block; touch-action: none; cursor: pointer; outline: none; }
+.ac-hot { background: transparent; border: 0; padding: 0; border-radius: 2cqw; z-index: 2; }
+.ac-hot:hover { background: rgba(255, 240, 180, 0.12); box-shadow: 0 0 2cqw rgba(255, 220, 120, 0.45); }
+.ac-sign {
+  transform: translate(-50%, 0); white-space: nowrap; z-index: 2; pointer-events: none;
+  padding: 0.3cqw 1.1cqw; border-radius: 99px; font-size: 1.3cqw;
+  background: #1d2f6f; color: #ffe27a; border: 0.14cqw solid #e2b357;
+}
+.ac-prompt {
+  transform: translate(-50%, 0); z-index: 3; white-space: nowrap;
+  padding: 0.6cqw 1.5cqw; border-radius: 99px; font-size: 1.6cqw;
+  background: #12837a; color: #fff; border: 0.16cqw solid #f6e3b4; box-shadow: 0 0.3cqw 0 #0b5f58;
+  animation: ac-bounce 1.2s ease-in-out infinite;
+}
+.ac-prompt-exit { background: #2f5fb3; box-shadow: 0 0.3cqw 0 #1d3c75; }
+@keyframes ac-bounce { 50% { transform: translate(-50%, -0.4cqw); } }
+.ac-tip {
+  left: 50%; top: 2.6%; transform: translateX(-50%); white-space: nowrap;
+  padding: 0.5cqw 1.5cqw; border-radius: 99px; font-size: 1.45cqw;
+  background: rgba(29, 47, 111, 0.85); color: #fff8e6; box-shadow: 0 0.3cqw 0 rgba(0, 0, 0, 0.2);
+}
+.ac-lexit { right: 1.6%; top: 2.6%; z-index: 6; }
+.ac-coupon {
+  left: 1.6%; top: 2.6%; z-index: 6; white-space: nowrap;
+  padding: 0.35cqw 1.1cqw; border-radius: 99px; font-size: 1.35cqw;
+  background: rgba(255, 250, 238, 0.95); border: 0.14cqw solid #e2b357; color: #6e4b2f;
+}
+.ac-coupon b { color: #c0392b; margin: 0 0.15em; }
+.ac-coupon.gain { animation: ac-pulse 0.5s ease-in-out 3; }
+@keyframes ac-pulse { 50% { transform: scale(1.12); } }
+.ac-toast {
+  left: 50%; top: 11%; transform: translateX(-50%); z-index: 7; white-space: nowrap;
+  padding: 0.7cqw 1.8cqw; border-radius: 99px; font-size: 1.5cqw;
+  background: #fffaf0; color: #8a4b00; border: 0.16cqw solid #e2b357; box-shadow: 0 0.4cqw 0 rgba(30, 40, 80, 0.35);
+}
+
+/* ================= 창(별빛 팡팡·캡슐) ================= */
+.ac-win { position: absolute; inset: 0; z-index: 10; background: rgba(10, 18, 50, 0.55); }
+.ac-frame {
+  position: absolute; left: 4%; top: 4%; width: 92%; height: 92%;
+  container-type: inline-size; overflow: hidden;
+  border-radius: 1.6cqw; border: 0.35cqw solid #e2b357; box-shadow: 0 0.8cqw 2.4cqw rgba(0, 0, 0, 0.45);
+  background: #13286b center / 100% 100% no-repeat; color: #fff;
+}
+.ac-frame > * { position: absolute; margin: 0; }
+.ac-gcanvas { inset: 0; width: 100%; height: 100%; display: block; }
+.ac-x {
+  right: 1.2%; top: 2.2%; z-index: 9; width: 4.2cqw; height: 4.2cqw; border-radius: 50%;
+  font-size: 1.9cqw; line-height: 1; background: #fffaf0; color: #24407a; border: 0.18cqw solid #e2b357;
+  box-shadow: 0 0.3cqw 0 rgba(0, 0, 0, 0.3);
+}
+/* 위 상태 칩(시안: 점수 · 시계 · 조작 상태) */
+.ac-h {
+  top: 2.2%; z-index: 4; display: flex; align-items: center; gap: 0.6cqw; white-space: nowrap;
+  padding: 0.35cqw 1.4cqw; border-radius: 99px; font-size: 1.7cqw;
+  background: rgba(14, 28, 80, 0.88); border: 0.22cqw solid #e2b357; color: #fff;
+}
+.ac-h b { font-size: 2.3cqw; letter-spacing: 0.05em; }
+.ac-hscore { left: 1.8%; min-width: 9cqw; }
+.ac-hstar { color: #ffd23f; font-size: 2.3cqw; }
+.ac-htime { left: 50%; transform: translateX(-50%); }
+.ac-htime.hurry b { color: #ffb4a0; animation: ac-pulse 0.5s ease-in-out infinite; }
+.ac-hstatus { right: 7%; font-size: 1.35cqw; }
+.ac-hstatus i { width: 0.9cqw; height: 0.9cqw; border-radius: 50%; background: #ffb74d; display: inline-block; }
+.ac-hstatus.on i { background: #3ddc6e; }
+.ac-hstatus.wait i { animation: ac-blink 0.9s steps(2) infinite; }
+@keyframes ac-blink { 50% { opacity: 0.2; } }
+
+/* 한 줄 안내 */
+.ac-guide {
+  left: 50%; top: 13%; transform: translateX(-50%); z-index: 5; white-space: nowrap;
+  padding: 0.7cqw 2cqw; border-radius: 99px; font-size: 1.9cqw;
+  background: #fffaf0; color: #1d2f6f; border: 0.2cqw solid #e2b357; box-shadow: 0 0.4cqw 0 rgba(0, 0, 0, 0.3);
+}
+/* 첫 화면 */
+.ac-intro {
+  left: 50%; top: 13%; transform: translateX(-50%); z-index: 5; width: 62%;
+  display: flex; flex-direction: column; align-items: center; gap: 0.9cqw; text-align: center;
+}
+.ac-title {
+  font-size: 4.6cqw; line-height: 1.15; color: #ffe27a; letter-spacing: 0.08em;
+  text-shadow: 0 0.35cqw 0 #b5650a, 0 0 2cqw rgba(255, 210, 80, 0.6);
+}
+.ac-say {
+  position: relative; padding: 1.1cqw 2.2cqw; border-radius: 1.6cqw; font-size: 2cqw; line-height: 1.45;
+  background: #fffaf0; color: #3b2410; border: 0.22cqw solid #e2b357;
+}
+.ac-say::after { /* 말꼬리: 아래 픽셀을 가리킴 */
+  content: ''; position: absolute; left: 50%; bottom: -1.3cqw; transform: translateX(-50%);
+  border: 1.2cqw solid transparent; border-top-color: #e2b357; border-bottom: 0;
+}
+.ac-privacy { font-size: 1.15cqw; color: #cbd6ff; }
+.ac-intro > * { margin: 0; }
+.ac-intro .ac-btns { margin-top: 0.6cqw; }
+/* 3·2·1 */
+.ac-count {
+  left: 50%; top: 32%; transform: translateX(-50%); z-index: 5;
+  font-size: 11cqw; color: #ffe27a; text-shadow: 0 0.5cqw 0 #b5650a, 0 0 3cqw rgba(255, 210, 80, 0.7);
+  animation: ac-countpop 0.8s ease-out infinite;
+}
+@keyframes ac-countpop { 0% { transform: translateX(-50%) scale(1.4); opacity: 0.4; } 30% { transform: translateX(-50%) scale(1); opacity: 1; } }
+/* 손을 놓쳤을 때 */
+.ac-pause {
+  left: 50%; top: 22%; transform: translateX(-50%); z-index: 6; width: 48%;
+  padding: 2cqw; border-radius: 1.6cqw; text-align: center;
+  background: rgba(255, 250, 240, 0.97); color: #1d2f6f; border: 0.25cqw solid #e2b357;
+  display: flex; flex-direction: column; align-items: center; gap: 0.9cqw;
+}
+.ac-pause-text { margin: 0; font-size: 2.6cqw; }
+.ac-pause-sub { margin: 0; font-size: 1.4cqw; color: #5d6787; }
+/* 결과 */
+.ac-result {
+  left: 50%; top: 13%; transform: translateX(-50%); z-index: 6; width: 54%;
+  padding: 2.2cqw 2.4cqw; border-radius: 1.8cqw; text-align: center;
+  background: rgba(255, 250, 240, 0.97); color: #3b2410; border: 0.3cqw solid #e2b357; box-shadow: 0 0.6cqw 0 rgba(0, 0, 0, 0.3);
+  display: flex; flex-direction: column; align-items: center; gap: 0.7cqw;
+}
+.ac-result > * { margin: 0; }
+.ac-rtitle { font-size: 2.3cqw; color: #1d2f6f; }
+.ac-rscore { font-size: 3cqw; color: #b5650a; }
+.ac-rscore b { font-size: 6cqw; color: #e08a00; }
+.ac-rscore span { color: #ffc21a; }
+.ac-rline { font-size: 1.6cqw; }
+.ac-rcoupon { color: #0b5f58; }
+.ac-rextra { font-size: 1.35cqw; color: #8a4b00; }
+.ac-result .ac-btns { margin-top: 0.8cqw; }
+/* 터치용 ◀ ▶ */
+.ac-pad {
+  bottom: 3%; z-index: 5; width: 7cqw; height: 7cqw; border-radius: 50%; font-size: 3cqw;
+  background: rgba(255, 250, 240, 0.85); color: #12837a; border: 0.2cqw solid #e2b357; touch-action: none;
+}
+.ac-pad-left { left: 2%; }
+.ac-pad-right { right: 2%; }
+
+/* ================= 캡슐 뽑기 ================= */
+.ac-cap {
+  position: absolute; left: 10%; top: 7%; width: 80%; height: 86%; container-type: inline-size;
+  border-radius: 1.6cqw; border: 0.3cqw solid #e2b357; background: #fffaf0; color: #3b2410;
+  box-shadow: 0 0.8cqw 2.4cqw rgba(0, 0, 0, 0.45); overflow: hidden;
+}
+.ac-cap .ac-x { position: absolute; right: 1.6%; top: 2.6%; width: 5cqw; height: 5cqw; font-size: 2.2cqw; }
+.ac-cap-title { margin: 2.4cqw 0 0; text-align: center; font-size: 3.4cqw; color: #c2185b; }
+.ac-cap-body { display: flex; gap: 3cqw; padding: 2cqw 4cqw; align-items: flex-start; }
+.ac-cap-left { flex: none; width: 30%; }
+/* 로비 그림에서 캡슐 기계 부분만(1160~1450 × 140~600) */
+.ac-gumball {
+  position: relative; width: 100%; aspect-ratio: 290 / 460;
+  background-size: calc(1672 / 290 * 100%) auto; background-position: calc(1160 / (1672 - 290) * 100%) calc(140 / (941 - 460) * 100%);
+  background-repeat: no-repeat;
+}
+.ac-gumball.shake { animation: ac-shake 0.12s linear 7; }
+@keyframes ac-shake { 25% { transform: rotate(-2deg); } 75% { transform: rotate(2deg); } }
+.ac-capball {
+  position: absolute; left: 50%; top: 80%; width: 12cqw; height: 12cqw; margin-left: -6cqw; border-radius: 50%;
+  background: linear-gradient(180deg, #f07aa6 0 50%, #fffaf0 50% 100%); border: 0.4cqw solid #c2185b;
+}
+.ac-capball.pop { animation: ac-ballpop 0.9s ease-out forwards; }
+.ac-capball.open { top: 68%; background: linear-gradient(180deg, #f07aa6 0 30%, transparent 30% 70%, #fffaf0 70% 100%); animation: ac-glow 1s ease-in-out infinite; }
+@keyframes ac-ballpop { 0% { transform: scale(0.2); top: 66%; } 60% { transform: scale(1.1); } 100% { transform: scale(1); top: 68%; } }
+@keyframes ac-glow { 50% { box-shadow: 0 0 3cqw #ffd23f; } }
+.ac-cap-right { flex: 1; display: flex; flex-direction: column; gap: 1.1cqw; align-items: flex-start; }
+.ac-cap-right > * { margin: 0; }
+.ac-cap-count { font-size: 2.4cqw; }
+.ac-cap-count b { color: #c0392b; font-size: 3cqw; margin: 0 0.15em; }
+.ac-cap-rule { font-size: 1.6cqw; color: #6e4b2f; }
+.ac-cap .ac-choice { font-size: 2cqw; }
+.ac-cap-msg { min-height: 1.4em; font-size: 1.8cqw; color: #0b5f58; }
+.ac-box-title { font-size: 1.7cqw; color: #24407a; margin-top: 0.6cqw !important; }
+.ac-box { display: flex; flex-wrap: wrap; gap: 1cqw; }
+.ac-box-empty { margin: 0; font-size: 1.5cqw; color: #8a6a4a; }
+.ac-mc {
+  display: flex; align-items: center; gap: 0.8cqw; padding: 0.7cqw 1.4cqw 0.7cqw 0.8cqw; border-radius: 1.2cqw;
+  background: #fff; border: 0.22cqw solid var(--c); color: #3b2410; font-size: 1.6cqw;
+}
+.ac-mc-icon {
+  width: 4cqw; height: 4.6cqw; display: grid; place-items: center; font-size: 2.4cqw;
+  border-radius: 1cqw 1cqw 0.4cqw 0.4cqw; background: var(--c); box-shadow: inset 0 -0.6cqw 0 rgba(0, 0, 0, 0.2);
+}
+.ac-prize .ac-mc { font-size: 2.1cqw; animation: ac-pulse 0.6s ease-in-out 2; }

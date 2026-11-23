@@ -383,6 +383,7 @@
     if (fid === 'ghost') return !!(s.gate && s.gate.cleared);   // 문지기 게임 혼자 추리하기 본 게임 한 판
     if (fid === 'melody') return !!(s.melody && s.melody.cleared);   // 멜로디 스테이지 댄스 미션 하나 성공
     if (fid === 'parade') return !!(s.parade && s.parade.cleared);   // 레인보우 퍼레이드 현수막을 꾸며 퍼레이드를 끝까지 한 번
+    if (fid === 'arcade') return !!(s.arcade && s.arcade.cleared);   // 플레이 아케이드 별빛 팡팡 본게임을 끝까지 한 판
     return false;
   }
   // 받침에 따라 조사 고르기: josa('탐험가', '을', '를') → '탐험가를'
@@ -469,6 +470,7 @@
         : d.facility === 'ghost' ? '유령의 집 문지기와 혼자 추리하기 한 판을 끝내면 받을 수 있어요.'
         : d.facility === 'melody' ? '멜로디 스테이지에서 유니콘과 댄스 미션을 하나 성공하면 받을 수 있어요.'
         : d.facility === 'parade' ? '레인보우 퍼레이드에서 현수막을 꾸며 퍼레이드를 끝까지 한 번 보면 받을 수 있어요.'
+        : d.facility === 'arcade' ? '플레이 아케이드에서 별빛 팡팡 30초 본게임을 한 판 끝내면 받을 수 있어요.'
         : josa(facilityName(d.facility), '이', '가') + ' 문을 열면 받을 수 있어요.';
       return;
     }
@@ -646,8 +648,8 @@
   function openFacility(f) {
     if (!f || state.modalFacility || state.rideOpen) return;
     stopMoving(); state.keys = {};
-    // 놀이기구 화면이 따로 있는 시설: 코스터 익스프레스(코딩), 유령의 집(문지기의 비밀 규칙), 멜로디 스테이지(댄스·자유 연주), 토리네 도시락(도시락 주문 수학 놀이), 레인보우 퍼레이드(현수막 꾸미기)
-    var ride = f.id === 'coaster' ? window.MPCoaster : f.id === 'ghost' ? window.MPGate : f.id === 'melody' ? window.MPMelody : f.id === 'picnic' ? window.MPPicnic : f.id === 'parade' ? window.MPParade : null;
+    // 놀이기구 화면이 따로 있는 시설: 코스터 익스프레스(코딩), 유령의 집(문지기의 비밀 규칙), 멜로디 스테이지(댄스·자유 연주), 토리네 도시락(도시락 주문 수학 놀이), 레인보우 퍼레이드(현수막 꾸미기), 플레이 아케이드(별빛 팡팡·캡슐 뽑기)
+    var ride = f.id === 'coaster' ? window.MPCoaster : f.id === 'ghost' ? window.MPGate : f.id === 'melody' ? window.MPMelody : f.id === 'picnic' ? window.MPPicnic : f.id === 'parade' ? window.MPParade : f.id === 'arcade' ? window.MPArcade : null;
     if (ride) {
       state.rideOpen = f.id; state.nearby = null; ui.enter.hidden = true;
       ride.open();
@@ -1021,6 +1023,7 @@
       else if (state.rideOpen === 'melody' && window.MPMelody) MPMelody.close();
       else if (state.rideOpen === 'picnic' && window.MPPicnic) MPPicnic.close();
       else if (state.rideOpen === 'parade' && window.MPParade) MPParade.close();
+      else if (state.rideOpen === 'arcade' && window.MPArcade) MPArcade.close();
       if (state.modalFacility) closeFacility();
       if (state.charOpen) closeChars();
       if (state.profileOpen) closeProfile();
@@ -1058,7 +1061,8 @@
     exitGate: function () { exitRide('ghost'); },
     exitMelody: function () { exitRide('melody'); },
     exitPicnic: function () { exitRide('picnic'); },
-    exitParade: function () { exitRide('parade'); }
+    exitParade: function () { exitRide('parade'); },
+    exitArcade: function () { exitRide('arcade'); }
   };
 
   // 개발·검증용 핸들 (게임 동작에는 쓰이지 않음)
