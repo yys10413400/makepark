@@ -56,18 +56,24 @@
   var view = { w: 1, h: 1, dpr: 1 };
 
   // ---------- 배경 이미지 (시즌) ----------
-  // 모든 시즌 지도를 미리 불러 두고, 바꿀 때는 부드럽게 겹쳐 전환합니다.
-  var seasonImgs = {};
-  Object.keys(PARK.seasons).forEach(function (id) {
+  // 시작 계절 지도를 가장 먼저(높은 우선순위로) 받고, 다른 계절 지도는 그다음에 받습니다.
+  // (느린 학교 인터넷에서 지도가 놀이기구 그림들과 인터넷을 나눠 쓰느라 늦게 뜨지 않게)
+  // 계절을 바꿀 때 아직 안 받은 지도면 그때 바로 받고, 다 받으면 부드럽게 겹쳐 전환합니다.
+  var seasonImgs = {}, seasonLoading = {};
+  function loadSeason(id, urgent) {
+    if (!PARK.seasons[id] || seasonLoading[id]) return;
+    seasonLoading[id] = true;
     var img = new Image(), ground = null, groundDone = !PARK.seasons[id].ground;
+    if (urgent) img.fetchPriority = 'high';
     function ready() { // 지도와 땅 지도(있으면)를 모두 받은 뒤 가림 레이어를 만듦
       if (!img.complete || !img.naturalWidth || !groundDone) return;
       // 비율 유지: 지도 좌표계(W×H) 안에 원본 비율 그대로 맞춤
       var k = Math.min(W / img.naturalWidth, H / img.naturalHeight), w = img.naturalWidth * k, h = img.naturalHeight * k;
       seasonImgs[id] = { img: img, rect: { x: (W - w) / 2, y: (H - h) / 2, w: w, h: h }, occ: buildOccluders(img, ground, grids[id]) };
+      if (id === firstSeason) loadOtherSeasons();
     }
     img.onload = ready;
-    img.onerror = function () { console.error('지도 이미지를 불러오지 못했습니다: ' + PARK.seasons[id].map); };
+    img.onerror = function () { console.error('지도 이미지를 불러오지 못했습니다: ' + PARK.seasons[id].map); if (id === firstSeason) loadOtherSeasons(); };
     if (PARK.seasons[id].ground) {
       var gi = new Image();
       gi.onload = function () { ground = gi; groundDone = true; ready(); };
@@ -75,7 +81,11 @@
       gi.src = PARK.seasons[id].ground;
     }
     img.src = PARK.seasons[id].map;
-  });
+  }
+  var firstSeason = PARK.seasons[PARK.defaultSeason] ? PARK.defaultSeason : Object.keys(PARK.seasons)[0];
+  function loadOtherSeasons() { Object.keys(PARK.seasons).forEach(function (id) { loadSeason(id, false); }); }
+  loadSeason(firstSeason, true);
+  setTimeout(loadOtherSeasons, 8000); // 시작 지도가 아주 늦어도 결국 모두 받음
   var fade = { from: null, t: 1 };
   var ringImg = new Image(); ringImg.src = 'assets/ui/entrance-ring.png';
 
@@ -168,6 +178,7 @@
   function setSeason(id, animate) {
     if (!PARK.seasons[id]) id = PARK.defaultSeason;
     if (id === state.season) return;
+    loadSeason(id, true); // 아직 안 받은 계절 지도면 지금 바로 받음
     fade.from = animate ? state.season : null; fade.t = animate ? 0 : 1;
     state.season = id;
     grid = grids[id];
@@ -564,7 +575,8 @@
   function resize() {
     var r = canvas.getBoundingClientRect();
     view.w = Math.max(1, r.width); view.h = Math.max(1, r.height);
-    view.dpr = Math.min(window.devicePixelRatio || 1, 3);
+    // 화면 점 배율은 최대 2: 3배 화면 폰에서 그릴 점 수가 2.25배로 늘지만 눈으로 보이는 차이는 거의 없음(버벅임 방지)
+    view.dpr = Math.min(window.devicePixelRatio || 1, 2);
     canvas.width = Math.round(view.w * view.dpr); canvas.height = Math.round(view.h * view.dpr);
     snapCamera();
   }
@@ -796,7 +808,8 @@
     ctx.fillStyle = '#9fcf8a'; ctx.fillRect(0, 0, canvas.width, canvas.height);
     ctx.setTransform(d * cam.s, 0, 0, d * cam.s, d * (view.w / 2 - cam.cx * cam.s), d * (view.h / 2 - cam.cy * cam.s));
     ctx.imageSmoothingEnabled = true; ctx.imageSmoothingQuality = 'high';
-    var cur = seasonImgs[state.season], prev = fade.from && seasonImgs[fade.from];
+    // 바꾼 계절 지도를 아직 받는 중이면 그동안은 받아 둔 다른 계절 지도를 보여 줌(빈 초록 화면 대신)
+    var cur = seasonImgs[state.season] || seasonImgs[fade.from] || seasonImgs[firstSeason], prev = fade.from && seasonImgs[fade.from];
     if (prev && fade.t < 1) {
       ctx.drawImage(prev.img, prev.rect.x, prev.rect.y, prev.rect.w, prev.rect.h);
       ctx.globalAlpha = fade.t;
@@ -847,7 +860,7 @@
       ctx.globalAlpha = 1;
     }
     // 시설 이름표(지도 그림에 간판 글자가 없음): js/map-labels.js
-    if (window.MPMapLabels) MPMapLabels.draw(ctx, PARK, state.season, cam.s);
+    if (window.MPMapLabels) MPMapLabels.draw(ctx, PARK, state.season, cam.s, view.dpr);
     if (multi) {
       MPMulti.drawOthers(ctx, state.time, p.y, true, frameDt);            // 나보다 앞(아래쪽)에 있는 친구
       MPMulti.drawNames(ctx, { x: p.x, y: p.y, nickname: state.nickname });
@@ -889,6 +902,8 @@
       ctx.strokeStyle = behind ? 'rgba(255,0,255,0.9)' : 'rgba(0,255,255,0.7)'; ctx.lineWidth = 1.5;
       ctx.strokeRect(o.x, o.y, o.w, o.h);
       ctx.beginPath(); ctx.moveTo(o.x, o.baseY); ctx.lineTo(o.x + o.w, o.baseY); ctx.stroke();
+    // 눈 오는 계절이면 화면 위에 눈송이(js/snow.js). 지도·캐릭터 위, 화면 메뉴 아래
+    if (window.MPSnow) MPSnow.draw(ctx, view.w, view.h, view.dpr, frameDt, !!(PARK.seasons[state.season] || {}).snow, cam.cx * cam.s, cam.cy * cam.s);
       ctx.fillStyle = '#000'; ctx.font = '11px monospace'; ctx.fillText(o.id, o.x + 3, o.y + 12);
     });
   }

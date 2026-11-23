@@ -95,7 +95,8 @@ window.MP_SELFTEST = async function () {
   var before2 = { x: st.player.x, y: st.player.y, grade: st.grade, season: st.season };
   var other = Object.keys(D.park.seasons).filter(function (k) { return k !== st.season; })[0];
   window.MP_API.setSeason(other); await sleep(800);
-  var sv = JSON.parse(localStorage.getItem('makepark.save.v1') || '{}');
+  // 지금 쓰는 저장 칸(혼자 둘러보기·반 공원마다 다름)을 읽음
+  var sv = (window.MP_API && MP_API.readSave && MP_API.readSave()) || {};
   check(st.season === other, '계절 전환 실패');
   check(st.player.x === before2.x && st.player.y === before2.y && st.grade === before2.grade && sv.grade === before2.grade, '계절 전환 때 위치·학년이 바뀜');
   D.park.player.speed = 1500;

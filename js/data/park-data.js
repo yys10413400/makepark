@@ -15,7 +15,7 @@ window.MP_PARK = {
   defaultSeason: 'christmas',
   seasons: {
     christmas: {
-      label: '크리스마스', map: 'assets/maps/makepark-christmas.webp',
+      label: '크리스마스', map: 'assets/maps/makepark-christmas.webp', snow: true,   // snow: 화면에 눈이 내림(js/snow.js)
       // 땅(길) 지도: 캐릭터가 건물 뒤로 지나갈 때 덮개에서 길 부분을 지우는 데 씀 (tools/build_ground_mask.py)
       ground: 'assets/maps/makepark-christmas-ground.png'
       // 이 계절 지도에만 길 위에 놓인 물체가 있으면 walkEdits: [...] 로 이 계절에서만 막을 수 있음(형식은 아래 walkEdits 와 같음)
