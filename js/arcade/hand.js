@@ -82,7 +82,14 @@
         H.seenAt = now; H.everSeen = true;
       }
     }
-    H.raf = requestAnimationFrame(detect);
+    schedule();
+  }
+  // 새 카메라 프레임이 왔을 때만 인식(같은 프레임을 여러 번 보지 않아 게임 화면이 덜 끊김)
+  function schedule() {
+    if (!H.on) return;
+    var v = H.video;
+    if (v && v.requestVideoFrameCallback) H.raf = -v.requestVideoFrameCallback(function () { detect(); });
+    else H.raf = requestAnimationFrame(detect);
   }
 
   // onStep(text): 진행 상황 안내. 성공하면 resolve, 권한 거부·카메라 없음·인식 프로그램을 못 받으면 reject
@@ -91,7 +98,7 @@
     var token = ++H.token;
     if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) return Promise.reject(new Error('nocam'));
     if (onStep) onStep('카메라를 연결하고 있어요…');
-    return navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user', width: { ideal: 640 }, height: { ideal: 480 } }, audio: false })
+    return navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user', width: { ideal: 320 }, height: { ideal: 240 }, frameRate: { ideal: 30, max: 30 } }, audio: false })
       .then(function (stream) {
         if (token !== H.token) { stream.getTracks().forEach(function (t) { t.stop(); }); throw new Error('cancel'); }
         H.stream = stream;
@@ -105,14 +112,14 @@
       .then(function () {
         if (token !== H.token) throw new Error('cancel');
         H.on = true; H.raw = null; H.center = null; H.everSeen = false; H.seenAt = 0; H.x = 0.5; H.lastVT = -1;
-        H.raf = requestAnimationFrame(detect);
+        schedule();
       })
       .catch(function (e) { if (token === H.token) stop(); throw e; });
   }
 
   function stop() {
     H.token++;
-    H.on = false; cancelAnimationFrame(H.raf);
+    H.on = false; if (H.raf > 0) cancelAnimationFrame(H.raf); else if (H.raf < 0 && H.video && H.video.cancelVideoFrameCallback) H.video.cancelVideoFrameCallback(-H.raf);
     if (H.stream) H.stream.getTracks().forEach(function (t) { t.stop(); });
     if (H.video) { try { H.video.pause(); } catch (e) { /* 무시 */ } H.video.srcObject = null; }
     H.stream = null; H.video = null; H.hands = [];

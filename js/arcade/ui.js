@@ -259,7 +259,7 @@
 
     // 카메라 미리보기(거울 화면). 이 기기 안에서만 그리고 저장·전송하지 않음. 버튼으로 켜고 끔
     ui.camBox = el('div', 'ac-cam'); ui.camBox.hidden = true;
-    ui.camCv = el('canvas', 'ac-cam-cv'); ui.camCv.width = 320; ui.camCv.height = 240;
+    ui.camCv = el('canvas', 'ac-cam-cv'); ui.camCv.width = 192; ui.camCv.height = 144;
     ui.camCv.setAttribute('aria-label', '내 카메라 거울 화면. 초록 동그라미가 인식한 오른손이에요');
     ui.camBox.appendChild(ui.camCv);
     ui.camBox.appendChild(el('p', 'ac-cam-cap', '초록 ● 오른손 · 회색 ● 다른 손 · 노란 줄 = 화면 양 끝'));
@@ -337,6 +337,7 @@
   }
   function drawCam() {
     if (ui.camBox.hidden || !window.MPHand || !MPHand.preview) return;
+    if ((G.camN = (G.camN || 0) + 1) % 3) return;   // 미리보기는 3화면에 한 번만(가볍게)
     var p = MPHand.preview(), c = ui.camCv.getContext('2d'), W = ui.camCv.width, H = ui.camCv.height;
     c.fillStyle = '#0b1640'; c.fillRect(0, 0, W, H);
     var v = p.video;
@@ -345,14 +346,14 @@
       var k = Math.max(W / v.videoWidth, H / v.videoHeight), vw = v.videoWidth * k, vh = v.videoHeight * k;
       c.drawImage(v, (W - vw) / 2, (H - vh) / 2, vw, vh);
       c.restore();
-    } else { c.fillStyle = '#cbd6ff'; c.font = '20px Jua, sans-serif'; c.textAlign = 'center'; c.fillText('카메라 준비 중…', W / 2, H / 2); }
+    } else { c.fillStyle = '#cbd6ff'; c.font = '14px Jua, sans-serif'; c.textAlign = 'center'; c.fillText('카메라 준비 중…', W / 2, H / 2); }
     if (p.range) {
       c.strokeStyle = 'rgba(255,214,64,0.9)'; c.lineWidth = 3; c.setLineDash([8, 6]);
       p.range.forEach(function (x) { c.beginPath(); c.moveTo(x * W, 0); c.lineTo(x * W, H); c.stroke(); });
       c.setLineDash([]);
     }
     p.hands.forEach(function (h) {
-      c.beginPath(); c.arc(h.x * W, h.y * H, h.right ? 14 : 10, 0, Math.PI * 2);
+      c.beginPath(); c.arc(h.x * W, h.y * H, h.right ? 9 : 6, 0, Math.PI * 2);
       c.fillStyle = h.right ? 'rgba(61,220,110,0.85)' : 'rgba(200,200,200,0.75)'; c.fill();
       c.lineWidth = 3; c.strokeStyle = '#fff'; c.stroke();
     });
@@ -492,14 +493,17 @@
     } else if (G.mode === 'cam' && window.MPHand) {
       r = MPHand.read();
       if (r.everSeen) {
-        var target = X_MIN + r.x * (X_MAX - X_MIN), diff = target - G.px, maxStep = 1500 * dt;
-        if (Math.abs(diff) > 3) G.px += Math.max(-maxStep, Math.min(maxStep, diff));
+        // 손 인식은 초당 15~30번이라 그대로 따라가면 뚝뚝 끊겨 보임 → 매 화면마다 목표 쪽으로 부드럽게 다가감
+        var target = X_MIN + r.x * (X_MAX - X_MIN), diff = target - G.px;
+        if (Math.abs(diff) > 4) G.px += diff * (1 - Math.exp(-dt * 11));
       }
     }
     G.px = Math.max(X_MIN, Math.min(X_MAX, G.px));
     var dx = G.px - before;
-    G.moving = Math.abs(dx) > 40 * dt;
-    if (G.moving) { G.dir = dx > 0 ? 1 : -1; G.walkT += dt; } else G.walkT = 0;
+    // 걷기 그림이 한 프레임씩 켜졌다 꺼지며 깜빡이지 않게, 멈춘 뒤 0.12초는 걷는 채로 둠
+    if (Math.abs(dx) > 40 * dt) { G.dir = dx > 0 ? 1 : -1; G.still = 0; } else G.still = (G.still || 0) + dt;
+    G.moving = G.still < 0.12;
+    if (G.moving) G.walkT += dt; else G.walkT = 0;
 
     // ----- 손 확인(카메라) -----
     if (G.mode === 'cam' && r) {
@@ -587,14 +591,6 @@
   function drawGame() {
     var c = ui.gc.getContext('2d');
     c.clearRect(0, 0, IW, IH);
-    // 별(픽셀 뒤로 지나가게 먼저)
-    G.stars.forEach(function (s) {
-      var k = s.big ? 1.12 : 0.74, fi = Math.floor(G.t * 11 + s.ph) % 8;
-      if (s.practice) k = 0.9;
-      if (starImg.complete && starImg.naturalWidth) {
-        c.drawImage(starImg, fi * STAR.cw, 0, STAR.cw, STAR.ch, s.x - STAR.cx * k, s.y - STAR.cy * k, STAR.cw * k, STAR.ch * k);
-      }
-    });
     // 픽셀: 움직일 때만 옆걸음 8프레임(오른쪽 원본, 왼쪽 좌우 반전), 멈추면 정지 자세
     var k = PIX.k, w = PIX.cw * k, h = PIX.ch * k, top = FOOT_Y - PIX.foot * k;
     c.save();
@@ -608,6 +604,14 @@
       c.drawImage(pixIdle, -PIX.head * k, top, w, h);
     }
     c.restore();
+    // 별(픽셀 앞으로 지나가게 픽셀 다음에)
+    G.stars.forEach(function (s) {
+      var k = s.big ? 1.12 : 0.74, fi = Math.floor(G.t * 11 + s.ph) % 8;
+      if (s.practice) k = 0.9;
+      if (starImg.complete && starImg.naturalWidth) {
+        c.drawImage(starImg, fi * STAR.cw, 0, STAR.cw, STAR.ch, s.x - STAR.cx * k, s.y - STAR.cy * k, STAR.cw * k, STAR.ch * k);
+      }
+    });
     // 받았을 때 반짝임·점수
     G.fx.forEach(function (f) {
       var a = 1 - f.t / f.life;
@@ -730,7 +734,7 @@
   function loop(now) {
     if (!S.open) return;
     var dt = Math.min(0.05, (now - S.last) / 1000); S.last = now;
-    stepLobby(dt); drawLobby(now / 1000);
+    stepLobby(dt); if (!S.win) drawLobby(now / 1000);   // 창이 열려 있으면 뒤 로비는 다시 그리지 않음(가볍게)
     if (S.win === 'game') { stepGame(dt); drawGame(); drawCam(); }
     S.raf = requestAnimationFrame(loop);
   }
