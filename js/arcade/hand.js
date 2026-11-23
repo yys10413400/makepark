@@ -7,8 +7,8 @@
  * - 화면에는 기본으로 인식 상태만 알려 주고, '카메라 보기'를 켜면 작은 거울 화면(이 기기 안에서만)을 보여 줍니다.
  * - stop() 하면 카메라를 완전히 끕니다(창 닫기·방향키로 바꾸기).
  *
- * 오른손 구분: MediaPipe 의 왼손/오른손 이름은 '거울처럼 뒤집힌(셀카) 영상'을 기준으로 붙습니다.
- *   이 파일은 카메라 영상을 뒤집지 않고 그대로 넣으므로, 실제 오른손은 'Left' 로 나옵니다(RIGHT_LABEL).
+ * 오른손 구분: 카메라 영상을 뒤집지 않고 그대로 넣었을 때 실제 오른손은 'Right' 로 나옵니다(RIGHT_LABEL).
+ *   (2026-11 실제 웹캠 확인: 'Left' 로 두었더니 왼손을 따라가서 'Right' 로 바꿈)
  * 방향: 뒤집지 않은 영상에서 내 오른쪽은 영상의 왼쪽(x 작아짐)이라 x 를 1 - x 로 바꿔
  *   '내가 오른쪽으로 움직이면 화면에서도 오른쪽'이 되게 합니다.
  */
@@ -17,7 +17,7 @@
   var VER = '0.10.14';
   var LIB = 'https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@' + VER;
   var MODEL = 'https://storage.googleapis.com/mediapipe-models/hand_landmarker/hand_landmarker/float16/1/hand_landmarker.task';
-  var RIGHT_LABEL = 'Left';
+  var RIGHT_LABEL = 'Right';
   var SPAN = 0.34;          // 손을 이만큼(영상 폭의 34%) 옮기면 화면 왼쪽 끝 ↔ 오른쪽 끝. 팔을 크게 뻗지 않아도 됨
   var DEAD = 0.004;         // 이보다 작은 흔들림은 무시(멈춘 손은 멈춘 채로)
 
