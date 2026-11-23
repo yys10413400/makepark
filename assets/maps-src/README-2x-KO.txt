@@ -54,3 +54,8 @@
 - 2896×2172로 키워 assets/maps/*.webp (품질 90). 워터마크 없음.
 - 길 배치는 예전 지도와 같아 입구 좌표는 그대로. 걷기 격자(build_walkmask.py)와 땅 지도(build_ground_mask.py)는 새로 만듦.
 - 크리스마스 지도: 바깥 강물만 살짝 언 얼음빛으로 바꿈(강가일수록 하얗게, 물결 명암은 남김). 길·건물 색은 그대로.
+
+2026-11-24 정리: 지금 쓰지 않는 예전 지도 원본 8개(약 66MB)를 저장소에서 지움
+  (makepark-normal/christmas 의 original·2x-original·2x-ai·gemini PNG)
+  필요하면 git 기록에서 되살릴 수 있음: git checkout 1992db2 -- assets/maps-src/<파일이름>
+  위에 적힌 예전 설명(2배 확대, 제미나이 교체 등)은 그 파일들에 대한 기록임.
