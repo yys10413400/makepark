@@ -28,16 +28,16 @@
     { id: 'R5', kind: 'reward', facility: 'ghost', name: '꼬마 유령' },
     { id: 'R6', kind: 'reward', facility: 'arcade', name: '게임 챔피언' },
     { id: 'R7', kind: 'reward', facility: 'star', name: '별빛 요정' },
-    { id: 'S1', kind: 'shop', price: 20, name: '정글 탐험가' },
-    { id: 'S2', kind: 'shop', price: 20, name: '꼬마 요리사' },
-    { id: 'S3', kind: 'shop', price: 20, name: '해변 서퍼' },
-    { id: 'S4', kind: 'shop', price: 30, name: '공룡 잠옷' },
-    { id: 'S5', kind: 'shop', price: 30, name: '꼬마 해적' },
-    { id: 'S6', kind: 'shop', price: 30, name: '꼬마 마법사' },
-    { id: 'S7', kind: 'shop', price: 40, name: '우주 비행사' },
-    { id: 'S8', kind: 'shop', price: 40, name: '꼬마 닌자' },
-    { id: 'S9', kind: 'shop', price: 40, name: '꼬마 기사' },
-    { id: 'S10', kind: 'shop', price: 40, name: '공주님' }
+    { id: 'S1', kind: 'shop', price: 2, name: '정글 탐험가' },
+    { id: 'S2', kind: 'shop', price: 2, name: '꼬마 요리사' },
+    { id: 'S3', kind: 'shop', price: 2, name: '해변 서퍼' },
+    { id: 'S4', kind: 'shop', price: 4, name: '공룡 잠옷' },
+    { id: 'S5', kind: 'shop', price: 4, name: '꼬마 해적' },
+    { id: 'S6', kind: 'shop', price: 4, name: '꼬마 마법사' },
+    { id: 'S7', kind: 'shop', price: 6, name: '우주 비행사' },
+    { id: 'S8', kind: 'shop', price: 6, name: '꼬마 닌자' },
+    { id: 'S9', kind: 'shop', price: 6, name: '꼬마 기사' },
+    { id: 'S10', kind: 'shop', price: 6, name: '공주님' }
   ];
   var BY_ID = {};
   ROSTER.forEach(function (c) { BY_ID[c.id] = c; });
