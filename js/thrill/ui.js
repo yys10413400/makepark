@@ -47,6 +47,8 @@
     if ((!d || typeof d !== 'object') && mem) d = mem;
     d = d && typeof d === 'object' ? JSON.parse(JSON.stringify(d)) : {};
     d.done = d.done && typeof d.done === 'object' ? d.done : {};
+    d.met = d.met && typeof d.met === 'object' ? d.met : {};     // 학년별 만난 인물 번호들
+    d.last = d.last && typeof d.last === 'object' ? d.last : {};  // 학년별 바로 전 판 인물
     return d;
   }
   function writeThrill(d) {
@@ -146,8 +148,11 @@
   function setGrade(g) {
     S.grade = g;
     ui.gradeBtns.forEach(function (b, i) { b.setAttribute('aria-checked', String(i + 1 === g)); b.classList.toggle('on', i + 1 === g); });
-    var park = api().profile().grade || null, def = MS.GRADES[g], done = thrillData().done['g' + g];
-    ui.gradeNote.textContent = g + '학년 미션: ‘' + def.title + '’ (' + def.subject + ')' + (done ? ' · 해 봤어요 ✔' : '') +
+    // 이번 판 인물: 이 학년에서 아직 안 만난 인물부터(다 만났으면 바로 전 판과 다른 인물)
+    var d = thrillData(), met = d.met['g' + g] || [], n = MS.GRADES[g].people.length;
+    S.who = MS.pick(g, met, d.last['g' + g]);
+    var park = api().profile().grade || null, def = MS.person(g, S.who);
+    ui.gradeNote.textContent = '이번에 만날 인물: ' + def.emoji + ' ' + def.who + ' (' + def.topic + ') · ' + g + '학년 인물 ' + n + '명 중 ' + Math.min(met.length, n) + '명 만났어요' +
       (park && park !== g ? ' · 바꾼 학년은 이번 놀이에만 써요.' : '');
   }
   function openDialog() {
@@ -333,6 +338,7 @@
     S.ms = MS.create('free', g);
     showScene('game');
     ui.gradeChip.textContent = g + '학년';
+    if (S.who == null) S.who = MS.pick(g, thrillData().met['g' + g], thrillData().last['g' + g]);
     ui.arena.style.backgroundImage = 'url(' + BASE + (MS.GRADES[g].night ? 'arena-night' : 'arena-day') + '.webp)';
     ui.arena.classList.toggle('night', !!MS.GRADES[g].night);
     setSay(''); hideModal(); ui.log.hidden = true;
@@ -349,9 +355,9 @@
   }
   function startMission() {
     S.mode = 'mission'; S.fx = [];
-    S.ms = MS.create(S.grade);
+    S.ms = MS.create(S.grade, null, null, S.who);
     renderActs(); updateGoal(); renderLog();
-    stageCard(S.ms.stageIntro(), '미션 · ' + MS.GRADES[S.grade].title);
+    stageCard(S.ms.stageIntro(), '미션 · ' + S.ms.def.title);
   }
   function startFree() {
     hideModal(); S.mode = 'free'; S.fx = [];
@@ -440,7 +446,7 @@
   }
   function hideModal() { ui.modal.hidden = true; S.modal = false; S.helpOpen = false; S.last = performance.now(); }
   function howToNode(g) {
-    var def = MS.GRADES[g], box = el('div', 'th-howto');
+    var def = MS.person(g, S.who), box = el('div', 'th-howto');
     box.appendChild(el('p', 'th-howto-sub', g + '학년 · ' + def.subject));
     var ol = el('ol', 'th-steps');
     [['🎯 목표', def.howto.goal], ['🕹️ 이동', def.howto.move + ' 방향키·WASD 또는 왼쪽 아래 방향 패드(대각선도 돼요).'],
@@ -456,7 +462,7 @@
   }
   function showHowTo(first) {
     if (S.modal && !first) return;
-    var def = MS.GRADES[S.grade];
+    var def = MS.person(S.grade, S.who);
     showModal(def.title, [], [first
       ? { text: '게임 시작', main: true, fn: function () { var d = thrillData(); if (!d.howto) { d.howto = true; writeThrill(d); } startPractice(); } }
       : { text: '계속하기', main: true, fn: hideModal }], howToNode(S.grade), 'howto');
@@ -501,9 +507,15 @@
     S.ms.rewarded = true;   // 한 판에 한 번만 계산
     var g = S.grade, d = thrillData(), first = !d.cleared, firstGrade = !d.done['g' + g];
     d.done['g' + g] = true;
+    var met = d.met['g' + g] || [];
+    if (met.indexOf(S.ms.who) < 0) met.push(S.ms.who);
+    d.met['g' + g] = met; d.last['g' + g] = S.ms.who;
+    S.who = MS.pick(g, met, S.ms.who);   // 다음 판은 다른 인물
     if (!d.cleared) d.cleared = true;   // 어느 학년이든 첫 완료 때 한 번만(건물 보상 캐릭터)
     var saved = writeThrill(d);
-    var lines = [resultLine(g)];
+    var lines = [resultLine(g)], n = MS.GRADES[g].people.length;
+    lines.push(met.length < n ? '다음 판에는 새 인물 ' + MS.person(g, S.who).emoji + ' ‘' + MS.person(g, S.who).who + '’ 이야기가 기다려요! (' + g + '학년 인물 ' + met.length + ' / ' + n + '명 만남)'
+      : '🎉 ' + g + '학년 인물 ' + n + '명을 모두 만났어요!');
     if (first) {
       var r = window.MPChars && MPChars.byId('R4');
       lines.push('★ 건물 보상 ‘' + (r ? r.name : '범퍼카 레이서') + '’ 캐릭터를 받았어요! 공원 위쪽 ‘캐릭터’에서 골라 봐요.');
@@ -740,7 +752,7 @@
   window.MPThrill = {
     open: open, close: close, _S: S, _ui: ui,
     // 검증용: 바로 미션 열기, 시간 흘리기(화면이 숨겨져 애니메이션이 느릴 때)
-    _openGame: function (g) { if (!S.open) open(); openGame(g); },
+    _openGame: function (g, who) { if (!S.open) open(); S.who = who == null ? null : who; openGame(g); },
     _tick: function (sec, ix, iy) {
       var step = 1 / 60;
       for (var t = 0; t < sec; t += step) {

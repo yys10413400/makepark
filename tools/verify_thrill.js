@@ -2,11 +2,12 @@
  * 짜릿 어드벤처 · 토토의 범퍼카 연구소 자동 검증
  * 실행: node tools/verify_thrill.js
  * - 자유 주행: 대각선 속도 정규화, 손을 떼면 감속해 멈춤, 벽을 뚫지 않고 살짝 튕김, 물체와 겹친 채 멈추지 않음
- * - 학년별 과학자 이야기: 카드 3장·퀴즈 3문제, 카드 자리에 차가 갈 수 있는지,
+ * - 학년별 인물(js/thrill/people.js): 인물마다 카드 3장·퀴즈 3문제, 카드 자리에 차가 갈 수 있는지, 안 만난 인물부터 고르기,
  *   카드를 몰아서 모으면 이야기 → 3장째 뒤 퀴즈, 틀리면 힌트와 같은 문제, 다 맞히면 완료, 처음 자리로 가도 모은 카드 유지
  */
 'use strict';
 global.MP_THRILL_PHYS = require('../js/thrill/physics.js');
+global.MP_THRILL_PEOPLE = require('../js/thrill/people.js');
 var P = global.MP_THRILL_PHYS;
 var M = require('../js/thrill/missions.js');
 var fails = 0, n = 0;
@@ -56,43 +57,59 @@ console.log('[자유 주행]');
   ok(bad === 0 && w.bodies[0].x > 1300, '물체를 벽으로 밀어붙여도 차·물체가 겹치거나 벽을 통과하지 않음');
 })();
 
-console.log('[이야기·퀴즈 데이터]');
+console.log('[인물 데이터]');
 (function () {
+  var names = [];
   for (var g = 1; g <= 6; g++) {
-    var d = M.GRADES[g], spots = M.SPOTS[g - 1];
-    var good = d.cards.length === 3 && d.quiz.length === 3 && d.quiz.every(function (q) { return q.opts.length === 3 && q.hint >= 1 && q.hint <= 3 && new Set(q.opts).size === 3; });
+    var G = M.GRADES[g], spots = M.SPOTS[g - 1];
     var reach = spots.every(function (p) { return !P.wallFix(p[0], p[1], P.CAR.r) && Math.hypot(p[0] - M.START.x, p[1] - M.START.y) > M.GRAB + 100; });
-    ok(good && reach, g + '학년 ' + d.who + ': 카드 3장 · 퀴즈 3문제(보기 3개) · 카드 자리에 차가 갈 수 있고 출발 자리와 떨어져 있음');
+    ok(G.people.length >= 2 && reach, g + '학년 인물 ' + G.people.length + '명(' + G.people.map(function (d) { return d.who; }).join(', ') + ') · 카드 자리에 차가 갈 수 있음');
+    G.people.forEach(function (d) {
+      names.push(d.who);
+      var good = d.cards.length === 3 && d.quiz.length === 3 && d.quiz.every(function (q) { return q.opts.length === 3 && q.hint >= 1 && q.hint <= 3 && new Set(q.opts).size === 3; });
+      if (!good) ok(false, g + '학년 ' + d.who + ': 카드 3장 · 퀴즈 3문제(보기 3개, 힌트 카드 1~3)');
+    });
   }
+  ok(new Set(names).size === names.length, '모든 인물이 카드 3장·퀴즈 3문제, 학년 사이 겹치는 인물 없음 (' + names.length + '명)');
+  ['우장춘', '세종대왕'].forEach(function (x) { ok(names.indexOf(x) < 0, x + '은(는) 넣지 않음'); });
 })();
 
-console.log('[학년별 플레이]');
-for (var g = 1; g <= 6; g++) (function (g) {
-  var ms = M.create(g, null, 17), evs = [];
+console.log('[판마다 인물 고르기]');
+(function () {
+  var okAll = true;
+  for (var g = 1; g <= 6; g++) {
+    var n = M.GRADES[g].people.length, met = [], last = null;
+    for (var k = 0; k < n; k++) { var w = M.pick(g, met, last, Math.random()); if (met.indexOf(w) >= 0) okAll = false; met.push(w); last = w; }
+    for (var r = 0; r < 50; r++) { var w2 = M.pick(g, met, last, Math.random()); if (n > 1 && w2 === last) okAll = false; last = w2; }
+  }
+  ok(okAll, '아직 안 만난 인물부터 나오고, 다 만난 뒤에는 바로 전 판 인물이 다시 나오지 않음');
+})();
+
+console.log('[인물별 플레이]');
+for (var g = 1; g <= 6; g++) M.GRADES[g].people.forEach(function (d, who) {
+  var ms = M.create(g, null, 17 + who, who), evs = [], tag = g + '학년 ' + d.who;
   run(ms, 1, [0, 0], evs);
-  ok(!types(evs, 'story').length, g + '학년: 가만히 있으면 카드를 모으지 않음');
-  var stories = [];
+  var lazy = !types(evs, 'story').length, stories = [], early = false, retryOk = true;
   ms.cards.forEach(function (c, i) {
     var e = [];
     run(ms, 8, driveTo(c.x, c.y, 10), e);
     stories = stories.concat(types(e, 'story'));
-    if (i === 0) { ms.retry(); ok(ms.got() >= 1 && ms.world.car.x === M.START.x, g + '학년: 처음 자리로 가도 모은 카드는 그대로'); }
-    if (ms.got() < 3) ok(!types(ms.storyDone(), 'ask').length, g + '학년: 카드 ' + ms.got() + '장 모았을 때는 아직 퀴즈 없음');
+    if (i === 0) { ms.retry(); retryOk = ms.got() >= 1 && ms.world.car.x === M.START.x; }
+    if (ms.got() < 3 && types(ms.storyDone(), 'ask').length) early = true;
   });
-  ok(stories.length === 3 && ms.got() === 3, g + '학년: 카드 3장에 차를 대면 이야기 3개 (' + stories.map(function (s) { return s.card.emoji; }).join(' ') + ')');
-  var q = types(ms.storyDone(), 'ask')[0];
-  ok(q && q.q.options.length === 3, g + '학년: 3장을 다 모으면 퀴즈');
-  for (var k = 0; k < 3; k++) {
+  var q = types(ms.storyDone(), 'ask')[0], hintOk = true, flow = !!q;
+  for (var k = 0; k < 3 && q; k++) {
     var wrong = q.q.options.filter(function (o) { return o.id !== '0'; })[0];
-    var w = ms.answer(q.q.id, wrong.id);
-    var h = types(w, 'hint')[0], again = types(w, 'ask')[0];
-    if (k === 0) ok(h && /번 카드/.test(h.text) && again && again.q.id === q.q.id && !ms.done, g + '학년: 틀리면 “어느 카드를 떠올려 볼지” 힌트와 같은 문제 — ' + h.text);
+    var w = ms.answer(q.q.id, wrong.id), h = types(w, 'hint')[0], again = types(w, 'ask')[0];
+    if (!(h && /번 카드/.test(h.text) && again && again.q.id === q.q.id && !ms.done)) hintOk = false;
     var r = ms.answer(again.q.id, '0');
     q = types(r, 'ask')[0];
-    if (k < 2) ok(q && q.q.id === 'q' + (k + 1), g + '학년: 퀴즈 ' + (k + 1) + ' 정답 → 다음 문제');
-    else ok(ms.done && types(r, 'complete').length, g + '학년: 퀴즈 3문제를 다 맞히면 완료');
+    if (k < 2 && !(q && q.q.id === 'q' + (k + 1))) flow = false;
+    if (k === 2 && !(ms.done && types(r, 'complete').length)) flow = false;
   }
-})(g);
+  ok(lazy && retryOk && !early && stories.length === 3 && flow && hintOk && ms.def.who === d.who,
+    tag + ': 카드 3장 → 이야기 3개 → 퀴즈(틀리면 힌트·같은 문제) → 3문제 정답이면 완료, 처음 자리로 가도 카드 유지');
+});
 
 console.log('\n' + (n - fails) + ' / ' + n + ' 통과');
 process.exit(fails ? 1 : 0);
