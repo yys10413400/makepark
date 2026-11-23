@@ -23,6 +23,7 @@
   <link rel="stylesheet" href="css/arcade.css">
   <link rel="stylesheet" href="css/thrill.css">
   <link rel="stylesheet" href="css/net.css">
+  <link rel="stylesheet" href="css/title.css">
   <!-- 선생님 모드(?teacher=반코드): 첫 입장 화면(닉네임 창)이 잠깐 보이지 않게 그림을 그리기 전에 표시 -->
   <script>if (/[?&]teacher=\d{5}/.test(location.search)) document.documentElement.classList.add('teacher-mode');</script>
 </head>
@@ -30,29 +31,24 @@
   <div id="app">
     <canvas id="stage" aria-label="메이크파크 공원 지도"></canvas>
 
-    <!-- 첫 입장 화면 (시안 2: 금색 테두리 크림 패널 / 배경은 실제 공원 지도) -->
     <!-- 앱으로 설치(브라우저가 설치할 수 있다고 알려 줄 때만 보임, js/pwa.js) -->
     <button id="installApp" class="install-app" type="button" hidden>📲 앱으로 설치</button>
-    <section id="title" class="entry-overlay">
-      <form id="titleForm" class="entry-panel entry-main" autocomplete="off" novalidate>
-        <div class="entry-crest" aria-hidden="true">
-          <svg class="crest-castle" viewBox="0 0 120 40"><path d="M20 40V22l8-8 8 8v18zM44 40V16l10-12 10 12v24zM76 40V20l9-9 9 9v20zM98 40V24l6-6 6 6v16z"/><path class="flag" d="M54 4V0h8l-3 2 3 2zM28 14V9h7l-3 2 3 2zM85 11V6h7l-3 2 3 2z"/></svg>
-          <span>MAKE PARK</span>
-          <svg class="sparkle crest-star" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 0C13 8 16 11 24 12 16 13 13 16 12 24 11 16 8 13 0 12 8 11 11 8 12 0Z"/></svg>
-        </div>
-        <h1 class="entry-title"><svg class="sparkle" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 0C13 8 16 11 24 12 16 13 13 16 12 24 11 16 8 13 0 12 8 11 11 8 12 0Z"/></svg><span>메이크파크에 오신 걸 환영해요!</span><svg class="sparkle" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 0C13 8 16 11 24 12 16 13 13 16 12 24 11 16 8 13 0 12 8 11 11 8 12 0Z"/></svg></h1>
-        <p class="entry-sub line-deco" id="entrySub"><span>닉네임과 학년을 골라요</span></p>
+    <!-- 첫 입장 화면: 정문 그림 배경(assets/ui/title-bg.webp) 위 단순한 흰 카드 (css/title.css) -->
+    <section id="title" class="entry-overlay title-screen">
+      <form id="titleForm" class="title-card" autocomplete="off" novalidate>
+        <h1 class="title-name">메이크파크</h1>
+        <p class="title-sub">닉네임과 학년을 골라요</p>
         <p id="welcomeBack" class="entry-welcome" hidden></p>
 
         <div class="nick-row">
-          <label class="nick-label" for="nickname"><svg class="sparkle" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 0C13 8 16 11 24 12 16 13 13 16 12 24 11 16 8 13 0 12 8 11 11 8 12 0Z"/></svg>닉네임</label>
+          <label class="nick-label" for="nickname">닉네임</label>
           <input id="nickname" class="nick-input" type="text" maxlength="40" placeholder="공원에서 사용할 이름"
                  autocomplete="off" spellcheck="false" aria-describedby="nickError">
         </div>
         <p id="nickError" class="field-msg" aria-live="polite"></p>
 
         <fieldset class="grade-set">
-          <legend class="grade-legend"><svg class="sparkle" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 0C13 8 16 11 24 12 16 13 13 16 12 24 11 16 8 13 0 12 8 11 11 8 12 0Z"/></svg>학년</legend>
+          <legend class="grade-legend">학년</legend>
           <div class="grade-grid">
             <label class="grade-opt"><input type="radio" name="grade" value="1"><span>1학년</span></label>
             <label class="grade-opt"><input type="radio" name="grade" value="2"><span>2학년</span></label>
@@ -63,11 +59,9 @@
           </div>
         </fieldset>
 
-        <p class="entry-note line-deco"><span>학년에 맞는 미션을 준비해 드려요</span></p>
         <button id="enterPark" type="submit" class="entry-go" disabled>공원으로 출발!</button>
         <p id="titleHint" class="entry-hint" aria-live="polite"></p>
         <p id="storageNote" class="entry-storage" hidden>이 기기에는 저장할 수 없어요. 이번에만 기억하고, 다음에 다시 입력해야 해요.</p>
-        <svg class="sparkle bottom-star" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 0C13 8 16 11 24 12 16 13 13 16 12 24 11 16 8 13 0 12 8 11 11 8 12 0Z"/></svg>
       </form>
     </section>
 

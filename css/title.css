@@ -1,0 +1,79 @@
+/* ---------- 첫 입장 화면 ----------
+   배경: 메이크파크 정문 그림(assets/ui/title-bg.webp)을 화면에 꽉 차게.
+   입장 창: 장식을 뺀 단순한 흰 카드. 정문 아치 가운데에 놓임.
+   css/style.css 의 예전 입장 화면 규칙(.entry-panel·.entry-main)은 이 카드에 쓰지 않음(클래스가 다름).
+   입력칸·학년 버튼·출발 버튼의 기본 모양은 style.css 것을 쓰고, 여기서 카드 안 모양만 단순하게 덮어씀. */
+#title.title-screen {
+  display: flex; justify-content: center; align-items: safe center; overflow-y: auto;
+  padding: max(16px, env(safe-area-inset-top)) max(16px, env(safe-area-inset-right)) max(16px, env(safe-area-inset-bottom)) max(16px, env(safe-area-inset-left));
+  background: #bfe3f5 url("../assets/ui/title-bg.webp") center 40% / cover no-repeat;
+}
+.title-card {
+  width: min(380px, 100%); margin: auto; padding: 24px 22px 18px;
+  text-align: center; color: #3b2a1e;
+  background: rgba(255, 255, 255, 0.94);
+  border-radius: 22px;
+  box-shadow: 0 10px 30px rgba(30, 45, 80, 0.25);
+}
+.title-name { margin: 0; font-weight: 400; font-size: 30px; line-height: 1.15; color: #c8323f; letter-spacing: 1px; }
+.title-sub { margin: 4px 0 0; font-size: 15px; color: #7a6a5c; }
+.title-card .entry-welcome { margin: 6px 0 0; font-size: 14px; color: #12837a; }
+
+/* 닉네임 */
+.title-card .nick-row { flex-direction: column; align-items: stretch; gap: 6px; margin-top: 18px; }
+.title-card .nick-label, .title-card .grade-legend {
+  display: block; float: none; width: auto; min-width: 0; margin: 0;
+  font-size: 15px; color: #6b5a4c; text-align: left;
+}
+.title-card .nick-input {
+  min-height: 48px; padding: 8px 14px; font-size: 18px; color: #3b2a1e;
+  background: #fff; border: 2px solid #e6ddd0; border-radius: 14px; box-shadow: none;
+}
+.title-card .nick-input:focus { border-color: #12837a; box-shadow: 0 0 0 3px rgba(18, 131, 122, 0.15); }
+.title-card .nick-input[aria-invalid="true"] { border-color: #c2412d; }
+.title-card .field-msg { padding-left: 0; }
+
+/* 학년 */
+.title-card .grade-set { margin-top: 4px; }
+.title-card .grade-legend { margin-bottom: 6px; }
+.title-card .grade-grid { grid-template-columns: repeat(3, 1fr); gap: 8px; padding-left: 0; }
+.title-card .grade-opt span {
+  min-height: 44px; padding: 4px; font-size: 18px; color: #4a3a2e;
+  background: #f5f1ea; border: 2px solid transparent; border-radius: 12px; box-shadow: none;
+}
+.title-card .grade-opt:hover input:not(:checked) + span { border-color: #e0d6c8; }
+.title-card .grade-opt input:checked + span { background: #12837a; color: #fff; border-color: #12837a; box-shadow: none; }
+.title-card .grade-opt input:focus-visible + span { outline: 3px solid #6a3d9a; outline-offset: 2px; }
+
+/* 출발 버튼 */
+.title-card .entry-go {
+  width: 100%; min-height: 52px; margin: 18px 0 0; padding: 6px 16px;
+  font-size: 22px; color: #fff; text-shadow: none;
+  background: #e2475b; border: 0; border-radius: 14px; box-shadow: 0 4px 0 #b3323f;
+}
+.title-card .entry-go:not(:disabled):hover { filter: brightness(1.05); }
+.title-card .entry-go:active:not(:disabled) { transform: translateY(3px); box-shadow: 0 1px 0 #b3323f; }
+.title-card .entry-go:disabled { background: #d6cfc6; color: #fff; box-shadow: 0 4px 0 #bdb4a9; cursor: not-allowed; }
+.title-card .entry-go:focus-visible { outline: 3px solid #6a3d9a; outline-offset: 3px; }
+.title-card .entry-hint { margin-top: 8px; color: #7a6a5c; }
+.title-card .entry-storage { color: #c2412d; }
+
+/* 좁은 휴대폰 */
+@media (max-width: 340px) {
+  .title-card { padding: 20px 16px 16px; }
+  .title-card .grade-grid { grid-template-columns: repeat(2, 1fr); }
+}
+/* 가로로 눕힌 휴대폰(화면이 낮음): 한 화면에 다 들어오게 */
+@media (max-height: 519px) and (orientation: landscape) {
+  .title-card { width: min(520px, 100%); padding: 14px 18px 10px; }
+  .title-name { font-size: 22px; }
+  .title-sub { display: none; }
+  .title-card .nick-row { flex-direction: row; align-items: center; gap: 10px; margin-top: 10px; }
+  .title-card .nick-label { flex: none; }
+  .title-card .nick-input { min-height: 40px; font-size: 16px; }
+  .title-card .grade-legend { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
+  .title-card .grade-grid { grid-template-columns: repeat(6, 1fr); gap: 6px; }
+  .title-card .grade-opt span { min-height: 38px; font-size: 16px; }
+  .title-card .entry-go { min-height: 44px; margin-top: 10px; font-size: 19px; }
+  .title-card .entry-hint { margin-top: 4px; }
+}
