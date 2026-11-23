@@ -8,7 +8,7 @@
  * - 벽: 둥근 네모(위 모서리는 원근 때문에 더 둥글게). 닿으면 살짝 튕김(반발 WALL_BOUNCE)
  * - 물체(카트·상자): 원. 차·밀판·벽과 부딪치면 겹치지 않게 밀어내고 접촉 방향으로 속도를 받음
  * - 막힌 곳(가림막·거울 받침·코너 벽): 축에 나란한 네모
- * - 빛: 광선을 쏘아 가림막에 막히고 거울에서 반사(최대 2번)
+ * - 빛: 광선을 쏘아 가림막에 막히고 거울에서 반사(최대 2번) — 5학년 밤 경기장 헤드라이트
  * 확인: node tools/verify_thrill.js
  */
 (function (root) {
@@ -16,7 +16,6 @@
   var ARENA = { w: 1672, h: 941, x0: 104, x1: 1566, y0: 184, y1: 842, rt: 230, rb: 130 };
   var CAR = { r: 58, vmax: 400, accel: 1500, turnAccel: 2600, decel: 560, turn: 9.5 };
   var WALL_BOUNCE = 0.38;
-  var PX_PER_M = 100;   // 거리 단위: 그림 100px = 1m (6학년 기록·화면 숫자·채점이 모두 이 값을 씀)
 
   function len(x, y) { return Math.sqrt(x * x + y * y); }
   function clamp(v, a, b) { return v < a ? a : v > b ? b : v; }
@@ -69,6 +68,8 @@
   }
   // input: { x: -1..1, y: -1..1 } (방향키·터치 방향 패드). 대각선은 길이 1로 정규화
   function steerCar(car, ix, iy, dt) {
+    // 벽에 세게 부딪친 직후 잠깐(0.2초)은 입력을 받지 않아 튕겨 나오는 모습이 보이게
+    if (car.stun > 0) { car.stun -= dt; ix = iy = 0; }
     var n = len(ix, iy);
     car.input = n > 0.01;
     if (car.input) {
@@ -173,6 +174,7 @@
       w.bodies.forEach(function (b) { solid(b, w, 0.25); });
       var hit = solid(car, w, WALL_BOUNCE);
       if (hit > 60) { ev.wallHit = Math.max(ev.wallHit, hit); car.hitN = ev.lastN; }
+      if (hit > 140 && !(car.stun > 0)) car.stun = 0.2;
     }
     // 물체가 벽에 끼어 차와 겹친 채 남지 않게: 마지막에 차만 물체 밖으로
     w.bodies.forEach(function (b) {
@@ -268,40 +270,13 @@
     return rays;
   }
 
-  // ---------- 6학년: 측정 ----------
-  // 측정선을 넘는 순간부터 dur 초 동안 실제로 지나간 길(프레임마다 움직인 거리의 합)을 기록. 측정 중에는 선을 다시 밟아도 그대로
-  function makeMeter(lineX, dur) { return { lineX: lineX, dur: dur || 3, on: false, t: 0, dist: 0, path: [], last: null, done: null }; }
-  function stepMeter(m, car, dt) {
-    var p = m.last;
-    m.last = { x: car.x, y: car.y };
-    if (m.done || !p) return null;
-    if (!m.on) {
-      if (p.x === car.x || (p.x - m.lineX) * (car.x - m.lineX) > 0) return null;
-      // 선을 넘은 자리부터 재기 시작(이번 프레임에서 선을 넘은 뒤 남은 시간만큼 이어서 잼)
-      var k = (m.lineX - p.x) / (car.x - p.x);
-      p = { x: m.lineX, y: p.y + (car.y - p.y) * k };
-      m.on = true; m.t = 0; m.dist = 0; m.path = [p];
-      dt *= 1 - k;
-    }
-    var use = Math.min(dt, m.dur - m.t), frac = dt > 0 ? use / dt : 1;
-    var nx = p.x + (car.x - p.x) * frac, ny = p.y + (car.y - p.y) * frac;
-    m.dist += len(nx - p.x, ny - p.y);
-    m.path.push({ x: nx, y: ny });
-    m.t += use;
-    if (m.t >= m.dur - 1e-9) { m.done = { dist: m.dist, time: m.dur, path: m.path.slice() }; m.on = false; return m.done; }
-    return null;
-  }
-  function meters(px) { return Math.round(px / PX_PER_M * 10) / 10; }        // 화면에 쓰는 거리(m, 소수 첫째)
-  function speedOf(distM, sec) { return Math.round(distM / sec * 10) / 10; } // 평균 속력(m/s, 소수 첫째 반올림)
-
   var API = {
-    ARENA: ARENA, CAR: CAR, PX_PER_M: PX_PER_M, DIR_ANG: DIR_ANG, PLATES: PLATES,
+    ARENA: ARENA, CAR: CAR, DIR_ANG: DIR_ANG, PLATES: PLATES,
     len: len, clamp: clamp, angDiff: angDiff, dirIndex: dirIndex,
     wallFix: wallFix, boxFix: boxFix, makeCar: makeCar, steerCar: steerCar, front: front,
     makeBody: makeBody, circlePair: circlePair, segPush: segPush, attachSegs: attachSegs,
     stepWorld: stepWorld, overlapping: overlapping,
-    castRay: castRay, headlight: headlight,
-    makeMeter: makeMeter, stepMeter: stepMeter, meters: meters, speedOf: speedOf
+    castRay: castRay, headlight: headlight
   };
   if (typeof module !== 'undefined' && module.exports) module.exports = API;
   else root.MP_THRILL_PHYS = API;

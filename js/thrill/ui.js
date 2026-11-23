@@ -5,13 +5,13 @@
  *        왼쪽 기록대 옆 수달 연구원 토토에게 '말 걸기' → 첫 대사 · 1~6학년 고르기 → 연구소 들어가기
  *        (걷기·말 걸기·학년 고르기·나가기는 코스터역 대기실(js/coaster/ui.js)과 같은 방식)
  * 장면 2 게임(같은 창 안에서 로비와 바꿔 보여 줌 — 코스터와 같은 방식)
- *        위: 학년 · 이번 목표 한 줄 · 도움말 · 나가기 / 가운데: 16:9 경기장(낮·밤) / 아래: 방향 패드 · 학년별 버튼 · 다시 시도
- *        하는 방법 카드 → [게임 시작] → 자유 연습 → [미션 시작] → 단계마다 짧은 안내 → 결과
- *        결과: [자유 주행] [다른 학년 선택] [공원으로 돌아가기]
- * 움직임·판정: js/thrill/physics.js, 학년 미션: js/thrill/missions.js (확인: node tools/verify_thrill.js)
+ *        위: 학년 · 이번 목표 한 줄 · 도움말 · 나가기 / 가운데: 16:9 경기장(낮, 5학년은 밤) / 아래: 방향 패드 · 버튼
+ *        하는 방법 → [게임 시작] → 자유 연습 → [미션 시작] → 별 이야기 카드 3장 모으기(카드마다 과학자 이야기)
+ *        → 퀴즈 3문제 → 결과: [자유 주행] [다른 학년 선택] [공원으로 돌아가기]
+ * 움직임: js/thrill/physics.js, 학년별 과학자 이야기·퀴즈: js/thrill/missions.js (확인: node tools/verify_thrill.js)
  * 그림: assets/thrill/ (python -I tools/build_thrill.py 로 assets/thrill-src 원본에서 만듦)
  *   car-dir.webp 8칸(↓ ↙ ← ↖ ↑ ↗ → ↘), car-drive/crash.webp 오른쪽 8프레임 — 칸 360×420, 범퍼 바닥 (180, 404)
- *   toto.webp 수첩 대기 8프레임 — 칸 300×440, 발 (150, 425)
+ *   toto.webp 수첩 대기 8프레임 — 칸 300×440, 발 (150, 425). 별 이야기 카드는 코드로 그림
  * 저장(window.MP_API): save.thrill = { howto, done: { g1: true … }, cleared }
  *   cleared 가 처음 true 가 될 때 건물 보상 캐릭터(R4)가 열림(game.js facilityCleared('thrill')) — 한 번만, 새로고침해도 그대로
  */
@@ -380,7 +380,7 @@
       box.appendChild(x);
     });
     if (S.mode === 'practice') box.appendChild(btn('th-act main', '▶ 미션 시작', startMission));
-    if (S.mode === 'mission') box.appendChild(btn('th-act retry', '↺ 다시 시도', retry));
+    if (S.mode === 'mission' && !S.ms.done) box.appendChild(btn('th-act retry', '↺ 처음 자리로', retry));
     if (S.mode === 'free') box.appendChild(btn('th-act main', '다른 학년 선택', toGradeSelect));
     S.actsSig = sig(list);
   }
@@ -388,7 +388,7 @@
   function retry() {
     if (S.modal || S.mode !== 'mission') return;
     S.ms.retry(); S.fx = []; S.crashT = 9;
-    setSay('차와 소품을 이번 단계 처음 자리로 돌려놨어. 끝낸 단계와 관찰 기록은 그대로야!');
+    setSay('차를 처음 자리로 돌려놨어. 모은 카드는 그대로야!');
     renderActs(); renderLog();
   }
 
@@ -408,18 +408,19 @@
     ui.toast.classList.remove('pop'); void ui.toast.offsetWidth; ui.toast.classList.add('pop');
     clearTimeout(toastT); toastT = setTimeout(function () { ui.toast.hidden = true; }, 2600);
   }
+  // 오른쪽 위 '모은 카드': 누르면 그 이야기를 다시 봄
   function renderLog() {
-    var ms = S.ms, lines = [];
+    var ms = S.ms;
     if (S.mode !== 'mission') { ui.log.hidden = true; return; }
-    var g = ms.grade;
-    if (g === 1) lines = ['<span class="th-dot"></span> 방향키를 놓은 곳', '<span class="th-star">★</span> 차가 멈춘 곳'];
-    if (g === 2) ms.log.forEach(function (l) { if (l.slips != null) lines.push((l.plate === 'flat' ? '평평한' : '굽은') + ' 밀판: 옆으로 ' + l.slips + '번 빠짐'); });
-    if (g === 3) { lines.push((ms.stage > 0 ? '✔' : '□') + ' 밀어서 옮기기'); lines.push((ms.done ? '✔' : '□') + ' 당겨서 옮기기'); }
-    if (g === 4) ms.log.forEach(function (l) { if (l.pair) lines.push(l.pair + ' → ' + (l.kind === 'repel' ? '밀어냄' : '끌어당김')); });
-    if (g === 5) { lines.push((ms.stage > 0 ? '✔' : '□') + ' 첫 표지판'); lines.push((ms.done ? '✔' : '□') + ' 숨은 표지판(반사)'); }
-    if (g === 6) (ms.runs || []).forEach(function (r, i) { lines.push((i + 1) + '번 주행: ' + r.m.toFixed(1) + 'm / 3초'); });
-    ui.log.hidden = !lines.length;
-    ui.log.innerHTML = '<p class="th-log-title">관찰 기록</p>' + lines.map(function (l) { return '<p>' + l + '</p>'; }).join('');
+    ui.log.hidden = false; ui.log.textContent = '';
+    ui.log.appendChild(el('p', 'th-log-title', '모은 카드 ' + ms.got() + ' / 3'));
+    ms.cards.forEach(function (c, i) {
+      var d = ms.def.cards[c.i];
+      if (!c.got) { ui.log.appendChild(el('p', 'th-log-empty', (i + 1) + '. ☆ 아직 못 찾았어요')); return; }
+      var b = btn('th-log-card', (c.i + 1) + '. ' + d.emoji + ' ' + d.title, function () { if (!S.modal) storyCard(d, c.i + 1, true); });
+      b.setAttribute('aria-label', d.title + ' 이야기 다시 보기');
+      ui.log.appendChild(b);
+    });
   }
 
   // ---------- 카드 ----------
@@ -450,7 +451,7 @@
       ol.appendChild(li);
     });
     box.appendChild(ol);
-    box.appendChild(el('p', 'th-howto-tip', '막히면 아래 [↺ 다시 시도] — 이번 단계 차와 소품만 처음 자리로 돌아가요. 끝낸 단계와 관찰 기록은 그대로예요.'));
+    box.appendChild(el('p', 'th-howto-tip', '틀려도 괜찮아요! 토토가 어느 카드를 다시 보면 좋은지 알려 줘요.'));
     return box;
   }
   function showHowTo(first) {
@@ -464,34 +465,23 @@
   function stageCard(text, title) {
     showModal(title || '다음 단계', [text], [{ text: '좋아, 해 볼게!', main: true, fn: function () { hideModal(); setSay(text); } }], null, 'stage');
   }
-  function askCard(q) {
-    var node = null;
-    if (q.compare) node = compareNode();
-    var btns = q.options.map(function (o) {
-      return { text: o.label, main: !o.light, fn: function () { hideModal(); handle(S.ms.answer(q.id, o.id)); renderActs(); renderLog(); } };
-    });
-    showModal('토토의 질문', [q.text], btns, node, 'ask');
+  // 이야기 카드: 과학자 이야기 한 장(다 읽으면 다음 — 3장째면 퀴즈)
+  function storyCard(d, n, again) {
+    var node = el('div', 'th-story');
+    node.appendChild(el('p', 'th-story-emoji', d.emoji));
+    node.appendChild(el('p', 'th-story-who', S.ms.def.who + ' 이야기 ' + n + ' / 3'));
+    node.appendChild(el('p', 'th-story-text', d.text));
+    var last = !again && S.ms.got() === 3;
+    showModal(d.title, [], [{ text: again ? '닫기' : last ? '퀴즈 풀러 가기!' : '다음 카드 찾으러 가기', main: true, fn: function () {
+      hideModal(); renderLog();
+      if (!again) { setSay(last ? '카드를 다 모았어! 이야기를 떠올리며 퀴즈를 풀어 보자.' : '좋아! 남은 별 카드 ' + (3 - S.ms.got()) + '장도 찾아볼까?'); handle(S.ms.storyDone()); }
+    } }], node, 'story');
   }
-  // 6학년: 두 주행의 거리 · 3초 · 실제 경로를 나란히
-  function compareNode() {
-    var box = el('div', 'th-compare'), runs = S.ms.runs || [];
-    runs.forEach(function (r, i) {
-      var col = el('div', 'th-run');
-      var cv = el('canvas', 'th-run-cv'); cv.width = 334; cv.height = 188;
-      var c = cv.getContext('2d'), k = cv.width / IW;
-      var bg = img('arena-day'); if (ready(bg)) c.drawImage(bg, 0, 0, cv.width, cv.height);
-      c.save(); c.scale(k, k);
-      c.strokeStyle = '#ffd23f'; c.lineWidth = 10; c.setLineDash([30, 22]); c.beginPath(); c.moveTo(S.ms.g6.lineX, 190); c.lineTo(S.ms.g6.lineX, 840); c.stroke(); c.setLineDash([]);
-      c.strokeStyle = i ? '#8a4fd6' : '#ff7a1a'; c.lineWidth = 16; c.lineJoin = 'round'; c.lineCap = 'round';
-      c.beginPath(); r.path.forEach(function (p, j) { if (j) c.lineTo(p.x, p.y); else c.moveTo(p.x, p.y); }); c.stroke();
-      var e = r.path[r.path.length - 1]; c.fillStyle = '#fff'; c.beginPath(); c.arc(e.x, e.y, 22, 0, Math.PI * 2); c.fill();
-      c.restore();
-      col.appendChild(cv);
-      col.appendChild(el('p', 'th-run-t', (i + 1) + '번 주행'));
-      col.appendChild(el('p', 'th-run-v', '거리 ' + r.m.toFixed(1) + 'm · 시간 3초'));
-      box.appendChild(col);
+  function askCard(q) {
+    var btns = q.options.map(function (o) {
+      return { text: o.label, main: true, fn: function () { hideModal(); handle(S.ms.answer(q.id, o.id)); renderActs(); renderLog(); } };
     });
-    return box;
+    showModal('토토의 퀴즈', [q.text], btns, null, 'ask');
   }
 
   // ---------- 사건 처리 ----------
@@ -499,11 +489,9 @@
     evs.forEach(function (e) {
       if (e.type === 'hint') setSay(e.text);
       else if (e.type === 'note') { toast(e.text); renderLog(); }
-      else if (e.type === 'stage') { renderLog(); renderActs(); stageCard(e.text); }
+      else if (e.type === 'story') { var k = S.ms.cards.filter(function (q) { return S.ms.def.cards[q.i] === e.card; })[0]; if (k) S.fx.push({ kind: 'grab', x: k.x, y: k.y, t: 0, life: 0.6 }); renderLog(); storyCard(e.card, e.n, false); }
       else if (e.type === 'ask') { renderLog(); askCard(e.q); }
-      else if (e.type === 'complete') { renderLog(); S.finishing = true; setTimeout(finish, S.grade === 5 ? 3000 : 1000); }   // 5학년은 차→거울→표지판 경로를 잠깐 보여 준 뒤
-      else if (e.type === 'arrow') S.fx.push({ kind: 'arrow', x: e.x, y: e.y, ang: e.ang, t: 0, life: 0.9 });
-      else if (e.type === 'path') S.fx.push({ kind: 'path', pts: e.pts, t: 0, life: 4 });
+      else if (e.type === 'complete') { renderLog(); renderActs(); S.finishing = true; setTimeout(finish, 700); }
       else if (e.type === 'crash') { if (S.crashT > 0.35) { S.crashT = 0; S.crashN = e.n; } }
     });
   }
@@ -527,14 +515,9 @@
       { text: '공원으로 돌아가기', fn: close }
     ], null, 'done');
   }
-  function resultLine(g) {
-    var ms = S.ms;
-    if (g === 1) return '방향키를 놓는 곳을 조절해서 별 칸 두 곳에 딱 멈췄어요!';
-    if (g === 2) { var f = ms.log.filter(function (l) { return l.final; })[0]; return '두 밀판을 비교하고 ' + (f && f.plate === 'flat' ? '평평한' : '굽은') + ' 밀판으로 상자를 배달했어요!'; }
-    if (g === 3) return '밀면 미는 쪽으로, 당기면 당기는 쪽으로 카트가 움직였어요!';
-    if (g === 4) return '같은 극은 밀어내고, 다른 극은 끌어당긴다는 것을 직접 확인했어요!';
-    if (g === 5) return '빛은 곧게 나아가다 가림막에 막히고, 거울에서 꺾여 숨은 표지판을 밝혔어요!';
-    var r = ms.runs || []; return '두 주행(' + r.map(function (x) { return x.m.toFixed(1) + 'm'; }).join(', ') + ')을 비교하고 평균 속력을 구했어요!';
+  function resultLine() {
+    var d = S.ms.def;
+    return d.emoji + ' ' + d.who + ' 이야기 카드 3장을 모으고, 퀴즈 3문제를 모두 맞혔어요!';
   }
 
   // ================================================================
@@ -542,113 +525,42 @@
   // ================================================================
   var CAR_K = 0.48, CAR_FOOT = 44;   // 차 그림 배율, 충돌 원 가운데에서 범퍼 바닥까지(그림 아래쪽으로)
   function drawGame(t) {
-    var c = ui.gc.getContext('2d'), ms = S.ms, w = ms.world, L = ms.layout();
+    var c = ui.gc.getContext('2d'), ms = S.ms;
     c.clearRect(0, 0, IW, IH);
-    // 바닥 표시(가장 먼저)
-    if (L.corner) drawCorner(c, L.corner);
-    if (L.zone) drawZone(c, L.zone, L.zoneLabel);
-    if (L.pad) drawPad(c, L.pad);
-    if (L.lineX) drawLine(c, L.lineX, L.meter);
-    if (L.runs) L.runs.forEach(function (r, i) { drawPath(c, r.path, i ? 'rgba(138,79,214,0.55)' : 'rgba(255,122,26,0.55)', 8); });
-    if (L.meter && L.meter.on) drawPath(c, L.meter.path.concat([{ x: w.car.x, y: w.car.y }]), '#18b6d8', 9);
-    if (ms.grade === 1 && ms.marks && !ms.free) drawMarks(c, ms.marks);
-    // 세워진 것: y 순서로
-    var items = [];
-    items.push({ y: w.car.y, draw: function () { drawCarAll(c, ms, t); } });
-    w.bodies.forEach(function (b) { items.push({ y: b.y, draw: function () { drawBody(c, b, ms, L); } }); });
-    if (L.g5) {
-      var G = L.g5;
-      items.push({ y: G.screen[3], draw: function () { drawScreen(c, G.screen); } });
-      items.push({ y: 300, draw: function () { drawMirror(c, G.mirror); } });
-      [G.sign1, G.sign2].forEach(function (s) { items.push({ y: s.y + 40, draw: function () { drawSign(c, s, ms); } }); });
-    }
+    var items = [{ y: ms.world.car.y, draw: function () { drawCar(c, ms.world.car, t); } }];
+    ms.cards.forEach(function (k) { if (!k.got) items.push({ y: k.y + 30, draw: function () { drawStoryStar(c, k, t); } }); });
     items.sort(function (a, b) { return a.y - b.y; }).forEach(function (i) { i.draw(); });
-    if (L.rope) drawRope(c, L.rear, L.hook, L.rope.taut);
-    // 밤: 어둠 + 헤드라이트·반사광
     if (ms.night) drawNight(c, ms, t);
     drawFx(c);
     if (DEBUG) drawDebug(c, ms);
   }
-  function drawAt(c, im, x, footY, k) { c.drawImage(im, x - im.naturalWidth * k / 2, footY - im.naturalHeight * k, im.naturalWidth * k, im.naturalHeight * k); }
-  function drawPad(c, p) {
-    var im = img('pad'); if (!ready(im)) return;
-    var w = 230, h = w * im.naturalHeight / im.naturalWidth;
-    c.drawImage(im, p.x - w / 2, p.y - h / 2, w, h);
-  }
-  function rr(c, x, y, w, h, r) { c.beginPath(); c.moveTo(x + r, y); c.arcTo(x + w, y, x + w, y + h, r); c.arcTo(x + w, y + h, x, y + h, r); c.arcTo(x, y + h, x, y, r); c.arcTo(x, y, x + w, y, r); c.closePath(); }
-  function drawZone(c, z, label) {
+  // 별 이야기 카드: 바닥에서 둥실 떠 반짝이는 카드(코드로 그림)
+  function drawStoryStar(c, k, t) {
+    var bob = Math.sin(t * 3 + k.i * 2) * 8, x = k.x, y = k.y - 40 + bob;
     c.save();
-    rr(c, z[0], z[1], z[2] - z[0], z[3] - z[1], 30);
-    c.fillStyle = 'rgba(255,230,120,0.22)'; c.fill();
-    c.setLineDash([26, 16]); c.lineWidth = 8; c.strokeStyle = 'rgba(255,190,40,0.95)'; c.stroke(); c.setLineDash([]);
-    c.font = '40px Jua, sans-serif'; c.textAlign = 'center'; c.lineWidth = 8; c.strokeStyle = 'rgba(80,50,10,0.75)';
-    c.strokeText(label, (z[0] + z[2]) / 2, z[1] + 52); c.fillStyle = '#fff6c8'; c.fillText(label, (z[0] + z[2]) / 2, z[1] + 52);
+    c.fillStyle = 'rgba(40,30,10,0.22)'; c.beginPath(); c.ellipse(k.x, k.y + 22, 46, 14, 0, 0, Math.PI * 2); c.fill();
+    var g = c.createRadialGradient(x, y, 10, x, y, 90); g.addColorStop(0, 'rgba(255,236,140,0.85)'); g.addColorStop(1, 'rgba(255,220,90,0)');
+    c.fillStyle = g; c.beginPath(); c.arc(x, y, 90, 0, Math.PI * 2); c.fill();
+    c.translate(x, y); c.rotate(Math.sin(t * 2 + k.i) * 0.08);
+    rr(c, -40, -52, 80, 104, 14); c.fillStyle = '#fffaf0'; c.fill(); c.lineWidth = 6; c.strokeStyle = '#e2a72e'; c.stroke();
+    starPath(c, 0, -8, 30); c.fillStyle = '#ffd23f'; c.fill(); c.lineWidth = 3; c.strokeStyle = '#b87a00'; c.stroke();
+    c.font = '30px Jua, sans-serif'; c.textAlign = 'center'; c.fillStyle = '#c0392b'; c.fillText(String(k.i + 1), 0, 42);
     c.restore();
   }
+  function drawAt(c, im, x, footY, k) { c.drawImage(im, x - im.naturalWidth * k / 2, footY - im.naturalHeight * k, im.naturalWidth * k, im.naturalHeight * k); }
+  function rr(c, x, y, w, h, r) { c.beginPath(); c.moveTo(x + r, y); c.arcTo(x + w, y, x + w, y + h, r); c.arcTo(x + w, y + h, x, y + h, r); c.arcTo(x, y + h, x, y, r); c.arcTo(x, y, x + w, y, r); c.closePath(); }
   function arenaPath(c) {
     var A = P.ARENA;
     c.beginPath();
     c.moveTo(A.x0 + A.rt, A.y0); c.arcTo(A.x1, A.y0, A.x1, A.y1, A.rt); c.arcTo(A.x1, A.y1, A.x0, A.y1, A.rb);
     c.arcTo(A.x0, A.y1, A.x0, A.y0, A.rb); c.arcTo(A.x0, A.y0, A.x1, A.y0, A.rt); c.closePath();
   }
-  // 2학년 코너 화단(차·상자가 못 들어가는 곳): 경기장 바닥 안쪽만 칠하고 빨강·흰 연석으로 테두리
-  function drawCorner(c, b) {
-    var x0 = Math.max(b[0], P.ARENA.x0), y0 = b[1], x1 = b[2], y1 = Math.min(b[3], P.ARENA.y1);
-    c.save();
-    arenaPath(c); c.clip();
-    c.fillStyle = '#7fb36a'; c.fillRect(x0, y0, x1 - x0, y1 - y0);
-    for (var gx = x0 + 30; gx < x1 - 20; gx += 64) for (var gy = y0 + 46; gy < y1; gy += 58) {
-      var h = Math.sin(gx * 12.9898 + gy * 78.233) * 43758.5453, r = h - Math.floor(h);
-      var fx = gx + (r - 0.5) * 34, fy = gy + (((h * 7) % 1 + 1) % 1 - 0.5) * 26;
-      c.fillStyle = r < 0.33 ? '#ffd0e0' : r < 0.66 ? '#fff6dc' : '#ffb3c9';
-      for (var k = 0; k < 5; k++) { var a = k * Math.PI * 2 / 5 + r; c.beginPath(); c.arc(fx + Math.cos(a) * 8, fy + Math.sin(a) * 8, 7, 0, Math.PI * 2); c.fill(); }
-      c.fillStyle = '#f5b82e'; c.beginPath(); c.arc(fx, fy, 5, 0, Math.PI * 2); c.fill();
-    }
-    c.lineWidth = 22;
-    for (var s = 0; s < 2; s++) {
-      c.strokeStyle = s ? '#fff4ea' : '#e0453a'; c.setLineDash([40, 40]); c.lineDashOffset = s * 40;
-      c.beginPath(); c.moveTo(x0 - 20, y0 + 10); c.lineTo(x1 - 10, y0 + 10); c.lineTo(x1 - 10, y1 + 20); c.stroke();
-    }
-    c.restore();
-  }
-  function drawLine(c, x, m) {
-    c.save();
-    c.strokeStyle = m && m.on ? '#ff9f1a' : '#ffd23f'; c.lineWidth = 12; c.setLineDash([34, 22]);
-    c.beginPath(); c.moveTo(x, P.ARENA.y0 + 10); c.lineTo(x, P.ARENA.y1 - 10); c.stroke(); c.setLineDash([]);
-    c.font = '38px Jua, sans-serif'; c.textAlign = 'center'; c.lineWidth = 8; c.strokeStyle = 'rgba(60,40,0,0.7)';
-    c.strokeText('측정선', x, P.ARENA.y0 + 56); c.fillStyle = '#fff3b0'; c.fillText('측정선', x, P.ARENA.y0 + 56);
-    c.restore();
-  }
-  function drawPath(c, pts, color, wd) {
-    if (!pts || pts.length < 2) return;
-    c.save(); c.strokeStyle = color; c.lineWidth = wd; c.lineJoin = 'round'; c.lineCap = 'round';
-    c.beginPath(); pts.forEach(function (p, i) { if (i) c.lineTo(p.x, p.y); else c.moveTo(p.x, p.y); }); c.stroke(); c.restore();
-  }
   function starPath(c, x, y, r) {
     c.beginPath();
     for (var i = 0; i < 10; i++) { var a = -Math.PI / 2 + i * Math.PI / 5, q = i % 2 ? r * 0.45 : r; if (i) c.lineTo(x + Math.cos(a) * q, y + Math.sin(a) * q); else c.moveTo(x + Math.cos(a) * q, y + Math.sin(a) * q); }
     c.closePath();
   }
-  function drawMarks(c, marks) {
-    marks.forEach(function (m, i) {
-      var a = 0.45 + 0.55 * (i + 1) / marks.length;
-      c.save(); c.globalAlpha = a;
-      if (m.stop) { c.strokeStyle = 'rgba(255,255,255,0.8)'; c.lineWidth = 4; c.setLineDash([10, 10]); c.beginPath(); c.moveTo(m.rel.x, m.rel.y); c.lineTo(m.stop.x, m.stop.y); c.stroke(); c.setLineDash([]); }
-      c.fillStyle = '#fff'; c.strokeStyle = '#3a4a6a'; c.lineWidth = 4;
-      c.beginPath(); c.arc(m.rel.x, m.rel.y, 11, 0, Math.PI * 2); c.fill(); c.stroke();
-      if (m.stop) { starPath(c, m.stop.x, m.stop.y, 17); c.fillStyle = '#ffd23f'; c.fill(); c.strokeStyle = '#8a5a00'; c.lineWidth = 3; c.stroke(); }
-      c.restore();
-    });
-  }
   // 범퍼카: → 는 주행 8프레임 반복 / 충돌 8프레임 한 번, ← 는 좌우 반전, 나머지 방향은 기본 자세 + 흔들림·반동
-  function drawCarAll(c, ms, t) {
-    var w = ms.world, car = w.car, behind = Math.sin(car.ang) < -0.5;   // 위쪽을 볼 때만 앞 부품이 차 뒤에 가려짐
-    if (w.plate && behind) drawPlate(c, car, w.plate);
-    if (ms.grade === 4 && !ms.free && behind) drawCarMagnet(c, ms);
-    drawCar(c, car, t);
-    if (w.plate && !behind) drawPlate(c, car, w.plate);
-    if (ms.grade === 4 && !ms.free && !behind) drawCarMagnet(c, ms);
-  }
   function drawCar(c, car, t) {
     var sp = Math.hypot(car.vx, car.vy), di = P.dirIndex(car.ang), side = di === 6 || di === 2;
     var crashing = S.crashT < 0.5, k = CAR_K;
@@ -674,79 +586,7 @@
     c.drawImage(im, fi * 360, 0, 360, 420, -180 * k, -404 * k, 360 * k, 420 * k);
     c.restore();
   }
-  function drawPlate(c, car, kind) {
-    var im = img(kind === 'flat' ? 'plate-flat' : 'plate-curve'); if (!ready(im)) return;
-    var f = P.front(car, 16), k = 0.44;
-    c.save(); c.translate(f.x, f.y + 18); c.rotate(car.ang - Math.PI / 2);
-    c.drawImage(im, -im.naturalWidth * k / 2, -im.naturalHeight * k * 0.35, im.naturalWidth * k, im.naturalHeight * k);
-    c.restore();
-  }
-  function poleBadge(c, x, y, pole) {
-    c.save();
-    c.beginPath(); c.arc(x, y, 24, 0, Math.PI * 2);
-    c.fillStyle = pole === 'N' ? '#e23b3b' : '#2f6fe0'; c.fill();
-    c.lineWidth = 5; c.strokeStyle = '#fff'; c.stroke();
-    c.font = '34px Jua, sans-serif'; c.textAlign = 'center'; c.textBaseline = 'middle'; c.fillStyle = '#fff'; c.fillText(pole, x, y + 2);
-    c.restore();
-  }
-  function drawMagnetPart(c, x, y, ang, pole) {
-    var im = img(pole === 'N' ? 'mag-red' : 'mag-blue');
-    if (ready(im)) {
-      var k = 0.3;
-      c.save(); c.translate(x, y + 16); c.rotate(ang - Math.PI / 2);
-      c.drawImage(im, -im.naturalWidth * k / 2, -im.naturalHeight * k * 0.4, im.naturalWidth * k, im.naturalHeight * k);
-      c.restore();
-    }
-    poleBadge(c, x - Math.cos(ang) * 34, y - Math.sin(ang) * 20 - 62, pole);   // 글자는 자석 조금 뒤 위쪽에(붙어 있을 때 두 글자가 겹치지 않게)
-  }
-  function drawCarMagnet(c, ms) { var car = ms.world.car, f = P.front(ms.world.car, 14); drawMagnetPart(c, f.x, f.y, car.ang, ms.magnet); }
-  function drawBody(c, b, ms, L) {
-    c.save(); c.fillStyle = 'rgba(20,20,40,0.25)'; c.beginPath(); c.ellipse(b.x, b.y + 24, b.r * 1.1, b.r * 0.4, 0, 0, Math.PI * 2); c.fill(); c.restore();
-    if (b.kind === 'box') { var bi = img('box'); if (ready(bi)) drawAt(c, bi, b.x, b.y + 40, 0.32); return; }
-    var magBack = ms.grade === 4 && L.mag && Math.sin(b.ang) < -0.5;
-    if (magBack) drawMagnetPart(c, L.mag.x, L.mag.y, b.ang, b.pole);
-    var ci = img('cart'); if (ready(ci)) drawAt(c, ci, b.x, b.y + 48, 0.44);
-    if (ms.grade === 4 && L.mag && !magBack) drawMagnetPart(c, L.mag.x, L.mag.y, b.ang, b.pole);
-    if (ms.grade === 3 && L.hook) { var h = img('hook'); if (ready(h)) drawAt(c, h, L.hook.x, L.hook.y + 34, 0.26); }
-  }
-  function drawRope(c, a, b, taut) {
-    c.save(); c.strokeStyle = taut ? '#7a4a1c' : '#a8743c'; c.lineWidth = 9; c.lineCap = 'round';
-    var mx = (a.x + b.x) / 2, my = (a.y + b.y) / 2 + (taut ? 0 : 40);
-    c.beginPath(); c.moveTo(a.x, a.y - 6); c.quadraticCurveTo(mx, my, b.x, b.y - 6); c.stroke();
-    c.strokeStyle = 'rgba(255,230,180,0.6)'; c.lineWidth = 3; c.setLineDash([12, 12]);
-    c.beginPath(); c.moveTo(a.x, a.y - 8); c.quadraticCurveTo(mx, my - 2, b.x, b.y - 8); c.stroke();
-    c.restore();
-  }
-  function drawScreen(c, b) {
-    var im = img('screen'); if (!ready(im)) return;
-    var x0 = b[0], x1 = Math.min(b[2], P.ARENA.x1), n = Math.max(1, Math.round((x1 - x0) / 290)), w = (x1 - x0) / n, k = w / im.naturalWidth;
-    for (var i = 0; i < n; i++) c.drawImage(im, x0 + i * w, b[3] + 6 - im.naturalHeight * k, w, im.naturalHeight * k);
-  }
-  // 거울: 그림을 거울 면(/) 방향으로 눕혀 그리고, 빛을 꺾는 면을 은색 선으로 한 번 더
-  function drawMirror(c, m) {
-    var im = img('mirror'), cx = (m.a.x + m.b.x) / 2, cy = (m.a.y + m.b.y) / 2, ang = Math.atan2(m.b.y - m.a.y, m.b.x - m.a.x);
-    if (ready(im)) {
-      var w = 190, k = w / im.naturalWidth;
-      c.save(); c.translate(cx, cy); c.rotate(ang);
-      c.drawImage(im, -w / 2, -im.naturalHeight * k * 0.62, w, im.naturalHeight * k);
-      c.restore();
-    }
-    drawMirrorFace(c, m);
-  }
-  function drawMirrorFace(c, m) {
-    c.save(); c.lineCap = 'round';
-    c.strokeStyle = 'rgba(40,50,70,0.6)'; c.lineWidth = 16; c.beginPath(); c.moveTo(m.a.x, m.a.y + 4); c.lineTo(m.b.x, m.b.y + 4); c.stroke();
-    var g = c.createLinearGradient(m.a.x, m.a.y, m.b.x, m.b.y); g.addColorStop(0, '#dfe7f2'); g.addColorStop(0.5, '#ffffff'); g.addColorStop(1, '#b9c6d8');
-    c.strokeStyle = g; c.lineWidth = 9; c.beginPath(); c.moveTo(m.a.x, m.a.y); c.lineTo(m.b.x, m.b.y); c.stroke();
-    c.restore();
-  }
-  function drawSign(c, s, ms) {
-    var im = img('sign'); if (!ready(im)) return;
-    var lit = (ms.found && ms.found[s.id]) || (ms.lights && S.litNow && S.litNow[s.id]);
-    if (lit) { c.save(); c.globalCompositeOperation = 'lighter'; var g = c.createRadialGradient(s.x, s.y - 20, 10, s.x, s.y - 20, 120); g.addColorStop(0, 'rgba(255,220,90,0.7)'); g.addColorStop(1, 'rgba(255,200,60,0)'); c.fillStyle = g; c.beginPath(); c.arc(s.x, s.y - 20, 120, 0, Math.PI * 2); c.fill(); c.restore(); }
-    drawAt(c, im, s.x, s.y + 50, 0.38);
-  }
-  // 밤 경기장: 어둠 위에 헤드라이트(직접광)와 거울에서 꺾인 빛을 뚫어 그림
+  // 밤 경기장(5학년): 어둠 위에 헤드라이트 빛을 뚫어 그림
   var dark = null;
   function drawNight(c, ms, t) {
     if (!dark) { dark = document.createElement('canvas'); dark.width = IW / 2; dark.height = IH / 2; }
@@ -761,32 +601,25 @@
     d.fillStyle = g; d.beginPath(); d.arc(car.x, car.y, 170, 0, Math.PI * 2); d.fill();
     // 경기장 위 조명 세 개 아래도 조금
     [[512, 186], [836, 186], [1160, 186]].forEach(function (p) { var q = d.createRadialGradient(p[0], p[1], 10, p[0], p[1], 150); q.addColorStop(0, 'rgba(0,0,0,0.5)'); q.addColorStop(1, 'rgba(0,0,0,0)'); d.fillStyle = q; d.beginPath(); d.arc(p[0], p[1], 150, 0, Math.PI * 2); d.fill(); });
-    var rays = ms.rays(), lit = {};
-    S.litNow = lit;
+    var rays = ms.rays();
     if (rays.length) {
       d.fillStyle = 'rgba(0,0,0,0.92)';
       lightPolys(rays, function (poly) { d.beginPath(); poly.forEach(function (p, i) { if (i) d.lineTo(p.x, p.y); else d.moveTo(p.x, p.y); }); d.closePath(); d.fill(); });
-      rays.forEach(function (r) { r.hits.forEach(function (h) { if (h.id === 's1' || h.reflected) lit[h.id] = true; }); });
-      lit.s2 = lit.s2 && rays.some(function (r) { return r.hits.some(function (h) { return h.id === 's2' && h.reflected; }); });
     }
-    // 찾은 표지판은 계속 은은하게
-    if (ms.layout().g5) {
-      var G = ms.layout().g5;
-      [G.sign1, G.sign2].forEach(function (s) {
-        if (!((ms.found && ms.found[s.id]) || lit[s.id])) return;
-        var q = d.createRadialGradient(s.x, s.y - 10, 10, s.x, s.y - 10, 130); q.addColorStop(0, 'rgba(0,0,0,0.9)'); q.addColorStop(1, 'rgba(0,0,0,0)');
-        d.fillStyle = q; d.beginPath(); d.arc(s.x, s.y - 10, 130, 0, Math.PI * 2); d.fill();
-      });
-    }
+    // 별 이야기 카드는 어둠 속에서도 스스로 빛남(어디 있는지 보이게)
+    ms.cards.forEach(function (k) {
+      if (k.got) return;
+      var q = d.createRadialGradient(k.x, k.y - 40, 10, k.x, k.y - 40, 120); q.addColorStop(0, 'rgba(0,0,0,0.95)'); q.addColorStop(1, 'rgba(0,0,0,0)');
+      d.fillStyle = q; d.beginPath(); d.arc(k.x, k.y - 40, 120, 0, Math.PI * 2); d.fill();
+    });
     c.drawImage(dark, 0, 0, IW, IH);
     if (rays.length) {
       c.save(); c.globalCompositeOperation = 'lighter'; c.fillStyle = 'rgba(255,236,150,0.13)';
       lightPolys(rays, function (poly) { c.beginPath(); poly.forEach(function (p, i) { if (i) c.lineTo(p.x, p.y); else c.moveTo(p.x, p.y); }); c.closePath(); c.fill(); });
       c.restore();
-      // 다시 차를 어둠 위에 살짝(헤드라이트 쪽)
     }
   }
-  // 광선 묶음 → 빛 다각형들(직접광 부채꼴, 거울에서 꺾인 빛 띠)
+  // 광선 묶음 → 빛 다각형(헤드라이트 부채꼴)
   function lightPolys(rays, fn) {
     var first = [rays[0].pts[0]];
     rays.forEach(function (r) { first.push(r.pts[1]); });
@@ -799,21 +632,9 @@
   function drawFx(c) {
     S.fx.forEach(function (f) {
       var a = Math.max(0, 1 - f.t / f.life);
-      c.save(); c.globalAlpha = Math.min(1, a * 1.6);
-      if (f.kind === 'arrow') {
-        c.translate(f.x, f.y - 40); c.rotate(f.ang);
-        c.fillStyle = '#ff5a3c'; c.strokeStyle = '#fff'; c.lineWidth = 6;
-        c.beginPath(); c.moveTo(-50, -12); c.lineTo(18, -12); c.lineTo(18, -30); c.lineTo(58, 0); c.lineTo(18, 30); c.lineTo(18, 12); c.lineTo(-50, 12); c.closePath(); c.stroke(); c.fill();
-      } else if (f.kind === 'path') {
-        c.globalCompositeOperation = 'lighter';
-        c.strokeStyle = '#ffd23f'; c.lineWidth = 10; c.setLineDash([26, 16]); c.lineDashOffset = -f.t * 80; c.lineJoin = 'round';
-        c.beginPath(); f.pts.forEach(function (p, i) { if (i) c.lineTo(p.x, p.y); else c.moveTo(p.x, p.y); }); c.stroke();
-        c.setLineDash([]); c.fillStyle = '#fff3b0';
-        f.pts.forEach(function (p) { c.beginPath(); c.arc(p.x, p.y, 12, 0, Math.PI * 2); c.fill(); });
-        c.globalCompositeOperation = 'source-over';
-        c.font = '34px Jua, sans-serif'; c.textAlign = 'center'; c.lineWidth = 7; c.strokeStyle = 'rgba(20,20,50,0.8)';
-        [['차', f.pts[0]], ['거울', f.pts[1]], ['표지판', f.pts[2]]].forEach(function (q) { c.strokeText(q[0], q[1].x, q[1].y + 50); c.fillStyle = '#fff6c8'; c.fillText(q[0], q[1].x, q[1].y + 50); });
-      }
+      if (f.kind !== 'grab') return;
+      c.save(); c.globalAlpha = a;
+      for (var i = 0; i < 8; i++) { var ang = i * Math.PI / 4 + f.t * 2, r = 30 + f.t * 160; starPath(c, f.x + Math.cos(ang) * r, f.y - 40 + Math.sin(ang) * r, 14); c.fillStyle = '#ffd23f'; c.fill(); }
       c.restore();
     });
   }
@@ -824,7 +645,7 @@
     c.strokeStyle = 'red';
     [w.car].concat(w.bodies).forEach(function (o) { c.beginPath(); c.arc(o.x, o.y, o.r, 0, Math.PI * 2); c.stroke(); });
     (w.boxes || []).forEach(function (b) { c.strokeRect(b[0], b[1], b[2] - b[0], b[3] - b[1]); });
-    if (w.plate) P.attachSegs(w.car, P.PLATES[w.plate]).forEach(function (s) { c.beginPath(); c.moveTo(s[0].x, s[0].y); c.lineTo(s[1].x, s[1].y); c.stroke(); });
+    c.strokeStyle = 'gold'; S.ms.cards.forEach(function (k) { c.beginPath(); c.arc(k.x, k.y, MS.GRAB, 0, Math.PI * 2); c.stroke(); });
     c.restore();
   }
 
@@ -914,7 +735,7 @@
     window.addEventListener('keyup', function (e) { onKey(e, false); });
     window.addEventListener('blur', releaseAll);
     document.addEventListener('visibilitychange', function () { if (document.hidden) releaseAll(); });
-    ['car-dir', 'car-drive', 'car-crash', 'toto', 'cart', 'pad', 'box', 'hook', 'mag-red', 'mag-blue', 'plate-flat', 'plate-curve', 'screen', 'mirror', 'sign', 'arena-day'].forEach(img);
+    ['car-dir', 'car-drive', 'car-crash', 'toto'].forEach(img);
   }
   window.MPThrill = {
     open: open, close: close, _S: S, _ui: ui,

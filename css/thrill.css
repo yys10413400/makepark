@@ -112,9 +112,10 @@ body.thrill-open #hud, body.thrill-open #enterFacility { display: none !importan
 }
 .th-log[hidden] { display: none; }
 .th-log p { margin: 0; }
+.th-log-empty { color: #a08868; }
+.th-log-card { display: block; width: 100%; margin: 0.15em 0 0; padding: 0.15em 0.4em; border-radius: 0.5em; text-align: left; font-size: inherit; background: #fff3d0; color: #3b2410; border: 1px solid #e2b357; }
+.th-log-card:hover { background: #ffe8a8; }
 .th-log .th-log-title { color: #1f4fa3; }
-.th-dot { display: inline-block; width: 0.75em; height: 0.75em; border-radius: 50%; background: #fff; border: 2px solid #3a4a6a; vertical-align: -0.05em; }
-.th-star { color: #e0a400; }
 .th-arena.night .th-log, .th-arena.night .th-say-text { box-shadow: 0 0 0.8em rgba(255, 220, 120, 0.35); }
 .th-toast {
   position: absolute; left: 50%; bottom: 4%; transform: translateX(-50%); z-index: 4; margin: 0;
@@ -143,12 +144,13 @@ body.thrill-open #hud, body.thrill-open #enterFacility { display: none !importan
 .th-step-title { margin: 0; color: #1f4fa3; }
 .th-step-sub { margin: 0.15em 0 0; line-height: 1.4; }
 .th-howto-tip { margin: 0.6em 0 0; font-size: 0.85em; color: #8a6a4a; }
-.th-compare { display: flex; gap: 0.8em; justify-content: center; margin: 0.4em 0; }
-.th-run { flex: 1; max-width: 16em; }
-.th-run-cv { width: 100%; border-radius: 0.6em; border: 2px solid #e2b357; display: block; }
-.th-run-t { margin: 0.3em 0 0; color: #1f4fa3; }
-.th-run-v { margin: 0; font-size: 0.95em; }
-
+.th-story { margin: 0 0 0.2em; }
+.th-story-emoji { margin: 0; font-size: 3em; line-height: 1.1; }
+.th-story-who { margin: 0.1em 0 0.3em; color: #8a6a4a; font-size: 0.9em; }
+.th-story-text { margin: 0; padding: 0.6em 0.9em; border-radius: 0.8em; background: #fff; border: 2px solid #f0dfbc; line-height: 1.55; font-size: 1.1em; text-align: left; }
+.th-modal.story .th-card-title { color: #1f4fa3; }
+.th-modal.ask .th-card-line { font-size: 1.15em; }
+.th-modal.ask .th-card-btns { flex-direction: column; align-items: stretch; max-width: 22em; margin-left: auto; margin-right: auto; }
 /* 아래 조작 줄 */
 .th-bot { grid-area: bot; display: flex; align-items: center; gap: 1em; padding: 0.5em 1em 0.7em; min-height: 0; }
 .th-pad {
@@ -190,5 +192,7 @@ body.thrill-open #hud, body.thrill-open #enterFacility { display: none !importan
   .th-goal { order: 5; flex-basis: 100%; white-space: normal; }
   .th-gchip { margin-right: auto; }
   .th-acts { justify-content: center; }
-  .th-log { display: none; }
+  .th-log { font-size: 0.72em; max-width: 46%; }
+  /* 세로 화면은 경기장이 작아서 카드(이야기·퀴즈)를 화면 전체 위에 크게 */
+  .th-modal { position: fixed; z-index: 45; font-size: 16px; padding: 4%; }
 }
