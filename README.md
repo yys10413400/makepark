@@ -46,7 +46,7 @@
 | `tools/verify_picnic.js` | 주문 판정 자동 검증 (`node tools/verify_picnic.js`) |
 | `js/parade/ui.js`, `css/parade.css` | 레인보우 퍼레이드: 대기실 걷기·리리에게 말 걸기 → 시작 창 → 현수막 꾸미기(처음엔 하는 법, 색연필 8색·지우개·되돌리기·도장 4개, 천과 그림 레이어 분리) → 퍼레이드 팝업(다시 보기·꾸미기로 돌아가기) |
 | `js/parade/show.js` | 퍼레이드 그리기: 리리 8프레임 오프닝 → 모모(왼쪽)·루루(오른쪽)가 현수막을 들고 행진 → 가운데에서 잠깐 멈춤 → 퇴장. 아랫단 술만 흔들림 |
-| `assets/parade/`, `assets/parade-src/` | 퍼레이드 그림(장밋빛 로비, 리리 오프닝 640칸, 리리·모모·루루 걷기 448칸 — 장대 중심 x 모모 329·루루 125)과 받은 원본·README. `python tools/build_parade.py`로 만듦 |
+| `assets/parade/`, `assets/parade-src/` | 퍼레이드 그림(장밋빛 로비, 퍼레이드 배경 분수 정원 광장, 리리 오프닝 640칸, 리리·모모·루루 걷기 448칸 — 장대 중심 x 모모 329·루루 125)과 받은 원본·README. `python tools/build_parade.py`로 만듦 |
 | `assets/maps/makepark-christmas.webp`, `makepark-normal.webp` | 시즌 지도 2배 해상도(2896×2172, WebP). 게임 좌표는 1배(1448×1086) 기준이고 그림만 2배로 그립니다. |
 | `assets/legacy/` | 이전 지도들(첫 기본 지도, maps-v2)과 개별 장식 12종. 보관만 하고 화면에는 쓰지 않습니다. |
 

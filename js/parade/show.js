@@ -15,17 +15,17 @@
   var IW = 1672, IH = 941;
   var OPEN_MS = [220, 110, 290, 135, 110, 130, 125, 760], CART_CUE = 1120;
   var WALK = { size: 448, frameMs: 95, speed: 0.33 };          // 걷기 칸·한 프레임 시간·화면 px/ms
-  var K = 0.95;                                                // 걷기 그림 배율(몸 키 약 390px)
+  var K = 1.08;                                                // 걷기 그림 배율(몸 키 약 440px)
   var KO = K * 408 / 580;                                      // 오프닝 배율: 오프닝 몸 키(580)를 걷기 몸 키(408)에 맞춤
   var GROUND = 884;                                            // 발이 닿는 바닥 y
   // 시트 안 기준(그림 픽셀): 장대 중심 x, 발 밑 y, 몸 왼쪽·오른쪽 끝
   var MOMO = { pole: 329, foot: 408, left: 122, right: 353 };
   var LULU = { pole: 125, foot: 422, left: 104, right: 346 };
   var RIRI = { foot: 424, left: 107, right: 345, mid: 226 };
-  var BANNER_TOP = 330;          // 바닥에서 현수막 윗단까지(걷기 그림 픽셀) — 두 장대 공(꼭대기)보다 아래
-  var BANNER_H = 250;            // 현수막 천 높이(걷기 그림 픽셀) — 두 장대 끝보다 위에서 끝남
+  var BANNER_TOP = 348;          // 바닥에서 현수막 윗단까지(걷기 그림 픽셀) — 두 장대 공(꼭대기)보다 아래
+  var BANNER_H = 290;            // 현수막 천 높이(걷기 그림 픽셀) — 두 장대 끝보다 위에서 끝남
   var HEM = 20;                  // 아랫단 술 장식 높이(화면 px)
-  var PAUSE_MS = 2800, RIRI_GAP = 60, GREET_X = 1180;
+  var PAUSE_MS = 2800, RIRI_GAP = 24, GREET_X = 1250, STOP_SHIFT = 45;   // 멈출 때 현수막 가운데를 조금 왼쪽에 두어 맨 앞 리리까지 화면 안에
 
   var cache = {};
   function load(base, name) {
@@ -39,7 +39,7 @@
     return cache[key];
   }
   function loadAll(base) {
-    return Promise.all(['lobby', 'riri-opening', 'riri', 'momo', 'lulu'].map(function (n) { return load(base, n); }))
+    return Promise.all(['parade-bg', 'riri-opening', 'riri', 'momo', 'lulu'].map(function (n) { return load(base, n); }))
       .then(function (a) { return { bg: a[0], open: a[1], riri: a[2], momo: a[3], lulu: a[4] }; });
   }
   function openingFrame(ms) {
@@ -99,7 +99,7 @@
     // 시간 → 행렬 위치. travel 은 걸은 거리(멈춘 동안은 늘지 않음)
     function timeline(ms) {
       var startX = -(bw + (LULU.right - LULU.pole) * K) - 20;          // 루루 몸 오른쪽 끝까지 화면 밖
-      var stopX = IW / 2 - bw / 2;                                      // 현수막 가운데 = 화면 가운데
+      var stopX = IW / 2 - STOP_SHIFT - bw / 2;                         // 현수막 가운데 ≈ 화면 가운데
       var walkIn = (stopX - startX) / WALK.speed;
       var exitX = IW + (MOMO.pole - MOMO.left) * K + 20;               // 모모 몸 왼쪽 끝까지 화면 밖
       var walkOut = (exitX - stopX) / WALK.speed;
