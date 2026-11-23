@@ -37,7 +37,6 @@
     api().patchSave(patch);
     return api().storageOk();
   }
-  function today() { var d = new Date(); return d.getFullYear() + '-' + (d.getMonth() + 1) + '-' + d.getDate(); }
   function ticketCount() { return save().tickets || 0; }
 
   // ---------- 동작 아이콘(SVG). 좌우는 따로 그린 화살표(그림 뒤집기 아님) ----------
@@ -237,13 +236,7 @@
     ui.gradeBtns.forEach(function (b, i) { b.setAttribute('aria-checked', String(i + 1 === g)); b.classList.toggle('on', i + 1 === g); });
     var park = api().profile().grade || null, G = D.GRADES[BAND_OF(g)];
     ui.gradeNote.textContent = G.label + ' · ' + G.guide + (park && park !== g ? ' (바꾼 학년은 이번 놀이에만 써요)' : '');
-    var T = D.CONFIG.tickets, ms = melSave(), band = BAND_OF(g), paid = ms.paid || {}, dayN = ms.day && ms.day.date === today() ? ms.day.n : 0;
-    var left = missionsOf(band).filter(function (m) { return !paid[m.id]; }).length;
-    ui.ticketNote.textContent = '🎟 댄스 미션을 성공하면 티켓을 받아요! ' + (!(ms.done && ms.done[band])
-      ? G.label + ' 첫 성공은 ' + T.first + '장! (그다음부터는 새 미션을 처음 성공할 때마다 ' + T.again + '장, 하루 ' + T.dayMax + '장까지)'
-      : !left ? G.label + ' 미션 티켓은 모두 받았어요. 다른 학년 미션에 도전해 봐요!'
-      : dayN < T.dayMax ? '새 미션을 성공하면 ' + T.again + '장 (아직 ' + left + '개 남았어요 · 오늘 ' + dayN + ' / ' + T.dayMax + '장)'
-      : '오늘 티켓 ' + T.dayMax + '장은 다 받았어요. 내일 또 받아요!') + ' 자유 연주는 티켓 없이 마음껏!';
+    ui.ticketNote.textContent = api().ticketNote('melody', g) + ' 자유 연주는 티켓 없이 마음껏!';   // 모든 건물 같은 티켓 규칙(game.js)
   }
   function openDialog() {
     if (S.dialog) return;
@@ -807,33 +800,24 @@
     }
     setTimeout(function () { ui.sparks.textContent = ''; }, 2600);
   }
-  /* 티켓(다른 놀이기구와 같은 기준): 학년군에서 처음 성공한 미션 3장, 그 뒤 처음 성공하는 다른 미션마다 1장(하루 5장까지).
-     같은 미션을 다시 성공하면 주지 않음(미션 id 로 저장). 판마다 한 번만(R.rewarded) */
+  /* 티켓: 모든 건물 같은 규칙(game.js awardTicket) — 학년마다 댄스 미션을 처음 성공하면 1장, 모든 건물 합쳐 하루 3장.
+     성공한 미션은 paid 에 ★로 남김(미션 고르기 표시용). 판마다 한 번만(R.rewarded) */
   function reward(R) {
     if (R.rewarded) return { line: '', saved: true };
     R.rewarded = true;
-    var T = D.CONFIG.tickets, kind = 'again', gain = 0, newClear = false, before = ticketCount(), m = R.mission, dayN = 0;
+    var newClear = false, m = R.mission;
     var saved = patchMel(function (g) {
-      if (!g.day || g.day.date !== today()) g.day = { date: today(), n: 0 };
       g.done = g.done || {}; g.paid = g.paid || {}; g.best = g.best || {};
       var passed = R.results.filter(function (r) { return r && r.pass; }).length;
       g.best[m.id] = Math.max(g.best[m.id] || 0, passed);
       g.plays = (g.plays || 0) + 1;
+      g.done[R.band] = true; g.paid[m.id] = true;
       if (!g.cleared) { g.cleared = true; newClear = true; }
-      if (!g.paid[m.id]) {
-        if (!g.done[R.band]) { g.done[R.band] = true; g.paid[m.id] = true; kind = 'first'; gain = T.first; }
-        else if (g.day.n < T.dayMax) { g.day.n++; g.paid[m.id] = true; kind = 'new'; gain = T.again; }
-        else kind = 'daymax';   // 오늘 한도: 받은 것으로 치지 않아 내일 다시 성공하면 받을 수 있음
-      }
-      dayN = g.day.n;
-      return gain ? { tickets: (save().tickets || 0) + gain } : {};
+      return {};
     });
-    if (gain) showTickets(before);
-    var line = kind === 'first' ? '🎟 티켓 ' + gain + '장을 받았어요! 다른 미션을 처음 성공하면 1장씩 더 받아요.'
-      : kind === 'new' ? '🎟 새 미션 티켓 1장을 받았어요! (오늘 ' + dayN + ' / ' + T.dayMax + ')'
-      : kind === 'daymax' ? '오늘 받을 수 있는 새 미션 티켓(' + T.dayMax + '장)은 다 받았어요. 내일 또 받아요!'
-      : '이 미션 티켓은 이미 받았어요. 다른 미션에 도전해 봐요!';
-    return { line: line, saved: saved, newClear: newClear };
+    var tk = api().awardTicket('melody', R.grade || S.grade);
+    if (tk.gain) showTickets(tk.before);
+    return { line: tk.line, saved: saved, newClear: newClear };
   }
 
   // =====================================================================

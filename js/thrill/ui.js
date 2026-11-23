@@ -12,7 +12,8 @@
  * 그림: assets/thrill/ (python -I tools/build_thrill.py 로 assets/thrill-src 원본에서 만듦)
  *   car-dir.webp 8칸(↓ ↙ ← ↖ ↑ ↗ → ↘), car-drive/crash.webp 오른쪽 8프레임 — 칸 360×420, 범퍼 바닥 (180, 404)
  *   toto.webp 수첩 대기 8프레임 — 칸 300×440, 발 (150, 425). 별 이야기 카드는 코드로 그림
- * 저장(window.MP_API): save.thrill = { howto, done: { g1: true … }, cleared }
+ * 티켓: 모든 건물 같은 규칙(game.js awardTicket) — 학년마다 처음 끝내면 1장, 모든 건물 합쳐 하루 3장
+ * 저장(window.MP_API): save.thrill = { howto, done: { g1: true … }, met, last, cleared }
  *   cleared 가 처음 true 가 될 때 건물 보상 캐릭터(R4)가 열림(game.js facilityCleared('thrill')) — 한 번만, 새로고침해도 그대로
  */
 (function () {
@@ -121,6 +122,7 @@
     })(g);
     body.appendChild(gr);
     ui.gradeNote = el('p', 'th-grade-note'); body.appendChild(ui.gradeNote);
+    ui.ticketNote = el('p', 'th-ticket-note'); body.appendChild(ui.ticketNote);
     var acts = el('div', 'th-dialog-acts');
     ui.goBtn = btn('th-choice', '연구소 들어가기', function () { closeDialog(); openGame(S.grade); });
     acts.appendChild(ui.goBtn);
@@ -154,6 +156,7 @@
     var park = api().profile().grade || null, def = MS.person(g, S.who);
     ui.gradeNote.textContent = '이번에 만날 인물: ' + def.emoji + ' ' + def.who + ' (' + def.topic + ') · ' + g + '학년 인물 ' + n + '명 중 ' + Math.min(met.length, n) + '명 만났어요' +
       (park && park !== g ? ' · 바꾼 학년은 이번 놀이에만 써요.' : '');
+    ui.ticketNote.textContent = api().ticketNote ? api().ticketNote('thrill', g) : '';   // 모든 건물 같은 티켓 규칙(game.js)
   }
   function openDialog() {
     if (S.dialog) return;
@@ -513,7 +516,9 @@
     S.who = MS.pick(g, met, S.ms.who);   // 다음 판은 다른 인물
     if (!d.cleared) d.cleared = true;   // 어느 학년이든 첫 완료 때 한 번만(건물 보상 캐릭터)
     var saved = writeThrill(d);
+    var tk = api().awardTicket ? api().awardTicket('thrill', g) : null;   // 학년마다 처음 1장, 모든 건물 합쳐 하루 3장
     var lines = [resultLine(g)], n = MS.GRADES[g].people.length;
+    if (tk) lines.push(tk.line);
     lines.push(met.length < n ? '다음 판에는 새 인물 ' + MS.person(g, S.who).emoji + ' ‘' + MS.person(g, S.who).who + '’ 이야기가 기다려요! (' + g + '학년 인물 ' + met.length + ' / ' + n + '명 만남)'
       : '🎉 ' + g + '학년 인물 ' + n + '명을 모두 만났어요!');
     if (first) {

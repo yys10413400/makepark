@@ -63,7 +63,8 @@ body.thrill-open #hud, body.thrill-open #enterFacility { display: none !importan
 .th-grades-label { font-size: 1.25cqw; color: #6e4b2f; margin-right: 0.4cqw; }
 .th-grade { padding: 0.4cqw 1cqw; border-radius: 99px; font-size: 1.25cqw; background: #fff; color: #6e4b2f; border: 0.13cqw solid #d9b878; }
 .th-grade.on { background: #1f5fc8; color: #fff; border-color: #1f5fc8; }
-.th-grade-note { margin: 0.45cqw 0 0.8cqw; font-size: 1.1cqw; color: #8a6a4a; }
+.th-grade-note { margin: 0.45cqw 0 0.2cqw; font-size: 1.1cqw; color: #8a6a4a; }
+.th-ticket-note { margin: 0 0 0.8cqw; font-size: 1.1cqw; color: #c0392b; }
 .th-dialog-acts { display: flex; gap: 0.8cqw; flex-wrap: wrap; font-size: 1.5cqw; }
 
 /* ================= 게임 ================= */

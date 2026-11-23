@@ -14,23 +14,9 @@
   var IW = 1672, IH = 941;
   var BAND_OF = function (g) { return g <= 2 ? 'low' : g <= 4 ? 'middle' : 'high'; };
   var BAND_LABEL = { low: '1~2학년', middle: '3~4학년', high: '5~6학년' };
-  /* 티켓(코스터와 같은 방식): 학년마다 혼자 추리하기를 처음 끝내면 3장, 그 뒤 새 문제 판(혼자·친구랑)을 끝낼 때마다 1장 —
-     하루 최대 DAY_MAX장. 규칙 맞히기 별은 자랑거리로만 남김 */
-  var FIRST_TICKETS = 3, DAY_MAX = 5;
-  function today() { var d = new Date(); return d.getFullYear() + '-' + (d.getMonth() + 1) + '-' + d.getDate(); }
-  // 티켓 정하기(patchGate 안에서): → { kind: 'first'|'new'|'daymax', gain }
-  function award(g, firstKey) {
-    if (!g.day || g.day.date !== today()) g.day = { date: today(), n: 0 };
-    g.done = g.done && typeof g.done === 'object' ? g.done : {};
-    if (firstKey && !g.done[firstKey]) { g.done[firstKey] = true; return { kind: 'first', gain: FIRST_TICKETS }; }
-    if (g.day.n < DAY_MAX) { g.day.n++; return { kind: 'new', gain: 1 }; }
-    return { kind: 'daymax', gain: 0 };
-  }
-  function ticketLine(a, g) {
-    return a.kind === 'first' ? '🎟 티켓 ' + a.gain + '장을 받았어요! 다음부터는 새 문제를 풀 때마다 1장씩 받아요.'
-      : a.kind === 'new' ? '🎟 새 문제 티켓 1장을 받았어요! (오늘 ' + g.day.n + ' / ' + DAY_MAX + ')'
-      : '오늘 받을 수 있는 새 문제 티켓(' + DAY_MAX + '장)은 다 받았어요. 내일 또 받아요!';
-  }
+  /* 티켓: 모든 건물 같은 규칙(game.js awardTicket) — 학년마다 처음 끝낸 판(혼자·친구랑) 1장, 모든 건물 합쳐 하루 3장.
+     규칙 맞히기 별은 자랑거리로만 남김 */
+  function award() { return api().awardTicket('ghost', S.grade); }
   var TIP = '방향키나 바닥을 눌러 걸어가서, 문 앞 문지기 유령에게 말을 걸어 봐요';
   var GHOST_SAYS = '어떤 손님이 이 문을 지날 수 있을까? 내 기록을 보고 비밀 규칙을 찾아봐!';
   var FIRST_GUIDE = '네 손님의 기록을 살펴보고, 다음 손님이 지나갈 수 있을지 골라봐.';
@@ -224,10 +210,7 @@
     ui.gradeBtns.forEach(function (b, i) { b.setAttribute('aria-checked', String(i + 1 === g)); b.classList.toggle('on', i + 1 === g); });
     var park = (api().profile().grade) || null;
     ui.gradeNote.textContent = (park ? '공원 학년은 ' + park + '학년이에요. ' : '') + (park && park !== g ? '바꾼 학년은 이번 놀이에만 써요.' : '다른 학년 난이도도 골라 볼 수 있어요.');
-    var gs = gateSave(), dayN = gs.day && gs.day.date === today() ? gs.day.n : 0;
-    ui.ticketNote.textContent = '🎟 한 판을 끝내면 티켓을 받아요! ' + (!(gs.done && gs.done['g' + g])
-      ? g + '학년 혼자 추리하기는 처음이라 3장! (그다음부터는 한 판에 1장, 하루 ' + DAY_MAX + '장까지)'
-      : dayN < DAY_MAX ? '한 판에 1장씩 (오늘 ' + dayN + ' / ' + DAY_MAX + '장 받았어요)' : '오늘 티켓 ' + DAY_MAX + '장은 다 받았어요. 내일 또 받아요!');
+    ui.ticketNote.textContent = api().ticketNote('ghost', g);
   }
   function openDialog() {
     if (S.dialog) return;
@@ -724,19 +707,20 @@
       for (var i = 0; i < STAGES; i++) extra.appendChild(el('span', 'gk-stamp done', '★'));
       if (!run.rewarded) {
         run.rewarded = true;   // 보상은 판마다 한 번만
-        var before = ticketCount(), got = null, gsave = null;
+        var got = null;
         saved = patchGate(function (g) {
           g.rounds = (g.rounds || 0) + 1;
           if (!g.cleared) { g.cleared = true; newClear = true; }
+          g.done = g.done && typeof g.done === 'object' ? g.done : {}; g.done['g' + S.grade] = true;
           g.best = g.best || {};
           g.best[run.band] = Math.max(g.best[run.band] || 0, run.first);
-          got = award(g, 'g' + S.grade); gsave = g; gain = got.gain;   // 학년마다 처음 3장, 그 뒤 1장(하루 5장까지)
-          return gain ? { tickets: (save().tickets || 0) + gain } : {};
+          return {};
         });
-        if (gain) showTickets(before);
+        got = award(); gain = got.gain;   // 학년마다 처음 1장(모든 건물 합쳐 하루 3장)
+        if (gain) showTickets(got.before);
       }
       lines.push('처음에 맞힌 손님 ' + run.first + ' / ' + run.guests + ' · 규칙 맞히기 별 ' + '★★★'.slice(0, run.stars) + '☆☆☆'.slice(0, STAGES - run.stars));
-      if (got) lines.push(ticketLine(got, gsave));
+      if (got) lines.push(got.line);
       if (newClear) lines.push('★ 꼬마 유령 캐릭터를 받았어요! 공원 위쪽 ‘캐릭터’에서 골라 봐요.');
       btns.push({ text: '🎲 새 문제로 한 판 더', main: true, fn: function () { hideModal(); startSolo(); } });
       btns.push({ text: '로비로', fn: function () { hideModal(); toLobby(); } });
@@ -744,14 +728,10 @@
     } else {
       if (!S.friendRewarded) {
         S.friendRewarded = true;   // 보상은 판마다 한 번만
-        var before2 = ticketCount(), got2 = null, gsave2 = null;
-        saved = patchGate(function (g) {
-          g.rounds = (g.rounds || 0) + 1;
-          got2 = award(g, null); gsave2 = g; gain = got2.gain;   // 친구랑 문지기: 1장(혼자 놀기와 같은 하루 한도)
-          return gain ? { tickets: (save().tickets || 0) + gain } : {};
-        });
-        if (gain) showTickets(before2);
-        lines.push(ticketLine(got2, gsave2));
+        saved = patchGate(function (g) { g.rounds = (g.rounds || 0) + 1; return {}; });
+        var got2 = award(); gain = got2.gain;   // 친구랑 문지기도 같은 규칙(그 학년 처음이면 1장)
+        if (gain) showTickets(got2.before);
+        lines.push(got2.line);
       }
       if (S.online) {
         btns.push({ text: '역할 바꾸기', main: true, fn: function () { hideModal(); swapOnline(); } });
@@ -1104,15 +1084,15 @@
       makerDone(v);
     } else hideModal();
   }
-  // 규칙 만든 친구도 판이 끝나면 티켓(하루 한도 안에서 판마다 1장)
+  // 규칙 만든 친구도 판이 끝나면 티켓(같은 규칙: 그 학년 처음이면 1장)
   function makerDone(v) {
     var o = S.online, lines = [];
     if (o.rewarded !== v.round) {
       o.rewarded = v.round;
-      var before = ticketCount(), got = null, gs = null, gain = 0;
-      patchGate(function (g) { g.rounds = (g.rounds || 0) + 1; got = award(g, null); gs = g; gain = got.gain; return gain ? { tickets: (save().tickets || 0) + gain } : {}; });
-      if (gain) showTickets(before);
-      o.lastTicketLine = ticketLine(got, gs);
+      patchGate(function (g) { g.rounds = (g.rounds || 0) + 1; return {}; });
+      var got = award();
+      if (got.gain) showTickets(got.before);
+      o.lastTicketLine = got.line;
     }
     lines.push(o.lastTicketLine || '');
     showModal('친구랑 문지기 끝!', lines, [

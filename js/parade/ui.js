@@ -203,7 +203,8 @@
     ui.start.hidden = false; ui.talk.hidden = true; ui.leave.hidden = true; ui.tip.hidden = true;
     drawFace();
     var done = cleared();
-    ui.rewardNote.textContent = done ? '★ 퍼레이드 고수 캐릭터를 받았어요! 마음껏 또 꾸며 봐요.' : '★ 처음 퍼레이드를 끝까지 보면 ‘퍼레이드 고수’ 캐릭터를 받아요!';
+    ui.rewardNote.textContent = (done ? '★ 퍼레이드 고수 캐릭터를 받았어요! 마음껏 또 꾸며 봐요.' : '★ 처음 퍼레이드를 끝까지 보면 ‘퍼레이드 고수’ 캐릭터를 받아요!') +
+      (api() && api().ticketNote ? ' ' + api().ticketNote('parade', api().profile().grade) : '');
     ui.rewardNote.classList.toggle('done', done);
     ui.startGo.focus();
   }
@@ -432,9 +433,13 @@
     var fresh = !cleared();
     if (fresh && api()) api().patchSave({ parade: Object.assign({}, save().parade || {}, { cleared: true }) });
     var got = fresh && cleared();
-    ui.reward.hidden = !fresh;
-    ui.reward.textContent = got ? '★ ‘퍼레이드 고수’ 캐릭터를 받았어요! 공원 위쪽 ‘캐릭터’에서 골라 봐요.'
-      : '이 기기에는 저장할 수 없어서 캐릭터 보상이 남지 않아요.';
+    // 티켓: 모든 건물 같은 규칙(game.js) — 공원 학년마다 처음 끝까지 보면 1장(다시 봐도 더 주지 않음), 모든 건물 합쳐 하루 3장
+    var tk = api() && api().awardTicket ? api().awardTicket('parade', api().profile().grade) : null;
+    var lines = [];
+    if (tk) lines.push(tk.line);
+    if (fresh) lines.push(got ? '★ ‘퍼레이드 고수’ 캐릭터를 받았어요! 공원 위쪽 ‘캐릭터’에서 골라 봐요.' : '이 기기에는 저장할 수 없어서 캐릭터 보상이 남지 않아요.');
+    ui.reward.hidden = !lines.length;
+    ui.reward.textContent = lines.join(' ');
     ui.showEnd.hidden = false;
     setTimeout(function () { ui.replay.focus(); }, 30);
   }

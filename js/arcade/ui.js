@@ -617,6 +617,8 @@
       a.best = Math.max(a.best, G.score);
     }
     var saved = writeArcade(a);
+    // 티켓(캐릭터 가게용): 모든 건물 같은 규칙 — 공원 학년마다 처음 끝내면 1장, 모든 건물 합쳐 하루 3장. 판마다 한 번
+    var tk = gain && api() && api().awardTicket ? api().awardTicket('arcade', api().profile().grade) : null;
     ui.rScore.innerHTML = '<span aria-hidden="true">★</span> <b>' + G.score + '</b>점';
     ui.rLevel.textContent = '난이도 ' + L.name;
     ui.rLevel.className = 'ac-rlevel lv-' + lv;
@@ -624,6 +626,7 @@
     ui.rBest.textContent = newBest && played ? '🏆 새 최고 기록! 내 최고 기록(' + L.name + ') ' + best + '점' : '내 최고 기록(' + L.name + ') ' + best + '점';
     ui.rCoupon.textContent = gain ? '🎫 쿠폰 1장을 받았어요! (지금 ' + a.coupons + '장 · 캡슐 1개 = 쿠폰 ' + CAPSULE_COST + '장)' : '';
     var extra = [];
+    if (tk) extra.unshift(tk.line);
     if (first) extra.push('★ ‘게임 챔피언’ 캐릭터를 받았어요! 공원 위쪽 ‘캐릭터’에서 골라 봐요.');
     if (!saved) extra.push('이 기기에는 저장되지 않았어요. 기록은 이번에만 남아요.');
     ui.rExtra.textContent = extra.join(' ');

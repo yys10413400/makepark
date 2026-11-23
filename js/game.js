@@ -985,8 +985,55 @@
     state.nearby = null; ui.enter.hidden = true;
     canvas.focus && canvas.blur();
   }
+  // ---------- 티켓 규칙(모든 건물 같음) ----------
+  // 건물마다 학년마다 처음 끝낼 때 1장. 같은 건물·같은 학년을 다시 하면 없음.
+  // 모든 건물을 합쳐 하루 최대 TICKET_DAY_MAX장. 오늘 한도로 못 받은 학년은 받은 것으로 치지 않아 내일 다시 끝내면 받음.
+  // 저장: save.ticketRule = { day: { date, n }, got: { 'coaster:3': true, … } }, 티켓 수는 save.tickets
+  var TICKET_DAY_MAX = 3;
+  function ticketToday() { var d = new Date(); return d.getFullYear() + '-' + (d.getMonth() + 1) + '-' + d.getDate(); }
+  function ticketRule(s) {
+    var r = s && s.ticketRule && typeof s.ticketRule === 'object' ? JSON.parse(JSON.stringify(s.ticketRule)) : {};
+    r.got = r.got && typeof r.got === 'object' ? r.got : {};
+    if (!r.day || r.day.date !== ticketToday()) r.day = { date: ticketToday(), n: 0 };
+    return r;
+  }
+  function ticketGrade(g) { g = +g || state.grade || 1; return Math.max(1, Math.min(6, g)); }
+  // 받기 전에 미리 보기: { kind: 'first' 받을 수 있음 | 'got' 이미 받음 | 'daymax' 오늘 한도, dayN, max }
+  function ticketPreview(fid, g) {
+    var r = ticketRule(readSave() || {}), key = fid + ':' + ticketGrade(g);
+    return { kind: r.got[key] ? 'got' : r.day.n >= TICKET_DAY_MAX ? 'daymax' : 'first', dayN: r.day.n, max: TICKET_DAY_MAX, grade: ticketGrade(g) };
+  }
+  // 한 판을 끝냈을 때 부름(판마다 한 번): 받을 수 있으면 1장 주고 저장. → { kind, gain, before, after, dayN, max, line }
+  function awardTicket(fid, g) {
+    var s = readSave() || {}, r = ticketRule(s), gr = ticketGrade(g), key = fid + ':' + gr, before = s.tickets || 0, kind;
+    if (r.got[key]) kind = 'got';
+    else if (r.day.n >= TICKET_DAY_MAX) kind = 'daymax';
+    else { kind = 'first'; r.got[key] = true; r.day.n++; }
+    var gain = kind === 'first' ? 1 : 0;
+    var patch = { ticketRule: r };
+    if (gain) patch.tickets = before + gain;
+    patchSave(patch);
+    showTickets();
+    var res = { kind: kind, gain: gain, before: before, after: before + gain, dayN: r.day.n, max: TICKET_DAY_MAX, grade: gr };
+    res.line = ticketLine(res);
+    return res;
+  }
+  function ticketLine(t) {
+    return t.kind === 'first' ? '🎟 ' + t.grade + '학년 티켓 1장을 받았어요! (오늘 ' + t.dayN + ' / ' + t.max + '장)'
+      : t.kind === 'got' ? '🎟 ' + t.grade + '학년 티켓은 이미 받았어요. 다른 학년이나 다른 건물에서 받아 봐요!'
+      : '🎟 오늘 받을 수 있는 티켓 ' + t.max + '장을 다 받았어요. 내일 다시 끝내면 받을 수 있어요!';
+  }
+  // 시작 대화창 안내 한 줄
+  function ticketNote(fid, g) {
+    var p = ticketPreview(fid, g);
+    return p.kind === 'first' ? '🎟 ' + p.grade + '학년을 처음 끝내면 티켓 1장! (모든 건물 합쳐 하루 ' + p.max + '장 · 오늘 ' + p.dayN + '장 받았어요)'
+      : p.kind === 'got' ? '🎟 ' + p.grade + '학년 티켓은 이미 받았어요. 다른 학년이나 다른 건물에서 받아 봐요!'
+      : '🎟 오늘 티켓 ' + p.max + '장을 다 받았어요. 내일 또 받아요!';
+  }
   window.MP_API = {
     readSave: readSave,
+    // 티켓 규칙(모든 건물 같음): 건물·학년마다 처음 끝낼 때 1장, 하루 모두 합쳐 3장
+    ticketPreview: ticketPreview, awardTicket: awardTicket, ticketNote: ticketNote, ticketLine: ticketLine, TICKET_DAY_MAX: TICKET_DAY_MAX,
     patchSave: patchSave,
     openChars: function () { openChars('edit'); },
     storageOk: function () { return storageOk; },

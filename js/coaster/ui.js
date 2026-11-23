@@ -139,10 +139,7 @@
     var park = api().profile().grade || null, m = MS.byGrade(g), done = (buildSave().done || {})['g' + g];
     ui.gradeNote.textContent = (done ? '이번엔 새 꽃밭이 나와요(‘' + m.title + '’ 연습은 끝!) · ' : '첫 미션: ‘' + m.title + '’ · ') + (park ? '공원 학년은 ' + park + '학년이에요. ' : '') +
       (park && park !== g ? '바꾼 학년은 이번 놀이에만 써요.' : '다른 학년도 골라 볼 수 있어요.');
-    var bs = buildSave(), dayN = bs.day && bs.day.date === today() ? bs.day.n : 0;
-    ui.ticketNote.textContent = '🎟 선로를 완성하면 티켓을 받아요! ' + (!done
-      ? g + '학년 첫 미션은 3장! (그다음부터는 새 꽃밭을 처음 성공할 때마다 1장, 하루 ' + DAY_MAX + '장까지)'
-      : dayN < DAY_MAX ? '새 꽃밭을 성공하면 1장 (오늘 ' + dayN + ' / ' + DAY_MAX + '장 받았어요)' : '오늘 티켓 ' + DAY_MAX + '장은 다 받았어요. 내일 또 받아요!');
+    ui.ticketNote.textContent = api().ticketNote ? api().ticketNote('coaster', g) : '';   // 모든 건물 같은 티켓 규칙(game.js)
   }
   function openDialog() {
     if (S.dialog) return;
@@ -943,30 +940,20 @@
     }
     await wait(500, token);
   }
-  /* 티켓(추천안 A): 학년마다 처음 성공 3장, 그 뒤 '새 꽃밭'을 처음 성공할 때마다 1장 — 하루 최대 DAY_MAX장.
-     같은 판을 '다시 만들기'로 또 성공하면 주지 않음 */
-  var DAY_MAX = 5;
-  function today() { var d = new Date(); return d.getFullYear() + '-' + (d.getMonth() + 1) + '-' + d.getDate(); }
+  /* 티켓: 모든 건물 같은 규칙(game.js awardTicket) — 학년마다 처음 성공 1장, 모든 건물 합쳐 하루 3장 */
   function succeed() {
-    var m = S.mission, gid = 'g' + m.grade, kind = 'none', gain = 0, cleared = false, before = ticketCount();
+    var m = S.mission, gid = 'g' + m.grade, cleared = false;
     var saved = patchBuild(function (b) {
-      var extra = {};
-      if (!b.day || b.day.date !== today()) b.day = { date: today(), n: 0 };
-      if (!b.done[gid]) { b.done[gid] = true; kind = 'first'; gain = MS.tickets; }
-      else if (m.random && !m.paid) { if (b.day.n < DAY_MAX) { b.day.n++; kind = 'new'; gain = 1; } else kind = 'daymax'; }
-      else kind = 'again';
-      m.paid = true;
-      if (gain) extra.tickets = (save().tickets || 0) + gain;
+      if (!b.done[gid]) b.done[gid] = true;
       if (!b.cleared) { b.cleared = true; cleared = true; }
-      return extra;
+      return {};
     });
-    if (gain) showTickets(before);
+    var tk = m.paid ? null : api().awardTicket('coaster', m.grade);   // 같은 판을 '다시 만들기'로 또 성공하면 다시 계산하지 않음
+    m.paid = true;
+    if (tk && tk.gain) showTickets(tk.before);
     var lines = [];
     lines.push(m.layouts.length > 1 ? '꽃과 역 자리가 달라져도 같은 코드로 두 꽃밭 모두 성공했어요!' : '쌓은 블록 ' + LG.countBlocks(S.program) + '개로 선로를 완성했어요!');
-    lines.push(kind === 'first' ? '🎟 티켓 ' + gain + '장을 받았어요!' :
-      kind === 'new' ? '🎟 새 꽃밭 티켓 1장을 받았어요! (오늘 ' + buildSave().day.n + ' / ' + DAY_MAX + ')' :
-      kind === 'daymax' ? '오늘 받을 수 있는 새 꽃밭 티켓(' + DAY_MAX + '장)은 다 받았어요. 내일 또 받아요!' :
-      '이 꽃밭 티켓은 이미 받았어요. ‘새 꽃밭’을 성공하면 더 받을 수 있어요.');
+    if (tk) lines.push(tk.line);
     if (cleared) lines.push('★ ‘꼬마 기관사’ 캐릭터를 받았어요! 공원 위쪽 ‘캐릭터’에서 골라 봐요.');
     if (!saved) lines.push('이 기기에는 저장되지 않았어요. 기록은 이번에만 남아요.');
     var btns = [{ text: '🎲 새 꽃밭', main: true, fn: function () { hideModal(); openNext(pickMission(m.grade, true)); } }];

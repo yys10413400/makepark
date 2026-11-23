@@ -12,8 +12,7 @@
   'use strict';
   var P = window.MP_PICNIC;
   var IW = 1672, IH = 941, BASE = 'assets/picnic/';
-  /* 티켓(유령의 집과 같은 방식): 학년마다 처음 끝내면 3장, 그 뒤 한 판 끝낼 때마다 1장 — 하루 최대 DAY_MAX장 */
-  var FIRST_TICKETS = 3, DAY_MAX = 5;
+  /* 티켓: 모든 건물 같은 규칙(js/game.js awardTicket) — 학년마다 처음 끝내면 1장, 모든 건물 합쳐 하루 3장 */
   var TIP = '방향키나 바닥을 눌러 걸어가서, 아기 다람쥐 토리에게 말을 걸어 봐요';
   var TORI_SAYS = '어서 오세요! 소풍 손님들 주문이 밀려 있어요. 주문대로 도시락을 같이 만들어 줄래요?';
   var KIND = { 1: '개수 세기', 2: '더 담기와 빼기', 3: '똑같이 나누기', 4: '여러 조건 맞추기', 5: '전체의 분수', 6: '비' };
@@ -43,7 +42,6 @@
   function pct(v, of) { return (v / of * 100) + '%'; }
   function api() { return window.MP_API; }
   function save() { return (api() && api().readSave()) || {}; }
-  function today() { var d = new Date(); return d.getFullYear() + '-' + (d.getMonth() + 1) + '-' + d.getDate(); }
   // 주문 문장: {중괄호} 안은 딸기색 큰 글자
   function richText(box, text) {
     box.textContent = '';
@@ -168,11 +166,8 @@
   function setGrade(g) {
     S.grade = g;
     ui.gradeBtns.forEach(function (b, i) { b.setAttribute('aria-checked', String(i + 1 === g)); b.classList.toggle('on', i + 1 === g); });
-    var park = api().profile().grade || null, pc = save().picnic || {};
-    var day = pc.day && pc.day.date === today() ? pc.day.n : 0;
-    ui.ticketNote.textContent = '🎟 주문 3개를 다 풀면 티켓을 받아요! ' + (!(pc.done && pc.done['g' + g])
-      ? g + '학년은 처음이라 3장! (그다음부터는 새 주문 한 판에 1장, 하루 ' + DAY_MAX + '장까지)'
-      : '판마다 새 주문이 와요! 한 판에 1장씩 (오늘 ' + day + ' / ' + DAY_MAX + '장 받았어요)');
+    var park = api().profile().grade || null;
+    ui.ticketNote.textContent = api().ticketNote('picnic', g);   // 모든 건물 같은 티켓 규칙(game.js)
     ui.gradeNote.textContent = g + '학년 주문: ' + KIND[g] + ' · 주문 3개' + (park && park !== g ? ' (공원 학년은 ' + park + '학년이에요)' : '');
   }
   function openStart() {
@@ -521,26 +516,18 @@
   }
   function finish() {
     S.done = true;
-    var before = save().tickets || 0, got = null, pc = null, saved = true;
+    var got = null, saved = true;
     if (api()) {
       var s = save(), p = s.picnic && typeof s.picnic === 'object' ? s.picnic : {};
-      if (!p.day || p.day.date !== today()) p.day = { date: today(), n: 0 };
       p.done = p.done && typeof p.done === 'object' ? p.done : {};
-      var key = 'g' + S.grade;
-      if (!p.done[key]) { p.done[key] = true; got = { kind: 'first', gain: FIRST_TICKETS }; }
-      else if (p.day.n < DAY_MAX) { p.day.n++; got = { kind: 'new', gain: 1 }; }
-      else got = { kind: 'daymax', gain: 0 };
+      p.done['g' + S.grade] = true;
       p.cleared = true; p.rounds = (p.rounds || 0) + 1;
-      pc = p;
-      var patch = { picnic: p };
-      if (got.gain) patch.tickets = before + got.gain;
-      api().patchSave(patch);
+      api().patchSave({ picnic: p });
+      got = api().awardTicket('picnic', S.grade);   // 학년마다 처음 1장, 모든 건물 합쳐 하루 3장
       saved = api().storageOk();
     }
     var lines = [S.grade + '학년 ' + KIND[S.grade] + ' 주문 3개를 모두 전달했어요. 손님들이 즐거운 소풍을 떠났어요! 다음 판에는 새 주문이 와요.'];
-    if (got) lines.push(got.kind === 'first' ? '🎟 티켓 ' + got.gain + '장을 받았어요! 다음부터는 한 판 끝낼 때마다 1장씩 받아요.'
-      : got.kind === 'new' ? '🎟 티켓 1장을 받았어요! (오늘 ' + pc.day.n + ' / ' + DAY_MAX + ')'
-      : '오늘 받을 수 있는 티켓(' + DAY_MAX + '장)은 다 받았어요. 내일 또 받아요!');
+    if (got) lines.push(got.line);
     if (!saved) lines.push('이 기기에는 저장할 수 없어서 기록이 남지 않아요.');
     var c = ui.modalCard; c.textContent = ''; c.classList.remove('pc-help-card'); S.help = false;
     var face = el('div', 'pc-start-face pc-done-face'); face.appendChild(img('tori-idle-03', '', '기뻐하는 토리')); c.appendChild(face);
@@ -552,7 +539,7 @@
     row.appendChild(btn('pc-choice light', '가게로 돌아가기', function () { toLobby(); }));
     c.appendChild(row);
     ui.modal.hidden = false;
-    if (got && got.gain) showTickets(before);
+    if (got && got.gain) showTickets(got.before);
     setTimeout(function () { again.focus(); }, 30);
   }
 
