@@ -4,7 +4,7 @@
  * - '카메라로 시작'을 누른 뒤에만 start()로 카메라 권한을 요청합니다.
  * - 카메라 영상은 이 기기 브라우저 안에서만 손 위치를 찾는 데 쓰고, 저장하거나 어디로도 보내지 않습니다.
  *   (손 인식 프로그램 MediaPipe Hand Landmarker 와 모델 파일만 처음에 인터넷에서 받아 옴)
- * - 화면에는 영상을 보여 주지 않고, 인식 상태만 알려 줍니다.
+ * - 화면에는 기본으로 인식 상태만 알려 주고, '카메라 보기'를 켜면 작은 거울 화면(이 기기 안에서만)을 보여 줍니다.
  * - stop() 하면 카메라를 완전히 끕니다(창 닫기·방향키로 바꾸기).
  *
  * 오른손 구분: MediaPipe 의 왼손/오른손 이름은 '거울처럼 뒤집힌(셀카) 영상'을 기준으로 붙습니다.
@@ -58,13 +58,17 @@
       H.lastVT = v.currentTime;
       var res = null;
       try { res = H.marker.detectForVideo(v, performance.now()); } catch (e) { res = null; }
-      var found = null;
+      var found = null, hands = [];
       if (res && res.landmarks) {
         for (var i = 0; i < res.landmarks.length; i++) {
-          var hd = res.handednesses && res.handednesses[i] && res.handednesses[i][0];
-          if (hd && hd.categoryName === RIGHT_LABEL) { found = res.landmarks[i]; break; }
+          var hd = res.handednesses && res.handednesses[i] && res.handednesses[i][0], right = !!(hd && hd.categoryName === RIGHT_LABEL);
+          var lm = res.landmarks[i];
+          // 미리보기용: 거울처럼 뒤집은 좌표(손바닥 가운데)와 오른손인지
+          hands.push({ x: palmX(lm), y: (lm[0].y + lm[9].y) / 2, right: right });
+          if (right && !found) found = lm;
         }
       }
+      H.hands = hands;
       if (found) {
         var px = palmX(found), now = performance.now();
         // 처음 찾은 자리를 가운데로 삼되, 한쪽 끝에 치우치지 않게 0.35~0.65 사이로
@@ -111,7 +115,7 @@
     H.on = false; cancelAnimationFrame(H.raf);
     if (H.stream) H.stream.getTracks().forEach(function (t) { t.stop(); });
     if (H.video) { try { H.video.pause(); } catch (e) { /* 무시 */ } H.video.srcObject = null; }
-    H.stream = null; H.video = null;
+    H.stream = null; H.video = null; H.hands = [];
   }
 
   window.MPHand = {
@@ -120,6 +124,10 @@
     read: function () {
       var lost = H.everSeen ? performance.now() - H.seenAt : Infinity;
       return { x: H.x, seen: H.everSeen && lost < 250, lostMs: lost, everSeen: H.everSeen };
+    },
+    // 미리보기: 카메라 영상(video)과 지금 보이는 손들, 조작 범위(화면 왼끝·오른끝이 되는 손 위치)
+    preview: function () {
+      return { video: H.video, hands: H.hands || [], range: H.center == null ? null : [H.center - SPAN / 2, H.center + SPAN / 2] };
     },
     isOn: function () { return H.on || !!H.stream; },
     cameraLive: function () { return !!(H.stream && H.stream.getTracks().some(function (t) { return t.readyState === 'live'; })); }

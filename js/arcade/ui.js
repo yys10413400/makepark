@@ -9,7 +9,7 @@
  *   → 카메라: 연결 → '오른손을 보여 주세요' → 연습 별 / 방향키: 바로 연습 별
  *   → 연습 별을 받으면 '좋았어!' → 3·2·1 → 본게임 30초 → 결과(점수·최고 기록·쿠폰 1장 · [다시 하기][캡슐 뽑기])
  *   창을 닫으면(✕·Esc) 로비로 돌아오고 카메라를 끕니다. 연습·중도 종료에는 쿠폰을 주지 않습니다.
- * 오른손 인식은 js/arcade/hand.js(MPHand). 영상은 기기 안에서만 쓰고 화면에는 인식 상태만 보여 줍니다.
+ * 오른손 인식은 js/arcade/hand.js(MPHand). 영상은 기기 안에서만 쓰고, 카메라 모드에서는 작은 거울 화면(켜고 끌 수 있음)에 인식한 손을 표시합니다.
  * 에셋: assets/arcade/pixel-idle.webp · pixel-walk.webp(8칸 띠, 300×420, 발 y=400·머리 x=150)
  *       star.webp(8칸 띠, 240×330, 별 몸통 (120,250)) — tools/build_arcade.py 가 원본 시트에서 잘라 맞춤
  * 저장(window.MP_API): save.arcade = { coupons, welcome, best, rounds, capsules, cleared }
@@ -236,7 +236,7 @@
   var G = {
     phase: 'intro', mode: null, px: IW / 2, moving: false, dir: 1, walkT: 0,
     stars: [], fx: [], score: 0, left: GAME_SEC, spawn: 0, count: 0, phaseT: 0,
-    paused: false, round: 0, paidRound: 0, t: 0, keys: {}, practiceN: 0
+    paused: false, round: 0, paidRound: 0, t: 0, keys: {}, practiceN: 0, showCam: true
   };
 
   function buildGame() {
@@ -256,6 +256,17 @@
     ui.closeX = btn('ac-x', '✕', function () { closeWin(); });
     ui.closeX.setAttribute('aria-label', '창 닫고 아케이드 로비로');
     [ui.hScore, ui.hTime, ui.hStatus, ui.closeX].forEach(function (n) { f.appendChild(n); });
+
+    // 카메라 미리보기(거울 화면). 이 기기 안에서만 그리고 저장·전송하지 않음. 버튼으로 켜고 끔
+    ui.camBox = el('div', 'ac-cam'); ui.camBox.hidden = true;
+    ui.camCv = el('canvas', 'ac-cam-cv'); ui.camCv.width = 320; ui.camCv.height = 240;
+    ui.camCv.setAttribute('aria-label', '내 카메라 거울 화면. 초록 동그라미가 인식한 오른손이에요');
+    ui.camBox.appendChild(ui.camCv);
+    ui.camBox.appendChild(el('p', 'ac-cam-cap', '초록 ● 오른손 · 회색 ● 다른 손 · 노란 줄 = 화면 양 끝'));
+    f.appendChild(ui.camBox);
+    ui.camToggle = btn('ac-camtoggle', '', function () { G.showCam = !G.showCam; syncCam(); });
+    ui.camToggle.hidden = true;
+    f.appendChild(ui.camToggle);
 
     // 한 줄 안내
     ui.guide = el('p', 'ac-guide'); ui.guide.setAttribute('aria-live', 'polite'); ui.guide.hidden = true;
@@ -316,7 +327,38 @@
   }
 
   function setGuide(text) { ui.guide.hidden = !text; if (text) ui.guide.textContent = text; }
+  // 카메라 모드일 때만 '카메라 보기' 버튼과 미리보기
+  function syncCam() {
+    var on = G.mode === 'cam' && G.phase !== 'intro' && G.phase !== 'fail';
+    ui.camToggle.hidden = !on;
+    ui.camToggle.textContent = G.showCam ? '카메라 화면 숨기기' : '📷 카메라 화면 보기';
+    ui.camToggle.setAttribute('aria-pressed', String(G.showCam));
+    ui.camBox.hidden = !(on && G.showCam);
+  }
+  function drawCam() {
+    if (ui.camBox.hidden || !window.MPHand || !MPHand.preview) return;
+    var p = MPHand.preview(), c = ui.camCv.getContext('2d'), W = ui.camCv.width, H = ui.camCv.height;
+    c.fillStyle = '#0b1640'; c.fillRect(0, 0, W, H);
+    var v = p.video;
+    if (v && v.readyState >= 2 && v.videoWidth) {
+      c.save(); c.translate(W, 0); c.scale(-1, 1);   // 거울처럼(내 오른쪽 = 화면 오른쪽)
+      var k = Math.max(W / v.videoWidth, H / v.videoHeight), vw = v.videoWidth * k, vh = v.videoHeight * k;
+      c.drawImage(v, (W - vw) / 2, (H - vh) / 2, vw, vh);
+      c.restore();
+    } else { c.fillStyle = '#cbd6ff'; c.font = '20px Jua, sans-serif'; c.textAlign = 'center'; c.fillText('카메라 준비 중…', W / 2, H / 2); }
+    if (p.range) {
+      c.strokeStyle = 'rgba(255,214,64,0.9)'; c.lineWidth = 3; c.setLineDash([8, 6]);
+      p.range.forEach(function (x) { c.beginPath(); c.moveTo(x * W, 0); c.lineTo(x * W, H); c.stroke(); });
+      c.setLineDash([]);
+    }
+    p.hands.forEach(function (h) {
+      c.beginPath(); c.arc(h.x * W, h.y * H, h.right ? 14 : 10, 0, Math.PI * 2);
+      c.fillStyle = h.right ? 'rgba(61,220,110,0.85)' : 'rgba(200,200,200,0.75)'; c.fill();
+      c.lineWidth = 3; c.strokeStyle = '#fff'; c.stroke();
+    });
+  }
   function setStatus() {
+    syncCam();
     var s = ui.hStatus;
     var pre = G.phase === 'intro' || G.phase === 'fail';
     ui.hScore.hidden = pre; ui.hTime.hidden = pre;   // 첫 화면에는 점수·시간 대신 제목
@@ -689,7 +731,7 @@
     if (!S.open) return;
     var dt = Math.min(0.05, (now - S.last) / 1000); S.last = now;
     stepLobby(dt); drawLobby(now / 1000);
-    if (S.win === 'game') { stepGame(dt); drawGame(); }
+    if (S.win === 'game') { stepGame(dt); drawGame(); drawCam(); }
     S.raf = requestAnimationFrame(loop);
   }
   function open() {
