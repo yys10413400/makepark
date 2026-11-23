@@ -846,6 +846,8 @@
       character.draw(ctx, p.x, p.y, p.dir, p.moving, state.time);
       ctx.globalAlpha = 1;
     }
+    // 시설 이름표(지도 그림에 간판 글자가 없음): js/map-labels.js
+    if (window.MPMapLabels) MPMapLabels.draw(ctx, PARK, state.season, cam.s);
     if (multi) {
       MPMulti.drawOthers(ctx, state.time, p.y, true, frameDt);            // 나보다 앞(아래쪽)에 있는 친구
       MPMulti.drawNames(ctx, { x: p.x, y: p.y, nickname: state.nickname });

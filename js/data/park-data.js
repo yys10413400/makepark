@@ -74,33 +74,33 @@ window.MP_PARK = {
 
   // 공원 중심 장소 (입장 시설 아님)
   landmarks: [
-    { id: 'fountain', name: '분수 광장', x: 690, y: 565 }
+    { id: 'fountain', name: '분수 광장', x: 690, y: 565, label: { x: 691, y: 640 }, seasonNames: { christmas: '트리 광장' } }
   ],
 
   // 입장 시설.  entrance = 캐릭터가 서야 하는 입구 앞 길 좌표,  radius = 입장 버튼이 뜨는 거리
-  // pin = 전체 지도 핀의 끝 위치. 지도에 그려진 시설 이름표를 가리지 않게 이름표 바로 위에 둠
+  // pin = 전체 지도 핀의 끝 위치(이름표 바로 위).  label = 지도 위 이름표 가운데(js/map-labels.js 가 그림)
   facilities: [
     { id: 'coaster', name: '코스터 익스프레스', desc: '구불구불 레일 위를 달리는 신나는 롤러코스터예요.',
-      entrance: { x: 335, y: 392 }, radius: 60, pin: { x: 340, y: 266 } },
+      entrance: { x: 335, y: 392 }, radius: 60, pin: { x: 340, y: 266 }, label: { x: 342, y: 286 } },
     { id: 'parade', name: '레인보우 퍼레이드', desc: '현수막을 꾸미면 리리·모모·루루가 들고 행진하는 퍼레이드예요.',
-      entrance: { x: 300, y: 822 }, radius: 60, pin: { x: 300, y: 716 } },
+      entrance: { x: 300, y: 822 }, radius: 60, pin: { x: 300, y: 716 }, label: { x: 301, y: 735 } },
     { id: 'melody', name: '멜로디 스테이지', desc: '음악과 공연이 가득한 야외 무대예요.',
-      entrance: { x: 250, y: 600 }, radius: 60, pin: { x: 255, y: 461 } },
+      entrance: { x: 250, y: 600 }, radius: 60, pin: { x: 255, y: 461 }, label: { x: 256, y: 480 } },
     { id: 'thrill', name: '짜릿 어드벤처', desc: '수달 연구원 토토와 범퍼카를 몰며 미션을 푸는 범퍼카 연구소예요.',
-      entrance: { x: 995, y: 645 }, radius: 60, pin: { x: 1110, y: 481 } },
+      entrance: { x: 995, y: 645 }, radius: 60, pin: { x: 1110, y: 481 }, label: { x: 1115, y: 500 } },
     { id: 'ghost', name: '유령의 집', desc: '살금살금, 귀여운 유령들이 사는 집이에요.',
-      entrance: { x: 1158, y: 856 }, radius: 60, pin: { x: 1160, y: 761 } },
+      entrance: { x: 1158, y: 856 }, radius: 60, pin: { x: 1160, y: 761 }, label: { x: 1162, y: 780 } },
     { id: 'arcade', name: '플레이 아케이드', desc: '여러 가지 게임기가 모여 있는 오락실이에요.',
-      entrance: { x: 825, y: 838 }, radius: 60, pin: { x: 825, y: 737 } },
+      entrance: { x: 825, y: 838 }, radius: 60, pin: { x: 825, y: 737 }, label: { x: 826, y: 755 } },
     { id: 'star', name: '스타 페스티벌', desc: '반짝이는 작품을 뽐내는 축제 마당이에요.',
-      entrance: { x: 1180, y: 410 }, radius: 60, pin: { x: 1170, y: 282 } },
+      entrance: { x: 1180, y: 410 }, radius: 60, pin: { x: 1170, y: 282 }, label: { x: 1170, y: 298 } },
     { id: 'mypark', name: '마이파크', desc: '내가 만든 놀이기구를 세울 나만의 공원이에요.',
-      entrance: { x: 1130, y: 232 }, radius: 60, pin: { x: 1130, y: 150 } },
+      entrance: { x: 1130, y: 232 }, radius: 60, pin: { x: 1130, y: 150 }, label: { x: 1131, y: 168 } },
     // 예전 매표소 건물 → 토리네 도시락(아기 다람쥐 토리와 도시락 주문 수학 놀이). 지도 그림·가림 레이어(occluders 'ticket')는 그대로
     { id: 'picnic', name: '토리네 도시락', desc: '아기 다람쥐 토리와 소풍 도시락을 만드는 가게예요.',
-      entrance: { x: 605, y: 320 }, radius: 55, pin: { x: 605, y: 207 } },
+      entrance: { x: 605, y: 320 }, radius: 55, pin: { x: 605, y: 207 }, label: { x: 606, y: 226 } },
     { id: 'shop', name: '기념품 가게', desc: '메이크파크 기념품이 가득한 가게예요.',
-      entrance: { x: 850, y: 368 }, radius: 60, pin: { x: 850, y: 272 } }
+      entrance: { x: 850, y: 368 }, radius: 60, pin: { x: 850, y: 272 }, label: { x: 851, y: 290 } }
   ],
 
   // 카메라
