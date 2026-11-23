@@ -21,6 +21,14 @@
   var IW = 1672, IH = 941;
   var TIP = '방향키나 바닥을 눌러 걸어가서, 오락기를 눌러 봐요';
   var GAME_SEC = 30, CAPSULE_COST = 2;
+  // 난이도: speed 떨어지는 속도 배율 · gap 별 간격(초, 최소~최대) · ramp 30초 동안 빨라지는 정도 · big 큰 별 비율 · reach 바구니 판정 여유(px)
+  // 처음엔 공원 학년에 맞춰 미리 골라 둠(1~2학년 쉬움 · 3~4학년 보통 · 5~6학년 어려움), 아이가 바꾸면 그 단계를 기억
+  var LEVELS = {
+    easy: { name: '쉬움', speed: 0.72, gap: [0.95, 1.35], ramp: 0.15, big: 0.22, reach: 24 },
+    normal: { name: '보통', speed: 1, gap: [0.62, 0.97], ramp: 0.3, big: 0.17, reach: 10 },
+    hard: { name: '어려움', speed: 1.28, gap: [0.46, 0.72], ramp: 0.4, big: 0.13, reach: 4 }
+  };
+  var LEVEL_IDS = ['easy', 'normal', 'hard'];
   var DEBUG = /[?&]debug=1/.test(location.search);
 
   // 캡슐에서 나오는 오락기 4종(내 맵 꾸미기 보관함으로 들어감)
@@ -54,6 +62,10 @@
     a = a && typeof a === 'object' ? JSON.parse(JSON.stringify(a)) : {};
     a.coupons = Math.max(0, a.coupons | 0); a.best = Math.max(0, a.best | 0);
     a.rounds = a.rounds | 0; a.capsules = a.capsules | 0;
+    a.bestBy = a.bestBy && typeof a.bestBy === 'object' ? a.bestBy : {};
+    a.playedBy = a.playedBy && typeof a.playedBy === 'object' ? a.playedBy : {};
+    // 난이도가 생기기 전 기록은 '보통' 기록으로
+    if (a.best && a.bestBy.normal == null && !Object.keys(a.bestBy).length) { a.bestBy.normal = a.best; a.playedBy.normal = true; }
     return a;
   }
   function decorData() {
@@ -236,7 +248,7 @@
   var G = {
     phase: 'intro', mode: null, px: IW / 2, moving: false, dir: 1, walkT: 0,
     stars: [], fx: [], score: 0, left: GAME_SEC, spawn: 0, count: 0, phaseT: 0,
-    paused: false, round: 0, paidRound: 0, t: 0, keys: {}, practiceN: 0, showCam: true
+    paused: false, round: 0, paidRound: 0, t: 0, keys: {}, practiceN: 0, showCam: true, level: 'normal'
   };
 
   function buildGame() {
@@ -277,14 +289,21 @@
     intro.appendChild(el('h2', 'ac-title', '별빛 팡팡'));
     ui.say = el('p', 'ac-say');
     intro.appendChild(ui.say);
+    var lr = el('div', 'ac-levels'); lr.setAttribute('role', 'radiogroup'); lr.setAttribute('aria-label', '난이도');
+    lr.appendChild(el('span', 'ac-levels-label', '난이도'));
+    ui.levelBtns = LEVEL_IDS.map(function (id) {
+      var b = btn('ac-level lv-' + id, LEVELS[id].name, function () { setLevel(id, true); });
+      b.setAttribute('role', 'radio'); b.dataset.id = id; lr.appendChild(b); return b;
+    });
+    intro.appendChild(lr);
     var row = ui.introBtns = el('div', 'ac-btns');
     ui.camBtn = btn('ac-choice', '📷 카메라로 시작', startCamera);
     ui.keyBtn = btn('ac-choice light', '⌨️ 방향키로 시작', function () { startKeys(); });
     row.appendChild(ui.camBtn); row.appendChild(ui.keyBtn);
     intro.appendChild(row);
     ui.privacy = el('p', 'ac-privacy', '카메라 영상은 이 기기에서 손 위치만 찾는 데 쓰고, 저장하거나 보내지 않아요.');
-    intro.appendChild(ui.privacy);
     f.appendChild(intro);
+    f.appendChild(ui.privacy);   // 개인정보 안내는 아래 발판 위에(픽셀을 가리지 않게)
 
     // 3·2·1
     ui.count = el('p', 'ac-count'); ui.count.hidden = true; ui.count.setAttribute('aria-live', 'assertive');
@@ -300,6 +319,7 @@
     // 결과
     var rs = ui.result = el('div', 'ac-result'); rs.hidden = true;
     rs.appendChild(el('h2', 'ac-rtitle', '끝! 별을 이만큼 받았어요'));
+    ui.rLevel = el('p', 'ac-rlevel'); rs.appendChild(ui.rLevel);
     ui.rScore = el('p', 'ac-rscore'); rs.appendChild(ui.rScore);
     ui.rBest = el('p', 'ac-rline'); rs.appendChild(ui.rBest);
     ui.rCoupon = el('p', 'ac-rline ac-rcoupon'); rs.appendChild(ui.rCoupon);
@@ -308,6 +328,9 @@
     ui.againBtn = btn('ac-choice', '다시 하기', again);
     rb.appendChild(ui.againBtn);
     rb.appendChild(btn('ac-choice light', '🎁 캡슐 뽑기', function () { closeWin(); openCapsule(); }));
+    rs.appendChild(rb);
+    rb = el('div', 'ac-btns ac-btns-sub');
+    rb.appendChild(btn('ac-mini', '난이도 바꾸기', function () { toIntro(); setTimeout(function () { var b = ui.levelBtns.filter(function (x) { return x.dataset.id === G.level; })[0]; if (b) b.focus(); }, 30); }));
     rs.appendChild(rb);
     f.appendChild(rs);
 
@@ -394,8 +417,22 @@
     ui.camBtn.textContent = failMsg ? '📷 카메라 다시 해 보기' : '📷 카메라로 시작';
     ui.camBtn.disabled = false; ui.keyBtn.disabled = false;
     ui.privacy.hidden = false;
+    setLevel(defaultLevel());
     ui.pads.forEach(function (b) { b.hidden = true; });
     setGuide(''); setStatus(); showHud(0, GAME_SEC);
+  }
+  // 난이도: 저장된 선택이 있으면 그것, 없으면 공원 학년에 맞춰
+  function defaultLevel() {
+    var a = arcadeData();
+    if (LEVELS[a.level]) return a.level;
+    var g = (api() && api().profile && api().profile().grade) || 3;
+    return g <= 2 ? 'easy' : g <= 4 ? 'normal' : 'hard';
+  }
+  function setLevel(id, chosen) {
+    if (!LEVELS[id]) return;
+    G.level = id;
+    ui.levelBtns.forEach(function (b) { var on = b.dataset.id === id; b.classList.toggle('on', on); b.setAttribute('aria-checked', String(on)); });
+    if (chosen) { var a = arcadeData(); a.level = id; writeArcade(a); }
   }
   function closeWin() {
     // 중도에 닫으면 쿠폰 없이 로비로. 카메라는 꼭 끔
@@ -441,6 +478,7 @@
   function toPractice() {
     G.phase = 'practice'; G.stars = []; G.practiceN = 0;
     ui.intro.hidden = true; ui.result.hidden = true;
+    ui.privacy.hidden = true;
     setGuide(G.mode === 'cam' ? '별 아래로 바구니를 옮겨 봐!' : '← → 키로 바구니를 옮겨 봐!');
     setStatus();
   }
@@ -467,9 +505,9 @@
       G.stars.push({ x: x, y: -60, vy: 165, big: false, ph: Math.random() * 8, practice: true });
       return;
     }
-    var prog = 1 - G.left / GAME_SEC, big = Math.random() < 0.17;
+    var L = LEVELS[G.level], prog = 1 - G.left / GAME_SEC, big = Math.random() < L.big;
     x = X_MIN + 40 + Math.random() * (X_MAX - X_MIN - 80);
-    G.stars.push({ x: x, y: -60, vy: (290 + Math.random() * 120) * (1 + prog * 0.3) * (big ? 0.9 : 1), big: big, ph: Math.random() * 8 });
+    G.stars.push({ x: x, y: -60, vy: (290 + Math.random() * 120) * L.speed * (1 + prog * L.ramp) * (big ? 0.9 : 1), big: big, ph: Math.random() * 8 });
   }
   function catchStar(s) {
     var v = s.big ? 3 : 1;
@@ -527,7 +565,11 @@
     } else if (G.phase === 'play') {
       G.left -= dt;
       G.spawn -= dt;
-      if (G.spawn <= 0) { spawnStar(false); G.spawn = 0.62 + Math.random() * 0.35 - (1 - G.left / GAME_SEC) * 0.15; }
+      if (G.spawn <= 0) {
+        var L = LEVELS[G.level];
+        spawnStar(false);
+        G.spawn = L.gap[0] + Math.random() * (L.gap[1] - L.gap[0]) - (1 - G.left / GAME_SEC) * L.ramp * 0.5;
+      }
       if (G.left <= 0) { G.left = 0; finish(); return; }
     }
     stepStars(dt);
@@ -541,7 +583,7 @@
       // 별 몸통이 바구니 입구 줄을 지나는 순간, 입구 안이면 받기(한 번만)
       if (!s.done && py < MOUTH_Y && s.y >= MOUTH_Y) {
         s.done = true;
-        if (Math.abs(s.x - G.px) <= MOUTH_HALF + (s.big ? 20 : 10)) {
+        if (Math.abs(s.x - G.px) <= MOUTH_HALF + (s.big ? 10 : 0) + LEVELS[G.level].reach) {
           var v = catchStar(s);
           G.stars.splice(i, 1);
           if (s.practice) { G.phase = 'nice'; G.phaseT = 0; G.stars = []; setGuide('좋았어! 이제 30초 동안 별을 받아 봐!'); return; }
@@ -565,15 +607,21 @@
     G.phase = 'result'; G.stars = []; G.paused = false; ui.pause.hidden = true; ui.count.hidden = true;
     setGuide(''); showHud(G.score, 0);
     // 본게임을 끝까지 하면 점수와 관계없이 쿠폰 1장(한 판에 한 번)
-    var a = arcadeData(), first = !a.cleared, gain = 0, newBest = G.score > a.best;
+    // 최고 기록은 난이도마다 따로(bestBy), best 는 전체 최고
+    var a = arcadeData(), first = !a.cleared, gain = 0, lv = G.level, L = LEVELS[lv];
+    var prevBest = a.bestBy[lv] || 0, played = !!a.playedBy[lv], newBest = G.score > prevBest;
     if (G.paidRound !== G.round) {
       G.paidRound = G.round; gain = 1;
-      a.coupons += 1; a.rounds += 1; a.cleared = true;
-      if (newBest) a.best = G.score;
+      a.coupons += 1; a.rounds += 1; a.cleared = true; a.playedBy[lv] = true;
+      if (newBest) a.bestBy[lv] = G.score;
+      a.best = Math.max(a.best, G.score);
     }
     var saved = writeArcade(a);
     ui.rScore.innerHTML = '<span aria-hidden="true">★</span> <b>' + G.score + '</b>점';
-    ui.rBest.textContent = newBest && a.rounds > 1 ? '🏆 새 최고 기록! 내 최고 기록 ' + a.best + '점' : '내 최고 기록 ' + a.best + '점';
+    ui.rLevel.textContent = '난이도 ' + L.name;
+    ui.rLevel.className = 'ac-rlevel lv-' + lv;
+    var best = a.bestBy[lv] || 0;
+    ui.rBest.textContent = newBest && played ? '🏆 새 최고 기록! 내 최고 기록(' + L.name + ') ' + best + '점' : '내 최고 기록(' + L.name + ') ' + best + '점';
     ui.rCoupon.textContent = gain ? '🎫 쿠폰 1장을 받았어요! (지금 ' + a.coupons + '장 · 캡슐 1개 = 쿠폰 ' + CAPSULE_COST + '장)' : '';
     var extra = [];
     if (first) extra.push('★ ‘게임 챔피언’ 캐릭터를 받았어요! 공원 위쪽 ‘캐릭터’에서 골라 봐요.');

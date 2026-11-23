@@ -110,7 +110,7 @@ body.arcade-open #hud, body.arcade-open #enterFacility, body.arcade-open #chatBa
 }
 /* 첫 화면 */
 .ac-intro {
-  left: 50%; top: 13%; transform: translateX(-50%); z-index: 5; width: 62%;
+  left: 50%; top: 11%; transform: translateX(-50%); z-index: 5; width: 62%;
   display: flex; flex-direction: column; align-items: center; gap: 0.9cqw; text-align: center;
 }
 .ac-title {
@@ -125,7 +125,7 @@ body.arcade-open #hud, body.arcade-open #enterFacility, body.arcade-open #chatBa
   content: ''; position: absolute; left: 50%; bottom: -1.3cqw; transform: translateX(-50%);
   border: 1.2cqw solid transparent; border-top-color: #e2b357; border-bottom: 0;
 }
-.ac-privacy { font-size: 1.15cqw; color: #cbd6ff; }
+.ac-privacy { left: 50%; bottom: 1.6%; transform: translateX(-50%); z-index: 5; white-space: nowrap; font-size: 1.15cqw; color: #e6fff8; text-shadow: 0 0.1cqw 0.3cqw rgba(0, 40, 40, 0.8); }
 .ac-intro > * { margin: 0; }
 .ac-intro .ac-btns { margin-top: 0.6cqw; }
 /* 3·2·1 */
@@ -226,3 +226,21 @@ body.arcade-open #hud, body.arcade-open #enterFacility, body.arcade-open #chatBa
   padding: 0.35cqw 1cqw; border-radius: 99px; font-size: 1.15cqw;
   background: #fffaf0; color: #24407a; border: 0.16cqw solid #e2b357;
 }
+
+/* 난이도 */
+.ac-levels { display: flex; align-items: center; gap: 0.6cqw; }
+.ac-levels-label { font-size: 1.4cqw; color: #ffe27a; margin-right: 0.3cqw; }
+.ac-level {
+  padding: 0.35cqw 1.3cqw; border-radius: 99px; font-size: 1.4cqw; line-height: 1.2;
+  background: rgba(255, 250, 240, 0.9); color: #24407a; border: 0.16cqw solid #d9b878;
+}
+.ac-level.on { color: #fff; border-color: #fff3c4; box-shadow: 0 0 1cqw rgba(255, 226, 122, 0.7); }
+.ac-level.lv-easy.on, .ac-rlevel.lv-easy { background: #3e9b5a; }
+.ac-level.lv-normal.on, .ac-rlevel.lv-normal { background: #2f6fc0; }
+.ac-level.lv-hard.on, .ac-rlevel.lv-hard { background: #c9466b; }
+.ac-rlevel { padding: 0.15cqw 1cqw; border-radius: 99px; font-size: 1.2cqw; color: #fff; }
+.ac-mini {
+  padding: 0.3cqw 1.1cqw; border-radius: 99px; font-size: 1.25cqw;
+  background: #fff; color: #24407a; border: 0.14cqw solid #d9b878;
+}
+.ac-result .ac-btns-sub { margin-top: 0.1cqw; margin-bottom: 0.2cqw; }
