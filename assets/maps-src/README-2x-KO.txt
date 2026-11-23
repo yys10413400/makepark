@@ -47,3 +47,9 @@
 - 일반 맵과 같은 방법(2896×2172로 키움 → redo_signs.py → 워터마크 덮기)
 - 길 한가운데 생긴 트리 3그루는 지움(일반 맵 길 무늬를 눈 색으로 바꿔 채우거나 옆 눈길 조각으로 덮음)
 - 스타 페스티벌 왼쪽 길가 트리는 남기고, park-data.js 의 seasons.christmas.walkEdits 로 크리스마스에서만 못 지나가게 막음
+
+2026-11-23 두 지도 모두 새 그림으로 교체 (간판 글자 없는 그림)
+- 기본: makepark-hanok-2390x1792.png, 크리스마스: makepark-christmas-garden-2390x1792.png
+  (원본 PNG는 이 PC 폴더에만 두고 저장소에는 올리지 않음)
+- 2896×2172로 키워 assets/maps/*.webp (품질 90). 워터마크 없음.
+- 길 배치는 예전 지도와 같아 입구 좌표는 그대로. 걷기 격자(build_walkmask.py)와 땅 지도(build_ground_mask.py)는 새로 만듦.

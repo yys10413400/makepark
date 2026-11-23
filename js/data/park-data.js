@@ -9,18 +9,16 @@ window.MP_PARK = {
   world: { width: 1448, height: 1086 },
 
   // 시즌 배경. 기본은 크리스마스, 플레이어가 고른 시즌은 기기에 저장됩니다.
-  // 완성 지도에 눈·장식·시설 이름이 이미 그려져 있으므로 장식 레이어나 글자를 따로 올리지 않습니다.
+  // 완성 지도에 눈·장식이 이미 그려져 있으므로 장식 레이어를 따로 올리지 않습니다.
+  // (2026-11-23 지도부터 간판 글자가 없는 그림. 원본: assets/maps-src/makepark-hanok·christmas-garden-2390x1792.png)
   // (이전 지도와 개별 장식은 assets/legacy 에 보관만 합니다.)
   defaultSeason: 'christmas',
   seasons: {
     christmas: {
       label: '크리스마스', map: 'assets/maps/makepark-christmas.webp',
       // 땅(길) 지도: 캐릭터가 건물 뒤로 지나갈 때 덮개에서 길 부분을 지우는 데 씀 (tools/build_ground_mask.py)
-      ground: 'assets/maps/makepark-christmas-ground.png',
-      // 이 계절 지도에만 있는 물체(길가 크리스마스트리)는 이 계절에서만 막음. 형식은 아래 walkEdits 와 같음
-      walkEdits: [
-        { op: 'remove', ellipse: { cx: 1042, cy: 312, rx: 18, ry: 20 }, note: '스타 페스티벌 왼쪽 길가 트리' }
-      ]
+      ground: 'assets/maps/makepark-christmas-ground.png'
+      // 이 계절 지도에만 길 위에 놓인 물체가 있으면 walkEdits: [...] 로 이 계절에서만 막을 수 있음(형식은 아래 walkEdits 와 같음)
     },
     normal: { label: '일반', map: 'assets/maps/makepark-normal.webp', ground: 'assets/maps/makepark-normal-ground.png' }
   },
@@ -59,7 +57,7 @@ window.MP_PARK = {
     { id: 'ticket', x: 522, y: 118, w: 170, h: 190, baseY: 305, walkUnder: 0 },
     { id: 'shop', x: 765, y: 228, w: 175, h: 128, baseY: 352, walkUnder: 24 },
     { id: 'cottage-ne', x: 930, y: 212, w: 75, h: 85, baseY: 292, walkUnder: 24 },
-    { id: 'star', x: 1072, y: 262, w: 222, h: 110, baseY: 345, walkUnder: 0 },
+    { id: 'star', x: 1060, y: 240, w: 236, h: 132, baseY: 345, walkUnder: 0 },
     { id: 'melody', x: 170, y: 382, w: 160, h: 170, baseY: 548, walkUnder: 30 },
     { id: 'tent', x: 385, y: 418, w: 120, h: 112, baseY: 528, walkUnder: 30 },
     { id: 'cottage-c', x: 605, y: 340, w: 90, h: 100, baseY: 438, walkUnder: 24 },
@@ -70,9 +68,8 @@ window.MP_PARK = {
     { id: 'cottages-parade', x: 378, y: 596, w: 145, h: 140, baseY: 735, walkUnder: 30 },
     { id: 'arcade', x: 705, y: 686, w: 250, h: 132, baseY: 816, walkUnder: 30 },
     { id: 'ghost', x: 1055, y: 628, w: 205, h: 205, baseY: 832, walkUnder: 30 },
-    { id: 'cottage-s', x: 418, y: 815, w: 115, h: 92, baseY: 900, walkUnder: 24 },
-    // 크리스마스 지도에만 있는 범퍼카 오른쪽 길가 트리: 길을 막지 않고 캐릭터가 트리 뒤로 지나가게 함
-    { id: 'xmas-tree-e', season: 'christmas', x: 1262, y: 486, w: 84, h: 128, baseY: 612, walkUnder: 0 }
+    { id: 'cottage-s', x: 418, y: 815, w: 115, h: 92, baseY: 900, walkUnder: 24 }
+    // 한 계절 지도에만 있는 물체는 season: '<계절>' 을 붙이면 그 계절에서만 씀
   ],
 
   // 공원 중심 장소 (입장 시설 아님)
