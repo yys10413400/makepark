@@ -382,6 +382,7 @@
     if (fid === 'coaster') { var c = s.coaster || {}, st = c.stamps || {}; return !!(c.build && c.build.cleared) || Object.keys(st).some(function (k) { return st[k]; }); }
     if (fid === 'ghost') return !!(s.gate && s.gate.cleared);   // 문지기 게임 혼자 추리하기 본 게임 한 판
     if (fid === 'melody') return !!(s.melody && s.melody.cleared);   // 멜로디 스테이지 댄스 미션 하나 성공
+    if (fid === 'parade') return !!(s.parade && s.parade.cleared);   // 레인보우 퍼레이드 현수막을 꾸며 퍼레이드를 끝까지 한 번
     return false;
   }
   // 받침에 따라 조사 고르기: josa('탐험가', '을', '를') → '탐험가를'
@@ -467,6 +468,7 @@
         ? facilityName(d.facility) + '에서 거북이 역장과 선로 만들기 미션을 하나 끝내면 받을 수 있어요.'
         : d.facility === 'ghost' ? '유령의 집 문지기와 혼자 추리하기 한 판을 끝내면 받을 수 있어요.'
         : d.facility === 'melody' ? '멜로디 스테이지에서 유니콘과 댄스 미션을 하나 성공하면 받을 수 있어요.'
+        : d.facility === 'parade' ? '레인보우 퍼레이드에서 현수막을 꾸며 퍼레이드를 끝까지 한 번 보면 받을 수 있어요.'
         : josa(facilityName(d.facility), '이', '가') + ' 문을 열면 받을 수 있어요.';
       return;
     }

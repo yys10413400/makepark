@@ -177,4 +177,10 @@ body.parade-open #hud, body.parade-open #enterFacility, body.parade-open #chatBa
   background: rgba(255, 250, 244, 0.96); border: 0.25cqw solid #e2b357; box-shadow: 0 0.5cqw 0 rgba(140, 60, 70, 0.3);
 }
 .pr-end-title { margin: 0 0 1cqw; font-size: 2.4cqw; color: #b03c55; }
+.pr-end-reward {
+  margin: -0.3cqw 0 1cqw; padding: 0.5cqw 1.4cqw; border-radius: 99px; font-size: 1.45cqw;
+  background: #fff1c9; color: #8a5a10; border: 0.14cqw solid #e2b357; animation: pr-pop-in 0.4s ease-out;
+}
+.pr-reward-note { margin: 0 0 0.6cqw; font-size: 1.25cqw; color: #a0662a; }
+.pr-reward-note.done { color: #6f9a4e; }
 .pr-end-row { display: flex; gap: 1.2cqw; justify-content: center; }

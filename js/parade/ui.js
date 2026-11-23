@@ -153,6 +153,7 @@
     frame.appendChild(ui.popClose);
     ui.showEnd = el('div', 'pr-end'); ui.showEnd.hidden = true;
     ui.showEnd.appendChild(el('p', 'pr-end-title', '멋진 퍼레이드였어요!'));
+    ui.reward = el('p', 'pr-end-reward'); ui.reward.hidden = true; ui.showEnd.appendChild(ui.reward);
     var er2 = el('div', 'pr-end-row');
     ui.replay = btn('pr-choice', '🔁 다시 보기', function () { playParade(); });
     er2.appendChild(ui.replay);
@@ -180,6 +181,7 @@
     var h = el('h2', 'pr-card-title', '레인보우 퍼레이드'); h.id = 'prStartTitle';
     body.appendChild(h);
     body.appendChild(el('p', 'pr-start-text', RIRI_SAYS));
+    ui.rewardNote = el('p', 'pr-reward-note'); body.appendChild(ui.rewardNote);
     var acts = el('div', 'pr-acts');
     ui.startGo = btn('pr-choice', '🖍️ 현수막 꾸미기', function () { startGame(); });
     acts.appendChild(ui.startGo);
@@ -200,6 +202,9 @@
     S.start = true; S.keys = {}; S.dest = null; S.me.moving = false;
     ui.start.hidden = false; ui.talk.hidden = true; ui.leave.hidden = true; ui.tip.hidden = true;
     drawFace();
+    var done = cleared();
+    ui.rewardNote.textContent = done ? '★ 퍼레이드 고수 캐릭터를 받았어요! 마음껏 또 꾸며 봐요.' : '★ 처음 퍼레이드를 끝까지 보면 ‘퍼레이드 고수’ 캐릭터를 받아요!';
+    ui.rewardNote.classList.toggle('done', done);
     ui.startGo.focus();
   }
   function closeStart() { S.start = false; ui.start.hidden = true; ui.tip.hidden = false; S.keys = {}; }
@@ -417,9 +422,21 @@
   function playParade() {
     ui.showEnd.hidden = true;
     if (!S.show) S.show = window.MPParadeShow.create({ canvas: ui.showCanvas, base: BASE, banner: S.banner,
-      onEnd: function () { ui.showEnd.hidden = false; setTimeout(function () { ui.replay.focus(); }, 30); } });
+      onEnd: function () { onParadeEnd(); } });
     else S.show.setBanner(S.banner);
     S.show.play();
+  }
+  function cleared() { var p = save().parade; return !!(p && p.cleared); }
+  // 퍼레이드를 끝까지 처음 보면 건물 보상 캐릭터 '퍼레이드 고수'(R2, game.js facilityCleared('parade'))
+  function onParadeEnd() {
+    var fresh = !cleared();
+    if (fresh && api()) api().patchSave({ parade: Object.assign({}, save().parade || {}, { cleared: true }) });
+    var got = fresh && cleared();
+    ui.reward.hidden = !fresh;
+    ui.reward.textContent = got ? '★ ‘퍼레이드 고수’ 캐릭터를 받았어요! 공원 위쪽 ‘캐릭터’에서 골라 봐요.'
+      : '이 기기에는 저장할 수 없어서 캐릭터 보상이 남지 않아요.';
+    ui.showEnd.hidden = false;
+    setTimeout(function () { ui.replay.focus(); }, 30);
   }
   function backToDraw() {
     if (S.show) S.show.stop();
