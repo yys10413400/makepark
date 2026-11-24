@@ -99,7 +99,7 @@ window.MP_PARK = {
     { id: 'melody', name: '별소리 음악당', desc: '음악과 공연이 가득한 야외 무대예요.',
       entrance: { x: 250, y: 600 }, radius: 60, pin: { x: 255, y: 461 }, label: { x: 256, y: 480 } },
     { id: 'thrill', name: '콩콩 범퍼카', desc: '수달 연구원 토토와 범퍼카를 몰며 미션을 푸는 범퍼카 연구소예요.',
-      entrance: { x: 995, y: 645 }, radius: 60, pin: { x: 1180, y: 496 }, label: { x: 1180, y: 515 } },
+      entrance: { x: 1188, y: 636 }, radius: 60, pin: { x: 1180, y: 496 }, label: { x: 1180, y: 515 } },
     { id: 'ghost', name: '쉿! 유령의 집', desc: '살금살금, 귀여운 유령들이 사는 집이에요.',
       entrance: { x: 1158, y: 856 }, radius: 60, pin: { x: 1160, y: 761 }, label: { x: 1162, y: 780 } },
     { id: 'arcade', name: '별줍는 오락실', desc: '여러 가지 게임기가 모여 있는 오락실이에요.',
