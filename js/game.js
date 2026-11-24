@@ -1,4 +1,4 @@
-/* 메이크파크 - 공원 이동 / 시설 접근 / 입장 안내 */
+/* 상상마루 - 공원 이동 / 시설 접근 / 입장 안내 */
 (function () {
   'use strict';
   var PARK = window.MP_PARK;
@@ -392,10 +392,10 @@
     var s = readSave() || {};
     if (fid === 'coaster') { var c = s.coaster || {}, st = c.stamps || {}; return !!(c.build && c.build.cleared) || Object.keys(st).some(function (k) { return st[k]; }); }
     if (fid === 'ghost') return !!(s.gate && s.gate.cleared);   // 문지기 게임 혼자 추리하기 본 게임 한 판
-    if (fid === 'melody') return !!(s.melody && s.melody.cleared);   // 멜로디 스테이지 댄스 미션 하나 성공
-    if (fid === 'parade') return !!(s.parade && s.parade.cleared);   // 레인보우 퍼레이드 현수막을 꾸며 퍼레이드를 끝까지 한 번
-    if (fid === 'arcade') return !!(s.arcade && s.arcade.cleared);   // 플레이 아케이드 별빛 팡팡 본게임을 끝까지 한 판
-    if (fid === 'thrill') return !!(s.thrill && s.thrill.cleared);   // 짜릿 어드벤처 토토의 범퍼카 연구소: 어느 학년이든 미션 하나 완료
+    if (fid === 'melody') return !!(s.melody && s.melody.cleared);   // 별소리 음악당 댄스 미션 하나 성공
+    if (fid === 'parade') return !!(s.parade && s.parade.cleared);   // 무지개 행진길 현수막을 꾸며 퍼레이드를 끝까지 한 번
+    if (fid === 'arcade') return !!(s.arcade && s.arcade.cleared);   // 별줍는 오락실 별빛 팡팡 본게임을 끝까지 한 판
+    if (fid === 'thrill') return !!(s.thrill && s.thrill.cleared);   // 콩콩 범퍼카 토토의 범퍼카 연구소: 어느 학년이든 미션 하나 완료
     return false;
   }
   // 받침에 따라 조사 고르기: josa('탐험가', '을', '를') → '탐험가를'
@@ -480,10 +480,10 @@
       ui.charMsg.textContent = d.facility === 'coaster'
         ? facilityName(d.facility) + '에서 거북이 역장과 선로 만들기 미션을 하나 끝내면 받을 수 있어요.'
         : d.facility === 'ghost' ? '유령의 집 문지기와 혼자 추리하기 한 판을 끝내면 받을 수 있어요.'
-        : d.facility === 'melody' ? '멜로디 스테이지에서 유니콘과 댄스 미션을 하나 성공하면 받을 수 있어요.'
-        : d.facility === 'parade' ? '레인보우 퍼레이드에서 현수막을 꾸며 퍼레이드를 끝까지 한 번 보면 받을 수 있어요.'
-        : d.facility === 'arcade' ? '플레이 아케이드에서 별빛 팡팡 30초 본게임을 한 판 끝내면 받을 수 있어요.'
-        : d.facility === 'thrill' ? '짜릿 어드벤처에서 토토와 범퍼카 미션을 하나 끝내면 받을 수 있어요.'
+        : d.facility === 'melody' ? '별소리 음악당에서 유니콘과 댄스 미션을 하나 성공하면 받을 수 있어요.'
+        : d.facility === 'parade' ? '무지개 행진길에서 현수막을 꾸며 퍼레이드를 끝까지 한 번 보면 받을 수 있어요.'
+        : d.facility === 'arcade' ? '별줍는 오락실에서 별빛 팡팡 30초 본게임을 한 판 끝내면 받을 수 있어요.'
+        : d.facility === 'thrill' ? '콩콩 범퍼카에서 토토와 범퍼카 미션을 하나 끝내면 받을 수 있어요.'
         : josa(facilityName(d.facility), '이', '가') + ' 문을 열면 받을 수 있어요.';
       return;
     }
@@ -662,7 +662,7 @@
   function openFacility(f) {
     if (!f || state.modalFacility || state.rideOpen) return;
     stopMoving(); state.keys = {};
-    // 놀이기구 화면이 따로 있는 시설: 코스터 익스프레스(코딩), 유령의 집(문지기의 비밀 규칙), 멜로디 스테이지(댄스·자유 연주), 토리네 도시락(도시락 주문 수학 놀이), 레인보우 퍼레이드(현수막 꾸미기), 플레이 아케이드(별빛 팡팡·캡슐 뽑기), 짜릿 어드벤처(토토의 범퍼카 연구소)
+    // 놀이기구 화면이 따로 있는 시설: 바람 타는 구름열차(코딩), 유령의 집(문지기의 비밀 규칙), 별소리 음악당(댄스·자유 연주), 토리네 도시락(도시락 주문 수학 놀이), 무지개 행진길(현수막 꾸미기), 별줍는 오락실(별빛 팡팡·캡슐 뽑기), 콩콩 범퍼카(토토의 범퍼카 연구소)
     var ride = f.id === 'coaster' ? window.MPCoaster : f.id === 'ghost' ? window.MPGate : f.id === 'melody' ? window.MPMelody : f.id === 'picnic' ? window.MPPicnic : f.id === 'parade' ? window.MPParade : f.id === 'arcade' ? window.MPArcade : f.id === 'thrill' ? window.MPThrill : null;
     if (ride) {
       state.rideOpen = f.id; state.nearby = null; ui.enter.hidden = true;

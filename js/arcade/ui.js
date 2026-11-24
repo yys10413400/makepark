@@ -1,5 +1,5 @@
 /*
- * 플레이 아케이드 — 로비 · 별빛 팡팡 · 캡슐 뽑기
+ * 별줍는 오락실 — 로비 · 별빛 팡팡 · 캡슐 뽑기
  * ------------------------------------------------------------
  * 장면 1 로비(assets/arcade/lobby.webp, 1671×941): 공원 캐릭터로 걸어 다니다
  *        왼쪽 '별빛 팡팡' 오락기 → 별빛 팡팡 창,  오른쪽 캡슐 기계 → 캡슐 뽑기 창
@@ -113,7 +113,7 @@
     var lobby = ui.lobby = el('div', 'ac-lobby');
     lobby.style.backgroundImage = 'url(' + BASE + 'lobby.webp)';
     ui.canvas = el('canvas', 'ac-canvas'); ui.canvas.width = IW; ui.canvas.height = IH;
-    ui.canvas.setAttribute('aria-label', '플레이 아케이드 로비. 방향키나 바닥을 눌러 걸어요');
+    ui.canvas.setAttribute('aria-label', '별줍는 오락실 로비. 방향키나 바닥을 눌러 걸어요');
     ui.canvas.tabIndex = -1;
     lobby.appendChild(ui.canvas);
     // 오락기·캡슐 기계를 바로 누를 수 있는 버튼(화면 읽기 프로그램·키보드용으로도)
@@ -802,7 +802,7 @@
     var a = arcadeData();
     if (!a.welcome) {
       a.welcome = true; a.coupons += 1; writeArcade(a);
-      lobbyToast('🎫 플레이 아케이드 첫 방문 선물! 쿠폰 1장을 받았어요');
+      lobbyToast('🎫 별줍는 오락실 첫 방문 선물! 쿠폰 1장을 받았어요');
       showCoupons(true);
     } else showCoupons();
     S.last = performance.now();

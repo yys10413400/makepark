@@ -1,5 +1,5 @@
 /*
- * 메이크파크 함께하기 — 학생 쪽 (공원에서 다른 친구 보기, 선생님 명령 받기)
+ * 상상마루 함께하기 — 학생 쪽 (공원에서 다른 친구 보기, 선생님 명령 받기)
  * ------------------------------------------------------------
  * 입장 흐름: 첫 화면(닉네임·학년) → '어디로 갈까요?' 창(반 코드 입장 / 혼자 둘러보기) → (처음이면 캐릭터 고르기) → 공원
  * 공원에서: 같은 반 친구들이 자기 캐릭터로 걸어 다니고 머리 위에 닉네임이 보임. 놀이기구 안에 있는 친구는 공원에서 안 보임.
@@ -16,7 +16,7 @@
   if (!NET) return;
   var SEND_MS = 200, BEAT_MS = 3000;   // 움직일 때 1초에 5번, 가만히 있으면 3초마다
   var GATHER = { x: 690, y: 600 };      // 모두 모으기: 분수 광장 앞
-  var WHERE = { coaster: '코스터 익스프레스', ghost: '유령의 집', melody: '멜로디 스테이지', picnic: '토리네 도시락' };
+  var WHERE = { coaster: '바람 타는 구름열차', ghost: '쉿! 유령의 집', melody: '별소리 음악당', picnic: '토리네 도시락' };
 
   var S = { code: null, handle: null, pid: null, others: {}, last: null, lastSend: 0, joinedAt: 0, mySay: null, chatOff: false, lastSay: 0 };
   // 보낼 수 있는 말(번호로만 주고받음 — 번호를 바꾸면 예전 기기와 뜻이 달라지므로 끝에만 더하기)
@@ -54,7 +54,7 @@
     ui.go = el('button', 'join-btn', '입장하기'); ui.go.type = 'submit'; row.appendChild(ui.go);
     ui.solo = el('button', 'join-btn light', '혼자 둘러보기'); ui.solo.type = 'button'; row.appendChild(ui.solo);
     p.appendChild(row);
-    // 선생님 화면은 따로 설치하는 '메이크파크 선생님' 앱(teacher.html) — 학생 앱에는 링크를 두지 않음
+    // 선생님 화면은 따로 설치하는 '상상마루 선생님' 앱(teacher.html) — 학생 앱에는 링크를 두지 않음
     if (NET.mode === 'local') p.appendChild(el('p', 'join-mode', '시험 모드: 이 컴퓨터의 다른 탭끼리만 함께 보여요.'));
     ui.back = el('button', 'join-back', '← 뒤로'); ui.back.type = 'button'; p.appendChild(ui.back);
     wrap.appendChild(p);

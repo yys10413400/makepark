@@ -1,5 +1,5 @@
 /*
- * 메이크파크 지도 이름표
+ * 상상마루 지도 이름표
  * ------------------------------------------------------------
  * 지도 그림에는 간판 글자가 없으므로, 시설·광장 이름을 둥근 이름표로 지도 위에 그립니다.
  * 위치: js/data/park-data.js 의 facilities[].label, landmarks[].label (지도 좌표, 이름표 가운데)
@@ -10,8 +10,9 @@
  */
 (function () {
   'use strict';
-  var FONT = "Jua, 'Apple SD Gothic Neo', 'Malgun Gothic', sans-serif";
-  var BASE = 14;        // 글자 크기(지도 좌표). 화면에서 이보다 작아지지 않게 아래 MIN_PX 로 키움
+  // 간판 글씨: 궁서체 느낌의 얇은 붓글씨 명조(Song Myung, index.html 에서 받음)
+  var FONT = "'Song Myung', Gungsuh, '궁서', Batang, serif";
+  var BASE = 15;        // 글자 크기(지도 좌표). 화면에서 이보다 작아지지 않게 아래 MIN_PX 로 키움
   var MIN_PX = 11;      // 전체 지도처럼 멀리 볼 때도 글자가 이 크기(화면 px) 밑으로 작아지지 않게
   var cache = { key: '', list: [] }, fontOk = false;
 
@@ -53,7 +54,7 @@
     roundRect(c, 0, 0, w, h, h / 2.2); c.fill();
     c.lineWidth = Math.max(1.2, fs * 0.1); c.strokeStyle = '#a0682f'; c.stroke();
     c.font = fs + 'px ' + FONT; c.textAlign = 'center'; c.textBaseline = 'middle';
-    c.fillStyle = '#3b2a1e';
+    c.fillStyle = '#2e1d12';
     c.fillText(name, w / 2, h / 2 + fs * 0.04);
     return { cv: cv, w: w + pad * 2, h: h + sh + pad * 2, ox: w / 2 + pad, oy: h / 2 + pad };
   }
@@ -63,8 +64,16 @@
     var fs = Math.max(BASE, MIN_PX / scale);
     // 화면 점 배율을 4단계 정도로 묶어 다시 그리는 횟수를 줄임(확대·축소 움직임 중에도 가볍게)
     var px = Math.max(0.5, Math.round(scale * (dpr || 1) * 4) / 4);
-    // 글꼴(Jua)이 준비됐는지는 준비될 때까지만 물어봄(준비되면 이름표를 한 번 다시 그림)
-    if (!fontOk) fontOk = !document.fonts || document.fonts.check('14px Jua');
+    // 글꼴(Song Myung)이 준비됐는지는 준비될 때까지만 물어봄(준비되면 이름표를 한 번 다시 그림)
+    // (한글 웹글꼴은 글자 묶음별로 나눠 받으므로, 이름표에 쓰는 글자를 넣어 받고 받은 뒤에 다시 그림)
+    if (!fontOk) {
+      if (!document.fonts) fontOk = true;
+      else if (!draw.asked) {
+        draw.asked = true;
+        var text = items(park, season).map(function (it) { return it.name; }).join('') + '트리분수광장';
+        document.fonts.load("14px 'Song Myung'", text).then(function () { fontOk = true; }, function () { fontOk = true; });
+      }
+    }
     var fontReady = fontOk;
     var key = season + '|' + fs.toFixed(1) + '|' + px + '|' + fontReady;
     if (cache.key !== key) {

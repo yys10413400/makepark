@@ -1,8 +1,8 @@
 {
   "id": "./teacher.html?app=teacher",
-  "name": "메이크파크 선생님",
-  "short_name": "메이크파크 선생님",
-  "description": "메이크파크 반 공원 만들기와 관리(학생 위치·모두 모으기·학생 기록).",
+  "name": "상상마루 선생님",
+  "short_name": "상상마루 선생님",
+  "description": "상상마루 반 공원 만들기와 관리(학생 위치·모두 모으기·학생 기록).",
   "lang": "ko",
   "start_url": "./teacher.html?app=teacher",
   "scope": "./",

@@ -1,5 +1,5 @@
 /*
- * 멜로디 스테이지 화면
+ * 별소리 음악당 화면
  * ------------------------------------------------------------
  * 장면 1 대기 공간(assets/melody/stage.webp): 공원 캐릭터로 걸어 다니다 무대 위 유니콘에게 '말 걸기' → 학년·모드 고르기
  * 장면 2 댄스 미션: 유니콘 시범 → 4박 카운트다운 → 따라 하기(←·→·↑·Space 또는 터치 버튼) × 3세트 → 결과
@@ -187,7 +187,7 @@
   function buildLobby(st) {
     var lobby = ui.lobby = el('div', 'ml-scene ml-lobby');
     ui.canvas = el('canvas', 'ml-canvas'); ui.canvas.width = IW; ui.canvas.height = IH;
-    ui.canvas.setAttribute('aria-label', '멜로디 스테이지 앞 광장. 방향키나 바닥을 눌러 걸어요');
+    ui.canvas.setAttribute('aria-label', '별소리 음악당 앞 광장. 방향키나 바닥을 눌러 걸어요');
     lobby.appendChild(ui.canvas);
     ui.npcName = el('p', 'ml-npc-name', '멜로디 유니콘');
     ui.npcName.style.left = pct(NPC.x, IW); ui.npcName.style.top = pct(NPC.y - NPC.size * 0.98, IH);

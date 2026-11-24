@@ -3,17 +3,17 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
-  <title>메이크파크</title>
+  <title>상상마루</title>
   <link rel="manifest" href="student.webmanifest">
   <meta name="theme-color" content="#6a3d9a">
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-capable" content="yes">
-  <meta name="apple-mobile-web-app-title" content="메이크파크">
+  <meta name="apple-mobile-web-app-title" content="상상마루">
   <link rel="apple-touch-icon" href="assets/icons/student-apple-180.png">
   <link rel="icon" type="image/png" href="assets/icons/student-192.png">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Jua&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Jua&family=Song+Myung&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="css/style.css">
   <link rel="stylesheet" href="css/coaster.css">
   <link rel="stylesheet" href="css/gatekeeper.css">
@@ -30,7 +30,7 @@
 </head>
 <body>
   <div id="app">
-    <canvas id="stage" aria-label="메이크파크 공원 지도"></canvas>
+    <canvas id="stage" aria-label="상상마루 공원 지도"></canvas>
 
     <!-- 앱으로 설치(브라우저가 설치할 수 있다고 알려 줄 때만 보임, js/pwa.js) -->
     <button id="installApp" class="install-app" type="button" hidden>📲 앱으로 설치</button>
@@ -38,7 +38,7 @@
     <section id="title" class="entry-overlay title-screen">
       <form id="titleForm" class="title-card" autocomplete="off" novalidate>
         <p class="title-kicker">어서 와요!</p>
-        <h1 class="title-name">메이크파크</h1>
+        <h1 class="title-name">상상마루</h1>
         <p class="title-sub">닉네임과 학년을 고르면 공원에 들어가요</p>
         <p id="welcomeBack" class="entry-welcome" hidden></p>
 
@@ -100,22 +100,22 @@
     <section id="coaster" class="coaster-overlay" hidden aria-label="코스터역 — 블록으로 선로 만들기"></section>
 
     <!-- 유령의 집: 문지기의 비밀 규칙 (화면은 js/gatekeeper/ui.js 가 만듦) -->
-    <section id="gatekeeper" class="gk-overlay" hidden aria-label="유령의 집 — 문지기의 비밀 규칙"></section>
+    <section id="gatekeeper" class="gk-overlay" hidden aria-label="쉿! 유령의 집 — 문지기의 비밀 규칙"></section>
 
-    <!-- 멜로디 스테이지: 댄스 미션·자유 연주 (화면은 js/melody/ui.js 가 만듦) -->
-    <section id="melody" class="ml-overlay" hidden aria-label="멜로디 스테이지 — 댄스 미션과 자유 연주"></section>
+    <!-- 별소리 음악당: 댄스 미션·자유 연주 (화면은 js/melody/ui.js 가 만듦) -->
+    <section id="melody" class="ml-overlay" hidden aria-label="별소리 음악당 — 댄스 미션과 자유 연주"></section>
 
     <!-- 토리네 도시락: 도시락 주문 수학 놀이 (예전 매표소 자리, 화면은 js/picnic/ui.js 가 만듦) -->
     <section id="picnic" class="pc-overlay" hidden aria-label="토리네 도시락"></section>
 
-    <!-- 레인보우 퍼레이드: 대기실 걷기·리리에게 말 걸기 → 현수막 꾸미기 → 퍼레이드 팝업. 화면은 js/parade/ui.js 가 만듦 -->
-    <section id="parade" class="pr-overlay" hidden aria-label="레인보우 퍼레이드"></section>
+    <!-- 무지개 행진길: 대기실 걷기·리리에게 말 걸기 → 현수막 꾸미기 → 퍼레이드 팝업. 화면은 js/parade/ui.js 가 만듦 -->
+    <section id="parade" class="pr-overlay" hidden aria-label="무지개 행진길"></section>
 
-    <!-- 플레이 아케이드: 로비 걷기 → 별빛 팡팡(오른손·방향키로 별 받기) · 캡슐 뽑기. 화면은 js/arcade/ui.js 가 만듦 -->
-    <section id="arcade" class="ac-overlay" hidden aria-label="플레이 아케이드"></section>
+    <!-- 별줍는 오락실: 로비 걷기 → 별빛 팡팡(오른손·방향키로 별 받기) · 캡슐 뽑기. 화면은 js/arcade/ui.js 가 만듦 -->
+    <section id="arcade" class="ac-overlay" hidden aria-label="별줍는 오락실"></section>
 
-    <!-- 짜릿 어드벤처: 토토의 범퍼카 연구소 — 광장 걷기·토토에게 말 걸기 → 학년 → 범퍼카 미션. 화면은 js/thrill/ui.js 가 만듦 -->
-    <section id="thrill" class="th-overlay" hidden aria-label="짜릿 어드벤처 — 토토의 범퍼카 연구소"></section>
+    <!-- 콩콩 범퍼카: 토토의 범퍼카 연구소 — 광장 걷기·토토에게 말 걸기 → 학년 → 범퍼카 미션. 화면은 js/thrill/ui.js 가 만듦 -->
+    <section id="thrill" class="th-overlay" hidden aria-label="콩콩 범퍼카 — 토토의 범퍼카 연구소"></section>
 
     <!-- 게임 화면 UI -->
     <div id="hud" hidden>

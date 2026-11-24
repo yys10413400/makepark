@@ -1,5 +1,5 @@
 /*
- * 메이크파크 캐릭터 (완성형 캐릭터 고르기)
+ * 상상마루 캐릭터 (완성형 캐릭터 고르기)
  * ------------------------------------------------------------
  * 그림: assets/characters/<id>.webp (tools/build_characters.py 가 제미나이 원본에서 만듦)
  *       칸 위치·발 기준점: js/data/character-sprites.js (window.MP_CHAR_SPRITES)
@@ -10,7 +10,7 @@
  * 캐릭터 종류
  *  free   : 처음부터 고를 수 있음 (기본 남자아이 F1, 기본 여자아이 F2)
  *  reward : 그 건물(스테이지)을 통과하면 받음. 남자아이(b)·여자아이(g) 두 그림 중 내 성별 쪽을 씀
- *  shop   : 기념품 가게 티켓으로 삼
+ *  shop   : 추억 상점 티켓으로 삼
  */
 (function () {
   'use strict';

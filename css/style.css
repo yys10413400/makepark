@@ -22,6 +22,8 @@
   --mint: #4fbfa8;
   --sky: #dff1ff;
   --font: 'Jua', 'Apple SD Gothic Neo', 'Malgun Gothic', system-ui, sans-serif;
+  /* 간판 글씨: 궁서체 느낌의 얇은 붓글씨 명조(Song Myung). 지도 이름표·입장 버튼 이름·제목 */
+  --font-sign: 'Song Myung', 'Gungsuh', '궁서', 'Batang', serif;
 }
 
 * { box-sizing: border-box; }
@@ -86,7 +88,7 @@ html, body {
   padding: 10px 28px 12px; min-width: 220px; animation: pop 0.25s ease-out;
 }
 .enter-btn:active { transform: translateX(-50%) translateY(2px); }
-.enter-name { font-size: 16px; opacity: 0.92; }
+.enter-name { font-family: var(--font-sign); font-size: 19px; opacity: 0.92; }
 .enter-label { font-size: 24px; }
 kbd {
   font: inherit; font-size: 13px; background: rgba(255,255,255,0.25); border-radius: 6px;

@@ -1,6 +1,6 @@
 /* ---------- 첫 입장 화면 ----------
-   배경: 메이크파크 정문 그림(assets/ui/title-bg.webp)을 화면에 꽉 차게.
-   입장 창: 레인보우 퍼레이드 시작 창(css/parade.css .pr-card)과 같은 모양
+   배경: 상상마루 정문 그림(assets/ui/title-bg.webp)을 화면에 꽉 차게.
+   입장 창: 무지개 행진길 시작 창(css/parade.css .pr-card)과 같은 모양
      크림색 판 + 겨자색 굵은 테두리 + 아래로 진한 그림자, 라즈베리색 제목과 버튼.
    css/style.css 의 예전 입장 화면 규칙(.entry-panel·.entry-main)은 이 카드에 쓰지 않음(클래스가 다름).
    입력칸·학년 버튼·출발 버튼의 기본 동작은 style.css 것을 쓰고, 여기서 카드 안 모양만 덮어씀. */
@@ -17,7 +17,7 @@
   box-shadow: 0 8px 0 rgba(110, 40, 50, 0.45), 0 14px 30px rgba(60, 20, 30, 0.18);
 }
 .title-kicker { margin: 0; font-size: 16px; color: #b0743a; }
-.title-name { margin: 2px 0 0; font-weight: 400; font-size: 38px; line-height: 1.1; color: #b03c55; }
+.title-name { margin: 2px 0 0; font-family: var(--font-sign); font-weight: 400; font-size: 38px; line-height: 1.1; color: #b03c55; }
 .title-sub { margin: 6px 0 0; font-size: 16px; line-height: 1.4; color: #4a1f27; }
 .title-card .entry-welcome { margin: 6px 0 0; font-size: 15px; color: #b0743a; }
 

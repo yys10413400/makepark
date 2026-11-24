@@ -1,5 +1,5 @@
 /*
- * 메이크파크 선생님 화면 (teacher.html)
+ * 상상마루 선생님 화면 (teacher.html)
  * 1) 선생님 로그인: Firebase 는 구글 계정(어느 컴퓨터에서든 같은 선생님), 시험 모드는 이름만(이 컴퓨터 안에서)
  * 2) 내 반 목록: 여러 학교·여러 반을 이름을 붙여 만들고, 눌러서 열기 / 새 반 만들기 / 예전 반 코드로 열기
  * 3) 반 관리: 반 코드, 지금 들어온 학생(목록·지도 위치), 모두 모으기·내보내기·공원 닫기,
@@ -11,7 +11,7 @@
   var NET = window.MPNet, PARK = window.MP_PARK;
   var $ = function (id) { return document.getElementById(id); };
   var S = { user: null, code: null, meta: null, handle: null, players: {}, owner: false };
-  var WHERE = { park: '공원', coaster: '코스터 익스프레스', ghost: '유령의 집', melody: '멜로디 스테이지', picnic: '토리네 도시락' };
+  var WHERE = { park: '공원', coaster: '바람 타는 구름열차', ghost: '쉿! 유령의 집', melody: '별소리 음악당', picnic: '토리네 도시락' };
   function msg(id, text) { $(id).textContent = text || ''; }
 
   // 화면 안 확인창: 브라우저의 confirm·prompt·alert 는 '이 페이지의 대화상자 막기'를 한 번 체크하면

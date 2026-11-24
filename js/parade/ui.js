@@ -1,5 +1,5 @@
 /*
- * 레인보우 퍼레이드 화면
+ * 무지개 행진길 화면
  * ------------------------------------------------------------
  * 장면 1 대기실(assets/parade/lobby.webp): 공원 캐릭터로 바닥을 걸어 다니다 공작새 리리에게 '말 걸기'
  *        → 시작 창('현수막 꾸미기' · '나중에 할래'). 가까이 가면 리리가 인사하고 꼬리를 펼침
@@ -69,7 +69,7 @@
     var lobby = ui.lobby = el('div', 'pr-scene pr-lobby');
     lobby.style.backgroundImage = 'url(' + BASE + 'lobby.webp)';
     ui.canvas = el('canvas', 'pr-canvas'); ui.canvas.width = IW; ui.canvas.height = IH;
-    ui.canvas.setAttribute('aria-label', '레인보우 퍼레이드 대기실. 방향키나 화면을 눌러 걸어요');
+    ui.canvas.setAttribute('aria-label', '무지개 행진길 대기실. 방향키나 화면을 눌러 걸어요');
     lobby.appendChild(ui.canvas);
     ui.talk = btn('pr-prompt', '', function () { openStart(); });
     ui.talk.innerHTML = '말 걸기 <kbd>스페이스</kbd>'; ui.talk.hidden = true;
@@ -145,7 +145,7 @@
 
     // 퍼레이드 팝업(꾸미기 화면 위에 뜸)
     ui.pop = el('div', 'pr-modal pr-pop'); ui.pop.hidden = true;
-    var frame = el('div', 'pr-pop-frame'); frame.setAttribute('role', 'dialog'); frame.setAttribute('aria-modal', 'true'); frame.setAttribute('aria-label', '레인보우 퍼레이드');
+    var frame = el('div', 'pr-pop-frame'); frame.setAttribute('role', 'dialog'); frame.setAttribute('aria-modal', 'true'); frame.setAttribute('aria-label', '무지개 행진길');
     ui.showCanvas = el('canvas', 'pr-pop-canvas'); ui.showCanvas.setAttribute('aria-label', '리리, 모모와 루루가 내 현수막을 들고 행진해요');
     frame.appendChild(ui.showCanvas);
     ui.popClose = btn('pr-pop-x', '✕', function () { backToDraw(); });
@@ -178,7 +178,7 @@
     c.appendChild(face);
     var body = el('div', 'pr-start-body');
     body.appendChild(el('p', 'pr-start-name', '공작새 리리'));
-    var h = el('h2', 'pr-card-title', '레인보우 퍼레이드'); h.id = 'prStartTitle';
+    var h = el('h2', 'pr-card-title', '무지개 행진길'); h.id = 'prStartTitle';
     body.appendChild(h);
     body.appendChild(el('p', 'pr-start-text', RIRI_SAYS));
     ui.rewardNote = el('p', 'pr-reward-note'); body.appendChild(ui.rewardNote);
