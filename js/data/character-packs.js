@@ -1,7 +1,9 @@
 /*
  * 걷기 그림 팩(walk.json + PNG) ↔ 게임 캐릭터 연결표
  * ------------------------------------------------------------
- * 팩마다 폴더가 따로 있음: assets/characters/packs/<팩>/walk.json, <texture>.png
+ * 팩마다 폴더가 따로 있음: 원본 assets/characters-src/packs/<팩>/walk.json, <texture>.png
+ *  게임용 assets/characters/packs/<팩>/ (tools/build_pack_web.py): walk.json, 원본과 칸 배치가 똑같은 <texture>.webp,
+ *  고르기 화면 카드 cards/<캐릭터>.webp. 지도에는 .webp 에서 한 칸만 잘라 그림
  *  walk.json: 칸 224x320, 12열 x 4줄(front·left·right·back), 80ms, 발 기준점 (112, 294)
  * 게임 그림 id(기본 F1·F2, 보상 캐릭터 R<n> + 남 b / 여 g)는 그대로 두고, 아래 표로 팩 캐릭터 id 에 하나씩 직접 연결합니다.
  * (목록 순서·파일 이름 검색·성별로 짐작해서 연결하지 않음. star ≠ star-girl, flute ≠ flute-boy 는 서로 다른 캐릭터)
@@ -13,7 +15,8 @@ window.MP_CHAR_PACKS = {
   packs: {
     'hanbok-basic': { dir: 'assets/characters/packs/hanbok-basic/', bodyPx: 276 },
     'hanbok-nine': { dir: 'assets/characters/packs/hanbok-nine/', bodyPx: 276 },
-    'star-flute-sogo': { dir: 'assets/characters/packs/star-flute-sogo/', bodyPx: 276 }
+    'star-flute-sogo': { dir: 'assets/characters/packs/star-flute-sogo/', bodyPx: 276 },
+    'park-trio': { dir: 'assets/characters/packs/park-trio/', bodyPx: 276 }
   },
   // 게임 그림 id: [팩, walk.json 의 캐릭터 id, 고르기 화면 이름]
   map: {
@@ -25,6 +28,9 @@ window.MP_CHAR_PACKS = {
     R2g: ['hanbok-nine', 'rainbow-drum-girl', '무지개 북 소녀'],
     R3b: ['hanbok-nine', 'flute-boy', '피리 소년'],
     R3g: ['star-flute-sogo', 'flute', '피리 소녀'],
+    R4b: ['park-trio', 'lightning', '번개 소년'],
+    R5g: ['park-trio', 'lantern', '등불 소녀'],
+    R6b: ['park-trio', 'coin', '동전 소년'],
     R7b: ['star-flute-sogo', 'star', '별 소년'],
     R7g: ['hanbok-nine', 'star-girl', '별마당 소녀'],
     R8b: ['hanbok-nine', 'lunchbox-boy', '도시락 소년'],
@@ -46,6 +52,9 @@ window.MP_CHAR_PACKS = {
     'hanbok-nine/flower-charm-boy': { front: 11, left: 10, right: 4, back: 8 },
     'star-flute-sogo/star': { front: 5, left: 10, right: 4, back: 2 },
     'star-flute-sogo/flute': { front: 11, left: 0, right: 0, back: 2 },
-    'star-flute-sogo/sogo': { front: 5, left: 10, right: 4, back: 2 }
+    'star-flute-sogo/sogo': { front: 5, left: 10, right: 4, back: 2 },
+    'park-trio/coin': { front: 5, left: 3, right: 4, back: 8 },
+    'park-trio/lantern': { front: 11, left: 10, right: 4, back: 8 },
+    'park-trio/lightning': { front: 5, left: 3, right: 4, back: 2 }
   }
 };

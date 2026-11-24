@@ -1,0 +1,95 @@
+{
+  "frameWidth": 224,
+  "frameHeight": 320,
+  "columns": 12,
+  "rows": 4,
+  "frameDurationMs": 80,
+  "loop": true,
+  "anchorPixels": {
+    "x": 112,
+    "y": 294
+  },
+  "directions": [
+    "front",
+    "left",
+    "right",
+    "back"
+  ],
+  "characters": {
+    "coin": {
+      "texture": "coin-walk.png",
+      "animations": {
+        "front": {
+          "row": 0,
+          "firstColumn": 0,
+          "frameCount": 12
+        },
+        "left": {
+          "row": 1,
+          "firstColumn": 0,
+          "frameCount": 12
+        },
+        "right": {
+          "row": 2,
+          "firstColumn": 0,
+          "frameCount": 12
+        },
+        "back": {
+          "row": 3,
+          "firstColumn": 0,
+          "frameCount": 12
+        }
+      }
+    },
+    "lantern": {
+      "texture": "lantern-walk.png",
+      "animations": {
+        "front": {
+          "row": 0,
+          "firstColumn": 0,
+          "frameCount": 12
+        },
+        "left": {
+          "row": 1,
+          "firstColumn": 0,
+          "frameCount": 12
+        },
+        "right": {
+          "row": 2,
+          "firstColumn": 0,
+          "frameCount": 12
+        },
+        "back": {
+          "row": 3,
+          "firstColumn": 0,
+          "frameCount": 12
+        }
+      }
+    },
+    "lightning": {
+      "texture": "lightning-walk.png",
+      "animations": {
+        "front": {
+          "row": 0,
+          "firstColumn": 0,
+          "frameCount": 12
+        },
+        "left": {
+          "row": 1,
+          "firstColumn": 0,
+          "frameCount": 12
+        },
+        "right": {
+          "row": 2,
+          "firstColumn": 0,
+          "frameCount": 12
+        },
+        "back": {
+          "row": 3,
+          "firstColumn": 0,
+          "frameCount": 12
+        }
+      }
+    }
+  }
+}

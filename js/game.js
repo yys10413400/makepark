@@ -460,17 +460,19 @@
   }
   function drawCard(cv, sid, locked) {
     var g = cv.getContext('2d');
+    // 걷기 그림 팩 캐릭터는 카드용 작은 그림만 받음(큰 걷기 그림 17장을 한꺼번에 받으면 게임이 느려짐)
+    var thumb = MPChars.isPack && MPChars.isPack(sid);
     function paint() {
       g.clearRect(0, 0, cv.width, cv.height);
       if (locked) g.filter = 'grayscale(1) opacity(0.5)';
-      var ok = MPChars.drawSprite(g, sid, cv.width / 2, cv.height - 6, 'down', 84);
+      var ok = thumb ? MPChars.drawThumb(g, sid, cv.width / 2, cv.height - 6, 84) : MPChars.drawSprite(g, sid, cv.width / 2, cv.height - 6, 'down', 84);
       g.filter = 'none';
       return ok;
     }
     // 걷기 GIF 그림이 있으면 그것까지 받아진 뒤 다시 그림(처음엔 예전 그림이 잠깐 보일 수 있음)
-    var ae = MPChars.loadAnim ? MPChars.loadAnim(sid) : null;
+    var ae = thumb ? MPChars.loadThumb(sid) : MPChars.loadAnim ? MPChars.loadAnim(sid) : null;
     if (paint() && (!ae || ae.ok)) return;
-    var e = MPChars.load(sid), tries = 0;
+    var e = thumb ? ae : MPChars.load(sid), tries = 0;
     (function wait() { if ((ae ? ae.ok || ae.done : e.done) || tries++ > 400) paint(); else setTimeout(wait, 60); })();
   }
   // gender: 보상 캐릭터는 누른 카드(남/여), 기본은 그 캐릭터의 성별, 가게 캐릭터는 지금 성별 그대로

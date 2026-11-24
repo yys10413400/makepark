@@ -86,7 +86,8 @@
       e.started = true;
       e.ch = pi.info.characters[m[1]] || null;
       if (!e.ch) { e.imgDone = true; console.error('walk.json 에 없는 캐릭터예요: ' + m[0] + '/' + m[1]); }
-      else e.img.src = PK.packs[m[0]].dir + e.ch.texture;
+      // 원본 texture(PNG)와 크기·칸 배치가 똑같은 WebP 를 받음(tools/build_pack_web.py, 약 1/4 크기)
+      else e.img.src = PK.packs[m[0]].dir + e.ch.texture.replace(/\.png$/i, '.webp') + (window.MP_CHAR_VER ? '?v=' + window.MP_CHAR_VER : '');
     } else if (!e.started && !pi.done && !e.waiting) {
       // walk.json 을 받는 대로 PNG 도 받기 시작
       e.waiting = true;
@@ -112,6 +113,26 @@
   function packWalkCol(sid, ms) {
     var e = loadPack(sid), info = packInfo[PK.map[sid][0]].info;
     return Math.floor(ms / (info.frameDurationMs || 80));
+  }
+  // 고르기 화면 카드: 큰 걷기 그림 대신 앞모습 서 있기 한 칸을 절반 크기로 만든 작은 그림(cards/<캐릭터>.webp)
+  var thumbs = {};
+  function loadThumb(sid) {
+    var e = thumbs[sid];
+    if (e) return e;
+    var m = PK.map[sid];
+    e = thumbs[sid] = { img: new Image(), ok: false, done: false };
+    e.img.onload = function () { e.ok = e.done = true; };
+    e.img.onerror = function () { e.done = true; console.error('카드 그림을 불러오지 못했어요: ' + sid); };
+    e.img.src = PK.packs[m[0]].dir + 'cards/' + m[1] + '.webp' + (window.MP_CHAR_VER ? '?v=' + window.MP_CHAR_VER : '');
+    return e;
+  }
+  // (x, y) = 발 위치, h = 몸 키. 카드 그림은 224x320 칸의 절반이라 기준점(112, 294)도 절반
+  function drawThumb(ctx, sid, x, y, h) {
+    var e = loadThumb(sid);
+    if (!e.ok) return false;
+    var m = PK.map[sid], b = PK.packs[m[0]].bodyPx / 2, w = e.img.naturalWidth, hh = e.img.naturalHeight, s = h / b;
+    ctx.drawImage(e.img, 0, 0, w, hh, x - (w / 2) * s, y - (294 / 2) * s, w * s, hh * s);
+    return true;
   }
   // 고르기 화면 이름(팩 캐릭터는 그 캐릭터 이름)
   function spriteName(sid) { return PK.map[sid] ? PK.map[sid][2] : null; }
@@ -271,6 +292,6 @@
 
   window.MPChars = {
     ROSTER: ROSTER, byId: function (id) { return BY_ID[id] || null; },
-    spriteId: spriteId, spriteName: spriteName, isPack: isPack, load: load, loadAnim: loadAnim, drawSprite: drawSprite, drawAnim: drawAnim, Walker: Walker, BODY_H: BODY_H, DRAW_H: DRAW_H
+    spriteId: spriteId, spriteName: spriteName, isPack: isPack, loadThumb: loadThumb, drawThumb: drawThumb, load: load, loadAnim: loadAnim, drawSprite: drawSprite, drawAnim: drawAnim, Walker: Walker, BODY_H: BODY_H, DRAW_H: DRAW_H
   };
 })();
