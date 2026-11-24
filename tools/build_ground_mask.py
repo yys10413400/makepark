@@ -64,6 +64,24 @@ def best_shift(a, b, r=6):
     return best[1], best[2]
 
 
+def floor_edits(g, k):
+    """park-data.js walkEdits 중 floor: true 인 것(길 색은 아니지만 바닥인 곳)을 적힌 순서대로 땅 지도에 반영"""
+    t = open(ROOT + 'js/data/park-data.js', encoding='utf8').read()
+    H, W = g.shape
+    yy, xx = np.mgrid[0:H, 0:W]
+    xx = (xx + 0.5) / k; yy = (yy + 0.5) / k
+    num = r'(-?[\d.]+)'
+    for m in re.finditer(r"\{ op: '(add|remove)', (rect|ellipse): \{([^}]*)\}, floor: true", t):
+        op, kind, body = m.groups()
+        v = dict((a, float(b)) for a, b in re.findall(r'(\w+):\s*' + num, body))
+        if kind == 'rect':
+            hit = (xx >= v['x']) & (xx < v['x'] + v['w']) & (yy >= v['y']) & (yy < v['y'] + v['h'])
+        else:
+            hit = ((xx - v['cx']) / v['rx']) ** 2 + ((yy - v['cy']) / v['ry']) ** 2 <= 1
+        g[hit] = op == 'add'
+    return g
+
+
 def save(g, path):
     # 길 = 불투명(알파 255), 나머지 = 투명. 게임은 이 그림을 destination-out 으로 덮어 길 부분을 지움
     a = (g * 255).astype(np.uint8)
@@ -74,7 +92,7 @@ def main():
     n = np.array(Image.open(ROOT + MAPS['normal']).convert('RGB')).astype(float)
     k = round(n.shape[1] / 1448)
     g = ground_from_normal(n, k)
-    save(g, ROOT + 'assets/maps/makepark-normal-ground.png')
+    save(floor_edits(g.copy(), k), ROOT + 'assets/maps/makepark-normal-ground.png')
     print('normal ground', round(g.mean() * 100, 1), '%')
     for season, path in MAPS.items():
         if season == 'normal':
@@ -93,7 +111,7 @@ def main():
         obj = ndimage.binary_fill_holes(ndimage.binary_dilation(big[lab], iterations=2 * k))
         gs = gs & ~obj
         print(season, 'objects on path', int(big.sum()))
-        save(gs, ROOT + 'assets/maps/makepark-%s-ground.png' % season)
+        save(floor_edits(gs, k), ROOT + 'assets/maps/makepark-%s-ground.png' % season)
         print(season, 'shift from normal', dx, dy)
 
 

@@ -32,6 +32,7 @@ window.MP_PARK = {
   // 이동 가능 영역 = 두 지도 공통 자동 추출 격자(walkmask.js) + 건물 뒤 공간(occluders.walkUnder) + 아래 수정
   //   → 시작점과 연결된 칸만 사용
   // add: 이동 가능하게 추가, remove: 막기.  rect = {x,y,w,h}, ellipse = {cx,cy,rx,ry}
+  // floor: true = 길 색은 아니지만 바닥인 곳(분수 돌바닥 등). tools/build_ground_mask.py 가 땅 지도에도 같은 순서로 반영함
   walkEdits: [
     // 정문 탑: 위쪽(지붕·몸통)은 그 뒤로 지나갈 수 있게 열고(탑 그림이 캐릭터를 가림), 땅에 닿는 받침만 막음
     { op: 'add', rect: { x: 600, y: 860, w: 62, h: 140 }, note: '정문 왼쪽 탑 뒤(가려지는 길) — 화단과 탑 사이가 좁아 못 지나가던 문제' },
@@ -42,10 +43,15 @@ window.MP_PARK = {
     { op: 'add', rect: { x: 515, y: 150, w: 185, h: 72 }, note: '매표소 뒤로 지나가는 길(건물에 가려진 부분)' },
     { op: 'add', rect: { x: 1035, y: 150, w: 175, h: 42 }, note: '마이파크 문 뒤로 지나가는 길' },
     { op: 'add', rect: { x: 1178, y: 78, w: 46, h: 86 }, note: '강 위쪽 돌다리(강 건너 북쪽 광장으로)' },
-    { op: 'add', rect: { x: 1088, y: 78, w: 180, h: 12 }, note: '돌다리 위 끝 ~ 기찻길 사이 좁은 길' },
+    { op: 'add', rect: { x: 1088, y: 76, w: 180, h: 16 }, note: '돌다리 위 끝 ~ 기찻길 사이 좁은 길' },
     { op: 'add', rect: { x: 880, y: 56, w: 208, h: 34 }, note: '기찻길 건널목(집 왼쪽)' },
     { op: 'add', rect: { x: 1268, y: 56, w: 132, h: 34 }, note: '기찻길 건널목(집 오른쪽)' },
-    { op: 'remove', rect: { x: 850, y: 0, w: 600, h: 50 }, note: '지도 맨 위 가장자리: 카메라가 더 못 올라가 캐릭터 머리가 화면 밖으로 잘리므로 막음' }
+    { op: 'remove', rect: { x: 850, y: 0, w: 600, h: 50 }, note: '지도 맨 위 가장자리: 카메라가 더 못 올라가 캐릭터 머리가 화면 밖으로 잘리므로 막음' },
+    { op: 'add', ellipse: { cx: 691, cy: 582, rx: 93, ry: 62 }, floor: true, note: '분수 광장 돌바닥(분수 둘레를 걸을 수 있게)' },
+    { op: 'remove', ellipse: { cx: 690, cy: 570, rx: 70, ry: 40 }, floor: true, note: '분수 물그릇' },
+    { op: 'remove', rect: { x: 622, y: 500, w: 138, h: 46 }, floor: true, note: '분수 뒤쪽(벤치와 물그릇 사이가 너무 좁음)' },
+    { op: 'add', rect: { x: 16, y: 468, w: 62, h: 24 }, note: '왼쪽 돌다리(화면 끝에서 캐릭터가 잘리지 않게 x 16까지)' },
+    { op: 'add', rect: { x: 1330, y: 498, w: 102, h: 26 }, note: '오른쪽 돌다리' }
   ],
 
   /*
@@ -73,7 +79,8 @@ window.MP_PARK = {
     { id: 'cottages-parade', x: 378, y: 596, w: 145, h: 140, baseY: 735, walkUnder: 30 },
     { id: 'arcade', x: 650, y: 675, w: 312, h: 150, baseY: 822, walkUnder: 30 },
     { id: 'ghost', x: 1052, y: 655, w: 232, h: 182, baseY: 836, walkUnder: 30 },
-    { id: 'cottage-s', x: 418, y: 815, w: 115, h: 92, baseY: 900, walkUnder: 24 }
+    { id: 'cottage-s', x: 418, y: 815, w: 115, h: 92, baseY: 900, walkUnder: 24 },
+    { id: 'fountain', x: 618, y: 460, w: 146, h: 151, baseY: 611, walkUnder: 0 }
     // 한 계절 지도에만 있는 물체는 season: '<계절>' 을 붙이면 그 계절에서만 씀
   ],
 
