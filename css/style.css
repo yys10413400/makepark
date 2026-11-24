@@ -90,6 +90,13 @@ html, body {
 }
 .enter-btn:active { transform: translateX(-50%) translateY(2px); }
 .enter-name { font-family: var(--font-sign); font-size: 19px; opacity: 0.92; }
+@media (prefers-reduced-motion: no-preference) {
+  .enter-btn:not([hidden]) { animation: park-enter-appear 260ms ease-out; }
+  @keyframes park-enter-appear {
+    from { opacity: 0; translate: 0 5px; }
+    to { opacity: 1; translate: 0 0; }
+  }
+}
 .enter-label { font-size: 24px; }
 kbd {
   font: inherit; font-size: 13px; background: rgba(255,255,255,0.25); border-radius: 6px;

@@ -655,12 +655,45 @@
     });
     return best;
   }
+  var entranceStart = 0;
+  var reducedEntranceMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
+
+  function drawEntranceStars(x, y, elapsed) {
+    if (elapsed >= 1.1 || reducedEntranceMotion.matches) return;
+    ctx.save();
+    for (var i = 0; i < 5; i++) {
+      var progress = (elapsed - i * 0.065) / 0.84;
+      if (progress <= 0 || progress >= 1) continue;
+      var angle = Math.PI * (1 + i / 4);
+      var sx = x + Math.cos(angle) * (22 + progress * 15);
+      var sy = y + Math.sin(angle) * 12 - progress * 22;
+      var size = 4.5 * Math.sin(Math.PI * progress);
+      ctx.globalAlpha = Math.sin(Math.PI * progress);
+      ctx.fillStyle = '#fff4b0';
+      ctx.strokeStyle = '#b97a29';
+      ctx.lineWidth = 0.8;
+      ctx.beginPath();
+      for (var j = 0; j < 8; j++) {
+        var a = j * Math.PI / 4;
+        var r = j % 2 ? size * 0.32 : size;
+        var px = sx + Math.cos(a) * r, py = sy + Math.sin(a) * r * 1.35;
+        if (j === 0) ctx.moveTo(px, py);
+        else ctx.lineTo(px, py);
+      }
+      ctx.closePath(); ctx.fill(); ctx.stroke();
+    }
+    ctx.restore();
+  }
+
   function updateNearby() {
     var f = state.phase === 'play' && state.view === 'play' && !state.modalFacility && !state.profileOpen && !state.charOpen && !state.rideOpen ? findNearby() : null;
     if (f !== state.nearby) {
       state.nearby = f;
       ui.enter.hidden = !f;
-      if (f) ui.enterName.textContent = f.name;
+      if (f) {
+        entranceStart = state.time;
+        ui.enterName.textContent = f.name;
+      }
     }
   }
   function openFacility(f) {
@@ -834,7 +867,9 @@
     }
     // 가까운 시설 입구 표시
     if (state.nearby && state.view === 'play') {
-      var e = state.nearby.entrance, pulse = 1 + Math.sin(state.time * 4) * 0.06;
+      var e = state.nearby.entrance, elapsed = state.time - entranceStart;
+      var shimmer = reducedEntranceMotion.matches ? 0 : Math.sin(elapsed * 4);
+      var pulse = 1 + shimmer * 0.06;
       if (ringImg.complete && ringImg.naturalWidth) {
         // 황금빛 입구 링 (assets/ui/entrance-ring.png): 바닥에 깔리도록 입구 좌표 중심에 그림
         var rw = 96 * pulse, rh = rw * ringImg.naturalHeight / ringImg.naturalWidth;
@@ -842,7 +877,7 @@
         ctx.drawImage(ringImg, e.x - rw / 2, e.y - rh / 2, rw, rh);
         // 밝은 분홍 길 위에서도 잘 보이도록 한 번 더 '빛 더하기'로 겹쳐 그림
         ctx.globalCompositeOperation = 'lighter';
-        ctx.globalAlpha = 0.55 + Math.sin(state.time * 4) * 0.25;
+        ctx.globalAlpha = 0.55 + shimmer * 0.25;
         ctx.drawImage(ringImg, e.x - rw / 2, e.y - rh / 2, rw, rh);
         ctx.globalCompositeOperation = 'source-over';
         ctx.globalAlpha = 1;
@@ -850,6 +885,7 @@
         ctx.strokeStyle = 'rgba(255,214,90,0.9)'; ctx.lineWidth = 3;
         ctx.beginPath(); ctx.ellipse(e.x, e.y, 26 * pulse, 11 * pulse, 0, 0, Math.PI * 2); ctx.stroke();
       }
+      drawEntranceStars(e.x, e.y, elapsed);
     }
 
     var p = state.player;
@@ -870,6 +906,8 @@
       MPMulti.drawNames(ctx, { x: p.x, y: p.y, nickname: state.nickname });
     }
     if (state.debug) drawDebugOccluders();
+    // 눈 오는 계절이면 화면 위에 눈송이(js/snow.js). 지도·캐릭터 위, 화면 메뉴 아래
+    if (window.MPSnow) MPSnow.draw(ctx, view.w, view.h, view.dpr, frameDt, !!(PARK.seasons[state.season] || {}).snow, cam.cx * cam.s, cam.cy * cam.s);
 
     // 전체 지도: 시설 핀 + 내 위치 (이름 글자는 지도에 이미 그려져 있으므로 표시하지 않음)
     var mapAlpha = Math.min(1, Math.max(0, (playScale() - cam.s) / Math.max(0.001, playScale() - fitScale())));
@@ -906,8 +944,6 @@
       ctx.strokeStyle = behind ? 'rgba(255,0,255,0.9)' : 'rgba(0,255,255,0.7)'; ctx.lineWidth = 1.5;
       ctx.strokeRect(o.x, o.y, o.w, o.h);
       ctx.beginPath(); ctx.moveTo(o.x, o.baseY); ctx.lineTo(o.x + o.w, o.baseY); ctx.stroke();
-    // 눈 오는 계절이면 화면 위에 눈송이(js/snow.js). 지도·캐릭터 위, 화면 메뉴 아래
-    if (window.MPSnow) MPSnow.draw(ctx, view.w, view.h, view.dpr, frameDt, !!(PARK.seasons[state.season] || {}).snow, cam.cx * cam.s, cam.cy * cam.s);
       ctx.fillStyle = '#000'; ctx.font = '11px monospace'; ctx.fillText(o.id, o.x + 3, o.y + 12);
     });
   }
