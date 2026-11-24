@@ -83,8 +83,9 @@ def main():
         dx, dy = best_shift(n, b)
         gs = np.roll(np.roll(g, dy, 0), dx, 1)
         # 이 계절 지도에만 길 위에 놓인 물체(크리스마스트리·선물 등)는 길에서 뺌 → 캐릭터를 가릴 수 있게
-        lum = b.mean(-1); sat = b.max(-1) - b.min(-1)
-        obj = gs & ~((lum > 150) & (sat < 50))
+        #   길 색은 지도마다 다르므로(눈길은 흰빛, 한옥 지도는 분홍빛) 이 지도의 길 픽셀 중앙값과 색이 크게 다른 곳만 물체로 봄
+        med = np.median(b[gs], 0)
+        obj = gs & (np.abs(b - med).max(-1) > 60)
         obj = ndimage.binary_opening(obj, iterations=2 * k)
         lab, cnt = ndimage.label(obj)
         sizes = ndimage.sum(obj, lab, range(1, cnt + 1))
