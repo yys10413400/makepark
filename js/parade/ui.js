@@ -495,7 +495,7 @@
 
   // ---------- 대기실 걷기 ----------
   // 걸을 수 있는 바닥(그림 좌표 다각형): 벽·화분 아래부터. 자동차 받침대 앞은 조금 더 아래부터
-  var FLOOR = [[0, 458], [185, 400], [1160, 400], [1170, 414], [1520, 414], [1630, 450], [1672, 458], [1672, 935], [0, 935]];
+  var FLOOR = [[0, 520], [200, 498], [1160, 498], [1170, 514], [1545, 514], [1672, 520], [1672, 935], [0, 935]];
   var RIRI_POS = { x: 836, y: 585, k: 0.52 };   // 발 위치와 오프닝 그림 배율(몸 키 약 300)
   var EXIT_Y = 890;
   function inPoly(x, y, p) {
@@ -511,7 +511,7 @@
     return tx * tx + ty * ty >= 1;
   }
   // 캐릭터 몸 키: 공원에서 보이는 크기의 1.3배 + 원근(안쪽은 조금 작게)
-  var LOBBY_SCALE = 1.3, FLOOR_TOP = 400;
+  var LOBBY_SCALE = 1.3, FLOOR_TOP = 498;
   function charH(y) {
     var r = ui.canvas.getBoundingClientRect(), px = api().charScreenH ? api().charScreenH() : 94;
     var base = r.height ? px * IH / r.height : 125;

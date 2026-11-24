@@ -178,10 +178,10 @@ body.arcade-open #hud, body.arcade-open #enterFacility, body.arcade-open #chatBa
 .ac-cap-title { margin: 2.4cqw 0 0; text-align: center; font-size: 3.4cqw; color: #c2185b; }
 .ac-cap-body { display: flex; gap: 3cqw; padding: 2cqw 4cqw; align-items: flex-start; }
 .ac-cap-left { flex: none; width: 30%; }
-/* 로비 그림에서 캡슐 기계 부분만(1160~1450 × 140~600) */
+/* 로비 그림에서 캡슐 기계 부분만(1190~1480 × 200~660) */
 .ac-gumball {
   position: relative; width: 100%; aspect-ratio: 290 / 460;
-  background-size: calc(1672 / 290 * 100%) auto; background-position: calc(1160 / (1672 - 290) * 100%) calc(140 / (941 - 460) * 100%);
+  background-size: calc(1672 / 290 * 100%) auto; background-position: calc(1190 / (1672 - 290) * 100%) calc(200 / (941 - 460) * 100%);
   background-repeat: no-repeat;
 }
 .ac-gumball.shake { animation: ac-shake 0.12s linear 7; }

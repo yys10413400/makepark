@@ -234,13 +234,13 @@
 
   // ---------- 대기실 걷기 ----------
   // 걸을 수 있는 바닥(그림 좌표 다각형): 벽 아래 걸레받이 앞부터. 도시락 매대·벤치·화분·토리 발밑은 막음
-  var FLOOR = [[0, 712], [236, 566], [1442, 566], [1672, 678], [1672, 935], [0, 935]];
+  var FLOOR = [[0, 662], [84, 624], [1590, 624], [1672, 666], [1672, 935], [0, 935]];
   var BLOCK_RECTS = [
-    { x: 236, y: 500, w: 512, h: 96, note: '도시락 매대' },
-    { x: 1066, y: 500, w: 300, h: 82, note: '벤치' },
-    { x: 1338, y: 500, w: 110, h: 80, note: '화분' }
+    { x: 140, y: 560, w: 600, h: 96, note: '도시락 매대' },
+    { x: 1080, y: 560, w: 350, h: 80, note: '벤치' },
+    { x: 1425, y: 560, w: 135, h: 86, note: '화분' }
   ];
-  var TORI_POS = { x: 820, y: 640, h: 225 };   // 발 위치와 그릴 몸 키(그림 좌표)
+  var TORI_POS = { x: 830, y: 700, h: 225 };   // 발 위치와 그릴 몸 키(그림 좌표)
   var EXIT_Y = 890;
   function inPoly(x, y, p) {
     var c = false;
@@ -256,7 +256,7 @@
     return tx * tx + ty * ty >= 1;
   }
   // 캐릭터 몸 키: 공원에서 보이는 크기의 1.3배 + 원근(안쪽은 조금 작게)
-  var LOBBY_SCALE = 1.3, FLOOR_TOP = 566;
+  var LOBBY_SCALE = 1.3, FLOOR_TOP = 624;
   function charH(y) {
     var r = ui.canvas.getBoundingClientRect(), px = api().charScreenH ? api().charScreenH() : 94;
     var base = r.height ? px * IH / r.height : 125;

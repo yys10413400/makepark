@@ -87,12 +87,12 @@
   // 로비
   // ================================================================
   // 걸을 수 있는 분홍 바닥(그림 좌표 다각형). 오락기·캡슐 기계 앞까지
-  var FLOOR = [[0, 668], [236, 618], [566, 618], [604, 584], [1150, 584], [1164, 616], [1456, 616], [1671, 668], [1671, 934], [0, 934]];
+  var FLOOR = [[0, 660], [225, 640], [505, 640], [525, 604], [1195, 604], [1210, 636], [1465, 636], [1545, 646], [1671, 664], [1671, 934], [0, 934]];
   var SPOTS = {
-    game: { x: 398, y: 652, box: [240, 160, 560, 610], stand: { x: 400, y: 700 }, label: '별빛 팡팡 하기', top: 150 },
-    capsule: { x: 1306, y: 640, box: [1160, 140, 1450, 600], stand: { x: 1306, y: 690 }, label: '캡슐 뽑기', top: 132 }
+    game: { x: 364, y: 668, box: [222, 230, 506, 640], stand: { x: 364, y: 712 }, label: '별빛 팡팡 하기', top: 220 },
+    capsule: { x: 1335, y: 664, box: [1205, 220, 1465, 634], stand: { x: 1335, y: 708 }, label: '캡슐 뽑기', top: 212 }
   };
-  var EXIT_Y = 900, LOBBY_SCALE = 1.2, FLOOR_TOP = 584;
+  var EXIT_Y = 900, LOBBY_SCALE = 1.2, FLOOR_TOP = 604;
   function inPoly(x, y, p) {
     var c = false;
     for (var i = 0, j = p.length - 1; i < p.length; j = i++) {
@@ -125,7 +125,7 @@
       b.style.width = pct(s.box[2] - s.box[0], IW); b.style.height = pct(s.box[3] - s.box[1], IH);
       ui.hot[k] = b; lobby.appendChild(b);
     });
-    ui.sign = el('p', 'ac-sign', '별빛 팡팡'); place(ui.sign, 398, 112); lobby.appendChild(ui.sign);
+    ui.sign = el('p', 'ac-sign', '별빛 팡팡'); place(ui.sign, 364, 196); lobby.appendChild(ui.sign);
     ui.talk = btn('ac-prompt', '', function () { if (S.near) openSpot(S.near); });
     ui.talk.hidden = true;
     ui.leave = btn('ac-prompt ac-prompt-exit', '', close);
@@ -239,7 +239,7 @@
   // 별빛 팡팡 창
   // ================================================================
   var PIX = { cw: 300, ch: 420, foot: 400, head: 150, k: 0.9 };       // 픽셀 그림 칸·기준점·그리는 배율
-  var FOOT_Y = 878;                                                     // 청록 발판 위 발바닥 줄
+  var FOOT_Y = 866;                                                     // 나무 발판 위 발바닥 줄
   var MOUTH_Y = FOOT_Y - (PIX.foot - 236) * PIX.k, MOUTH_HALF = 74;    // 바구니 입구 높이·반폭
   var STAR = { cw: 240, ch: 330, cx: 120, cy: 250 };
   var X_MIN = 110, X_MAX = IW - 110;
