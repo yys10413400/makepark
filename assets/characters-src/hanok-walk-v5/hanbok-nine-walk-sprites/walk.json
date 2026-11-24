@@ -1,0 +1,290 @@
+{
+  "frameWidth": 224,
+  "frameHeight": 320,
+  "columns": 12,
+  "rows": 4,
+  "frameDurationMs": 80,
+  "loop": true,
+  "anchorPixels": {
+    "x": 112,
+    "y": 294
+  },
+  "directions": [
+    "front",
+    "left",
+    "right",
+    "back"
+  ],
+  "characters": {
+    "goggles-girl": {
+      "name": "고글 소녀",
+      "texture": "goggles-girl-walk.png",
+      "animations": {
+        "front": {
+          "row": 0,
+          "firstColumn": 0,
+          "frameCount": 12,
+          "file": "loops/goggles-girl/front.webp"
+        },
+        "left": {
+          "row": 1,
+          "firstColumn": 0,
+          "frameCount": 12,
+          "file": "loops/goggles-girl/left.webp"
+        },
+        "right": {
+          "row": 2,
+          "firstColumn": 0,
+          "frameCount": 12,
+          "file": "loops/goggles-girl/right.webp"
+        },
+        "back": {
+          "row": 3,
+          "firstColumn": 0,
+          "frameCount": 12,
+          "file": "loops/goggles-girl/back.webp"
+        }
+      }
+    },
+    "lunchbox-boy": {
+      "name": "도시락 소년",
+      "texture": "lunchbox-boy-walk.png",
+      "animations": {
+        "front": {
+          "row": 0,
+          "firstColumn": 0,
+          "frameCount": 12,
+          "file": "loops/lunchbox-boy/front.webp"
+        },
+        "left": {
+          "row": 1,
+          "firstColumn": 0,
+          "frameCount": 12,
+          "file": "loops/lunchbox-boy/left.webp"
+        },
+        "right": {
+          "row": 2,
+          "firstColumn": 0,
+          "frameCount": 12,
+          "file": "loops/lunchbox-boy/right.webp"
+        },
+        "back": {
+          "row": 3,
+          "firstColumn": 0,
+          "frameCount": 12,
+          "file": "loops/lunchbox-boy/back.webp"
+        }
+      }
+    },
+    "flower-charm-girl": {
+      "name": "꽃참 소녀",
+      "texture": "flower-charm-girl-walk.png",
+      "animations": {
+        "front": {
+          "row": 0,
+          "firstColumn": 0,
+          "frameCount": 12,
+          "file": "loops/flower-charm-girl/front.webp"
+        },
+        "left": {
+          "row": 1,
+          "firstColumn": 0,
+          "frameCount": 12,
+          "file": "loops/flower-charm-girl/left.webp"
+        },
+        "right": {
+          "row": 2,
+          "firstColumn": 0,
+          "frameCount": 12,
+          "file": "loops/flower-charm-girl/right.webp"
+        },
+        "back": {
+          "row": 3,
+          "firstColumn": 0,
+          "frameCount": 12,
+          "file": "loops/flower-charm-girl/back.webp"
+        }
+      }
+    },
+    "star-girl": {
+      "name": "별마당 소녀",
+      "texture": "star-girl-walk.png",
+      "animations": {
+        "front": {
+          "row": 0,
+          "firstColumn": 0,
+          "frameCount": 12,
+          "file": "loops/star-girl/front.webp"
+        },
+        "left": {
+          "row": 1,
+          "firstColumn": 0,
+          "frameCount": 12,
+          "file": "loops/star-girl/left.webp"
+        },
+        "right": {
+          "row": 2,
+          "firstColumn": 0,
+          "frameCount": 12,
+          "file": "loops/star-girl/right.webp"
+        },
+        "back": {
+          "row": 3,
+          "firstColumn": 0,
+          "frameCount": 12,
+          "file": "loops/star-girl/back.webp"
+        }
+      }
+    },
+    "flute-boy": {
+      "name": "피리 소년",
+      "texture": "flute-boy-walk.png",
+      "animations": {
+        "front": {
+          "row": 0,
+          "firstColumn": 0,
+          "frameCount": 12,
+          "file": "loops/flute-boy/front.webp"
+        },
+        "left": {
+          "row": 1,
+          "firstColumn": 0,
+          "frameCount": 12,
+          "file": "loops/flute-boy/left.webp"
+        },
+        "right": {
+          "row": 2,
+          "firstColumn": 0,
+          "frameCount": 12,
+          "file": "loops/flute-boy/right.webp"
+        },
+        "back": {
+          "row": 3,
+          "firstColumn": 0,
+          "frameCount": 12,
+          "file": "loops/flute-boy/back.webp"
+        }
+      }
+    },
+    "rainbow-drum-girl": {
+      "name": "무지개 북 소녀",
+      "texture": "rainbow-drum-girl-walk.png",
+      "animations": {
+        "front": {
+          "row": 0,
+          "firstColumn": 0,
+          "frameCount": 12,
+          "file": "loops/rainbow-drum-girl/front.webp"
+        },
+        "left": {
+          "row": 1,
+          "firstColumn": 0,
+          "frameCount": 12,
+          "file": "loops/rainbow-drum-girl/left.webp"
+        },
+        "right": {
+          "row": 2,
+          "firstColumn": 0,
+          "frameCount": 12,
+          "file": "loops/rainbow-drum-girl/right.webp"
+        },
+        "back": {
+          "row": 3,
+          "firstColumn": 0,
+          "frameCount": 12,
+          "file": "loops/rainbow-drum-girl/back.webp"
+        }
+      }
+    },
+    "goggles-boy": {
+      "name": "고글 소년",
+      "texture": "goggles-boy-walk.png",
+      "animations": {
+        "front": {
+          "row": 0,
+          "firstColumn": 0,
+          "frameCount": 12,
+          "file": "loops/goggles-boy/front.webp"
+        },
+        "left": {
+          "row": 1,
+          "firstColumn": 0,
+          "frameCount": 12,
+          "file": "loops/goggles-boy/left.webp"
+        },
+        "right": {
+          "row": 2,
+          "firstColumn": 0,
+          "frameCount": 12,
+          "file": "loops/goggles-boy/right.webp"
+        },
+        "back": {
+          "row": 3,
+          "firstColumn": 0,
+          "frameCount": 12,
+          "file": "loops/goggles-boy/back.webp"
+        }
+      }
+    },
+    "lunchbox-girl": {
+      "name": "도시락 소녀",
+      "texture": "lunchbox-girl-walk.png",
+      "animations": {
+        "front": {
+          "row": 0,
+          "firstColumn": 0,
+          "frameCount": 12,
+          "file": "loops/lunchbox-girl/front.webp"
+        },
+        "left": {
+          "row": 1,
+          "firstColumn": 0,
+          "frameCount": 12,
+          "file": "loops/lunchbox-girl/left.webp"
+        },
+        "right": {
+          "row": 2,
+          "firstColumn": 0,
+          "frameCount": 12,
+          "file": "loops/lunchbox-girl/right.webp"
+        },
+        "back": {
+          "row": 3,
+          "firstColumn": 0,
+          "frameCount": 12,
+          "file": "loops/lunchbox-girl/back.webp"
+        }
+      }
+    },
+    "flower-charm-boy": {
+      "name": "꽃참 소년",
+      "texture": "flower-charm-boy-walk.png",
+      "animations": {
+        "front": {
+          "row": 0,
+          "firstColumn": 0,
+          "frameCount": 12,
+          "file": "loops/flower-charm-boy/front.webp"
+        },
+        "left": {
+          "row": 1,
+          "firstColumn": 0,
+          "frameCount": 12,
+          "file": "loops/flower-charm-boy/left.webp"
+        },
+        "right": {
+          "row": 2,
+          "firstColumn": 0,
+          "frameCount": 12,
+          "file": "loops/flower-charm-boy/right.webp"
+        },
+        "back": {
+          "row": 3,
+          "firstColumn": 0,
+          "frameCount": 12,
+          "file": "loops/flower-charm-boy/back.webp"
+        }
+      }
+    }
+  }
+}

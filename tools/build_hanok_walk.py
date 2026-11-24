@@ -2,6 +2,7 @@
 한옥 옷 학생 캐릭터(기본·건물 보상)의 걷기 그림 모음(makepark-walk-sprites-v4)을 게임용 프레임 시트로 만듭니다.
 
   python tools/build_hanok_walk.py <풀어 둔 폴더>      # 예: python tools/build_hanok_walk.py assets/characters-src/hanok-walk
+  python tools/build_hanok_walk.py --pack <팩 폴더> [...] # walk.json 이 든 다시 그린 팩(아래 PACK 의 캐릭터만 바꿈)
 
 원본: <폴더>/<세트>/boy.png, girl.png  (2304x768, 192px 칸 12열 x 4줄, 줄 = 앞·왼쪽·오른쪽·뒤)
       <폴더>/<세트>/boy-front.png 가 있으면 그 그림을 앞모습 서 있기 그림으로 씀
@@ -36,6 +37,15 @@ SETS = {
     'tori-lunchbox': ('R8b', 'R8g'),
     'souvenir': ('R9b', 'R9g'),
 }
+# 다시 그린 걷기 팩(walk.json: 224x320 칸 12열 x 4줄, 줄 = front·left·right·back)의 캐릭터 이름 → 게임 그림 id
+PACK = {
+    'goggles-boy': 'R1b', 'goggles-girl': 'R1g',
+    'sogo': 'R2b', 'rainbow-drum-girl': 'R2g',
+    'flute-boy': 'R3b', 'flute': 'R3g',
+    'star': 'R7b', 'star-girl': 'R7g',
+    'lunchbox-boy': 'R8b', 'lunchbox-girl': 'R8g',
+    'flower-charm-boy': 'R9b', 'flower-charm-girl': 'R9g',
+}
 
 
 def clean(cell):
@@ -68,13 +78,13 @@ def leg_width(cell):
     return xs.max() - xs.min()
 
 
-def load_frames(path):
+def load_frames(path, cw=CELL, ch=CELL):
     im = np.array(Image.open(path).convert('RGBA'))
-    return {v: [clean(im[r * CELL:(r + 1) * CELL, k * CELL:(k + 1) * CELL]) for k in range(COLS)]
+    return {v: [clean(im[r * ch:(r + 1) * ch, k * cw:(k + 1) * cw]) for k in range(COLS)]
             for r, v in enumerate(ROWS)}
 
 
-def build(fr, front, sid, k):
+def build(fr, front, sid, k, ms=MS):
     """fr: 방향별 프레임 12장. front: 앞모습 서 있기 그림(없으면 None)."""
     idle = {v: int(np.argmin([leg_width(c) for c in fr[v]])) for v in VIEWS}
     extra = {v: (front if (v == 'down' and front is not None) else fr[v][idle[v]]) for v in VIEWS}
@@ -82,7 +92,7 @@ def build(fr, front, sid, k):
     for v in VIEWS:
         bs = [bbox(c) for c in fr[v] + [extra[v]]]
         x0 = max(0, min(b[0] for b in bs) - 2); y0 = max(0, min(b[1] for b in bs) - 2)
-        x1 = min(CELL, max(b[2] for b in bs) + 2); y1 = min(CELL, max(b[3] for b in bs) + 2)
+        x1 = min(fr[v][0].shape[1], max(b[2] for b in bs) + 2); y1 = min(fr[v][0].shape[0], max(b[3] for b in bs) + 2)
         # 발 기준점: 프레임마다 아래쪽 끝(가장 낮은 곳) 중 가장 많이 쓰인 높이, 가로는 몸 가운데의 중앙값
         foot_y = int(np.median([b[3] for b in bs]))
         foot_x = float(np.median([(b[0] + b[2]) / 2 for b in bs]))
@@ -104,18 +114,49 @@ def build(fr, front, sid, k):
     still = {v: [r[0], r[1] + COLS * row_h, r[2], r[3], r[4], r[5]] for v, r in views.items()}
     return {
         'src': src, 'k': k, 'views': still,
-        'anim': {'src': src, 'frames': COLS, 'ms': MS, 'k': k, 'rowH': int(row_h), 'views': views,
+        'anim': {'src': src, 'frames': COLS, 'ms': ms, 'k': k, 'rowH': int(row_h), 'views': views,
                  'idle': {v: COLS for v in VIEWS}},
     }
+
+
+def idle_h(fr, front):
+    c = front if front is not None else fr['down'][int(np.argmin([leg_width(c) for c in fr['down']]))]
+    b = bbox(c)
+    return b[3] - b[1]
+
+
+def old_idle_h(m):
+    """지금 게임에 들어 있는 그림의 앞모습 서 있기 키(원본 px)와 k."""
+    return m['views']['down'][3], m.get('k', 1)
+
+
+def build_pack(srcdir, meta):
+    """walk.json 이 있는 새 걷기 팩: 텍스처 이름 → 게임 그림 id(PACK). 키는 지금 그 캐릭터와 같게 맞춤."""
+    info = json.load(open(os.path.join(srcdir, 'walk.json'), encoding='utf-8'))
+    cw, ch, ms = info['frameWidth'], info['frameHeight'], info.get('frameDurationMs', MS)
+    assert info['directions'] == ['front', 'left', 'right', 'back'] and info['columns'] == COLS
+    for name, c in info['characters'].items():
+        sid = PACK.get(name)
+        if not sid:
+            print('건너뜀(어느 캐릭터인지 모름):', name); continue
+        fr = load_frames(os.path.join(srcdir, c['texture']), cw, ch)
+        oh, ok = old_idle_h(meta[sid])
+        k = round(ok * idle_h(fr, None) / oh, 4)
+        meta[sid] = build(fr, None, sid, k, ms)
+        print(sid, '<-', name, 'ok')
 
 
 def main():
     if len(sys.argv) < 2:
         print(__doc__); sys.exit(1)
-    srcdir = sys.argv[1]
     txt = open(JS, encoding='utf-8').read()
     head = txt[:txt.index('window.MP_CHAR_SPRITES')]
     meta = json.loads(txt[txt.index('{'):txt.index('};') + 1])
+    if sys.argv[1] == '--pack':
+        for d in sys.argv[2:]:
+            build_pack(d, meta)
+        return save(head, meta)
+    srcdir = sys.argv[1]
     data = {}
     for s, ids in SETS.items():
         for g, sid in zip(('boy', 'girl'), ids):
@@ -133,6 +174,10 @@ def main():
     for sid, (fr, front) in data.items():
         meta[sid] = build(fr, front, sid, k)
         print(sid, 'ok')
+    save(head, meta)
+
+
+def save(head, meta):
     with open(JS, 'w', encoding='utf-8') as fo:
         fo.write(head + 'window.MP_CHAR_SPRITES = ' + json.dumps(meta, ensure_ascii=False, indent=1, sort_keys=True) + ';\n'
                  + "window.MP_CHAR_VER = '" + time.strftime('%Y%m%d%H%M%S') + "';\n")
