@@ -1,0 +1,44 @@
+/* ---------- 이동 버튼 색 통일: 지도 이름표(간판)와 같은 모양 ----------
+   크림색 판 + 갈색 테두리 + 진한 갈색 글씨 + 아래로 옅은 갈색 그림자 (js/map-labels.js 이름표와 같은 색)
+   대상: 공원의 '입장하기', 놀이기구 로비의 '말 걸기'·'공원으로 나가기' 말풍선 버튼, 오른쪽 위 '공원으로' 버튼.
+   크기·위치·움직임은 각 놀이기구 css 그대로 두고 색만 덮어씀(이 파일은 다른 css 뒤에 불러옴). */
+:root {
+  --sign-bg: #fff8e7;
+  --sign-bg-hover: #fffdf6;
+  --sign-line: #a0682f;
+  --sign-ink: #3b2a1e;
+  --sign-shadow: #c99a5c;
+}
+
+/* 공원: 시설 앞 '입장하기' */
+#enterFacility.enter-btn {
+  background: var(--sign-bg); color: var(--sign-ink);
+  border: 3px solid var(--sign-line); box-shadow: 0 4px 0 var(--sign-shadow), 0 8px 18px rgba(60, 35, 15, 0.18);
+  text-shadow: none;
+}
+#enterFacility.enter-btn:hover { background: var(--sign-bg-hover); }
+#enterFacility.enter-btn:active { box-shadow: 0 2px 0 var(--sign-shadow); }
+#enterFacility .enter-name { color: #8a5a2b; opacity: 1; }
+#enterFacility kbd { background: rgba(160, 104, 47, 0.16); color: var(--sign-ink); }
+
+/* 놀이기구 로비: 캐릭터 머리 위 '말 걸기'·'공원으로 나가기' 버튼 */
+.ac-prompt, .cs-prompt, .gk-prompt, .ml-prompt, .pr-prompt, .pc-prompt, .th-prompt,
+.ac-prompt-exit, .cs-prompt-exit, .gk-prompt-exit, .ml-prompt-exit, .pr-prompt-exit, .pc-prompt-exit, .th-prompt-exit {
+  background: var(--sign-bg); color: var(--sign-ink);
+  border-color: var(--sign-line); border-style: solid;
+  box-shadow: 0 0.3cqw 0 var(--sign-shadow);
+  text-shadow: none;
+}
+.ac-prompt:hover, .cs-prompt:hover, .gk-prompt:hover, .ml-prompt:hover, .pr-prompt:hover, .pc-prompt:hover, .th-prompt:hover { background: var(--sign-bg-hover); }
+.ac-prompt kbd, .cs-prompt kbd, .gk-prompt kbd, .ml-prompt kbd, .pr-prompt kbd, .pc-prompt kbd, .th-prompt kbd {
+  background: rgba(160, 104, 47, 0.16); color: var(--sign-ink);
+}
+
+/* 놀이기구 로비 오른쪽 위 '공원으로' */
+.ac-lexit, .cs-lexit, .gk-exit, .ml-exit, .pr-exit, .pc-exit, .th-lexit {
+  background: var(--sign-bg); color: var(--sign-ink);
+  border-color: var(--sign-line); border-style: solid;
+  box-shadow: 0 0.25cqw 0 var(--sign-shadow);
+  text-shadow: none;
+}
+.ac-lexit:hover, .cs-lexit:hover, .gk-exit:hover, .ml-exit:hover, .pr-exit:hover, .pc-exit:hover, .th-lexit:hover { background: var(--sign-bg-hover); }

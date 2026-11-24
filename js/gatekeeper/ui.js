@@ -169,7 +169,12 @@
     st.appendChild(ui.tickets);
 
     // 그림 미리 불러오기
-    ['ghost-float-00', 'ghost-float-01', 'ghost-float-02', 'ghost-float-03', 'ghost-float-04', 'ghost-float-05', 'ghost-float-06', 'ghost-float-07', 'ghost-float-idle', 'ghost-hello', 'ghost-think', 'ghost-pass', 'ghost-stop', 'ghost-cheer'].forEach(function (n) { var i = new Image(); i.src = SPR.base + n + '.webp'; });
+    // 로비 유령 움직임 그림은 그리기에서 쓰는 것과 같은 그림(ghostImg)으로 받아 두고 미리 풀어 둠
+    // → 처음 들어갔을 때 아직 안 받은 장면 때문에 유령이 깜빡이지 않게
+    ['float-00', 'float-01', 'float-02', 'float-03', 'float-04', 'float-05', 'float-06', 'float-07', 'float-idle'].forEach(function (n) {
+      var i = ghostImg(n); if (i.decode) i.decode().catch(function () {});
+    });
+    ['ghost-hello', 'ghost-think', 'ghost-pass', 'ghost-stop', 'ghost-cheer'].forEach(function (n) { var i = new Image(); i.src = SPR.base + n + '.webp'; });
   }
 
   // ---------- 로비 대화: 첫 대사 → 학년 → 놀이 고르기 ----------
@@ -345,7 +350,7 @@
     if (S.nearGhost) { ui.talk.style.left = pct(GHOST.x, IW); ui.talk.style.top = pct(GHOST.y - GHOST.h - 80, IH); }
     if (S.nearExit) { ui.leave.style.left = pct(me.x, IW); ui.leave.style.top = pct(me.y - charH(me.y) - 70, IH); }
   }
-  var ghostImgs = {};
+  var ghostImgs = {}, lastGhost = null, lastFi = -1;
   function ghostImg(n) {
     if (!ghostImgs[n]) { ghostImgs[n] = new Image(); ghostImgs[n].src = SPR.base + 'ghost-' + n + '.webp'; }
     return ghostImgs[n];
@@ -363,6 +368,9 @@
     var c = ui.canvas.getContext('2d');
     c.clearRect(0, 0, IW, IH);
     var fi = S.dialog ? -1 : floatFrame(t), gi = ghostImg(fi < 0 ? 'float-idle' : 'float-0' + fi);
+    // 이 장면 그림이 아직 준비 안 됐으면 바로 전에 그린 장면을 계속 보여 줌(빈 칸으로 깜빡이지 않게)
+    if (gi.complete && gi.naturalWidth) { lastGhost = gi; lastFi = fi; }
+    else if (lastGhost) { gi = lastGhost; fi = lastFi; }
     var items = [
       { y: GHOST.y, draw: function () {
         var k = FLOAT.draw / FLOAT.size, lift = (FLOAT.base - (fi < 0 ? FLOAT.base : FLOAT.bottom[fi])) * k;
