@@ -144,7 +144,7 @@ def main():
         c = front if front is not None else fr['down'][int(np.argmin([leg_width(c) for c in fr['down']]))]
         b = bbox(c); hs.append(b[3] - b[1])
     k = round(float(np.mean(hs)) / BODY_H, 4)
-    packed = set(re.findall(r"^\s+(R\d+[bg]): \[", open(PACKS, encoding='utf-8').read(), re.M))
+    packed = set(re.findall(r"^\s+([FR]\d+[bg]?): \[", open(PACKS, encoding='utf-8').read(), re.M))
     for sid, (fr, front) in data.items():
         if sid in packed:
             continue   # 걷기 그림 팩 PNG 를 그대로 씀
