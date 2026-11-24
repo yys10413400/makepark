@@ -51,23 +51,23 @@ window.MP_PARK = {
    *   walkUnder : 물체 위쪽 길 가장자리에서 이만큼(px) 아래까지 '가려진 길'로 보고 걸을 수 있게 함(0이면 안 함)
    */
   occluders: [
-    { id: 'gate', x: 600, y: 858, w: 210, h: 190, baseY: 1040, walkUnder: 0 },
+    { id: 'gate', x: 566, y: 870, w: 258, h: 178, baseY: 1040, walkUnder: 0 },
     { id: 'mypark', x: 1062, y: 138, w: 140, h: 82, baseY: 218, walkUnder: 0 },
     { id: 'coaster', x: 150, y: 160, w: 325, h: 195, baseY: 352, walkUnder: 24 },
-    { id: 'ticket', x: 522, y: 118, w: 170, h: 190, baseY: 305, walkUnder: 0 },
+    { id: 'ticket', x: 488, y: 140, w: 245, h: 168, baseY: 305, walkUnder: 0 },
     { id: 'shop', x: 765, y: 228, w: 175, h: 128, baseY: 352, walkUnder: 24 },
     { id: 'cottage-ne', x: 930, y: 212, w: 75, h: 85, baseY: 292, walkUnder: 24 },
-    { id: 'star', x: 1060, y: 240, w: 236, h: 132, baseY: 345, walkUnder: 0 },
-    { id: 'melody', x: 170, y: 382, w: 160, h: 170, baseY: 548, walkUnder: 30 },
+    { id: 'star', x: 1032, y: 250, w: 268, h: 125, baseY: 372, walkUnder: 0 },
+    { id: 'melody', x: 108, y: 376, w: 252, h: 196, baseY: 570, walkUnder: 30 },
     { id: 'tent', x: 385, y: 418, w: 120, h: 112, baseY: 528, walkUnder: 30 },
     { id: 'cottage-c', x: 605, y: 340, w: 90, h: 100, baseY: 438, walkUnder: 24 },
-    { id: 'tower', x: 930, y: 398, w: 122, h: 230, baseY: 626, walkUnder: 30 },
+    { id: 'tower', x: 905, y: 455, w: 172, h: 175, baseY: 626, walkUnder: 30 },
     { id: 'cottages-tower', x: 855, y: 415, w: 92, h: 85, baseY: 498, walkUnder: 30 },
-    { id: 'bumper', x: 1135, y: 482, w: 135, h: 120, baseY: 602, walkUnder: 0 },
-    { id: 'parade', x: 185, y: 600, w: 230, h: 205, baseY: 800, walkUnder: 30 },
+    { id: 'bumper', x: 1088, y: 465, w: 210, h: 140, baseY: 605, walkUnder: 0 },
+    { id: 'parade', x: 160, y: 630, w: 280, h: 182, baseY: 810, walkUnder: 30 },
     { id: 'cottages-parade', x: 378, y: 596, w: 145, h: 140, baseY: 735, walkUnder: 30 },
-    { id: 'arcade', x: 705, y: 686, w: 250, h: 132, baseY: 816, walkUnder: 30 },
-    { id: 'ghost', x: 1055, y: 628, w: 205, h: 205, baseY: 832, walkUnder: 30 },
+    { id: 'arcade', x: 650, y: 675, w: 312, h: 150, baseY: 822, walkUnder: 30 },
+    { id: 'ghost', x: 1052, y: 655, w: 232, h: 182, baseY: 836, walkUnder: 30 },
     { id: 'cottage-s', x: 418, y: 815, w: 115, h: 92, baseY: 900, walkUnder: 24 }
     // 한 계절 지도에만 있는 물체는 season: '<계절>' 을 붙이면 그 계절에서만 씀
   ],

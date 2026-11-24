@@ -59,3 +59,10 @@
   (makepark-normal/christmas 의 original·2x-original·2x-ai·gemini PNG)
   필요하면 git 기록에서 되살릴 수 있음: git checkout 1992db2 -- assets/maps-src/<파일이름>
   위에 적힌 예전 설명(2배 확대, 제미나이 교체 등)은 그 파일들에 대한 기록임.
+
+2026-11-24 두 지도를 한옥 느낌 새 그림으로 다시 교체 + 입장 화면 배경(title-bg.webp)도 한옥 정문 그림으로
+- 원본: makepark-hanok-v2-1448x1086.png(기본), makepark-christmas-hanok-v2-1447x1087.png(크리스마스, 가운데 트리 광장)
+  (이 PC 폴더에만 두고 저장소에는 올리지 않음)
+- 크리스마스 그림은 기본 그림과 세로로 최대 4~5픽셀 어긋나 있어, 기본 그림에 맞춰 살짝 펴서(아핀 변환, 남은 차이 1픽셀 이하) 맞춤
+- 둘 다 2896×2172로 키우고 약하게 선명하게 → assets/maps/*.webp (품질 90)
+- 걷기 격자·땅 지도 다시 만들고, 지붕이 넓어진 건물들의 가림 영역(park-data.js occluders)을 새 그림에 맞춤. 입구 좌표는 그대로.
