@@ -1,7 +1,8 @@
 """시즌 지도들에서 '포장길' 픽셀을 찾아 공통 이동 격자(js/data/walkmask.js)를 만든다.
 
 사용법:
-  python tools/build_walkmask.py js/data/walkmask.js assets/maps/makepark-christmas.webp assets/maps/makepark-normal.webp
+  python tools/build_walkmask.py js/data/walkmask.js assets/maps/makepark-christmas.webp assets/maps/makepark-normal.webp --ground assets/maps/makepark-normal-ground.png
+  (--ground: 땅 지도에서 길인 칸을 더함. 땅 지도는 이 격자를 씨앗으로 만들므로, 그림을 바꾸면 이 도구 → build_ground_mask.py → 이 도구(--ground) 순서로)
 
 - 모든 지도에서 길로 판정된 칸만 남긴다(공통 충돌 영역). 시즌을 바꿔도 같은 영역을 쓴다.
 - 길 판정: 밝은 분홍빛 베이지 포장(빨강 > 초록 > 파랑, 밝음). 눈, 물, 잔디, 건물은 제외된다.
@@ -55,12 +56,29 @@ def cells_of(path):
     return cells | (nb >= 6)  # 한 칸짜리 구멍 메우기
 
 
-out, maps = sys.argv[1], sys.argv[2:]
+def ground_cells(path, shape):
+    # 땅 지도(tools/build_ground_mask.py 결과, 불투명 = 길)에서 반 이상이 길인 칸
+    a = Image.open(path).convert('LA').resize(WORLD, Image.BILINEAR)
+    g = np.asarray(a)[..., 1] > 128
+    rows, cols = shape
+    return g[:rows * CELL, :cols * CELL].reshape(rows, CELL, cols, CELL).mean((1, 3)) > 0.5
+
+
+args = sys.argv[1:]
+grounds = []
+while '--ground' in args:
+    i = args.index('--ground'); grounds.append(args[i + 1]); del args[i:i + 2]
+out, maps = args[0], args[1:]
 common = None
 for path in maps:
     c = cells_of(path)
     print(path, 'cells', int(c.sum()))
     common = c if common is None else (common & c)
+# 색 판정이 놓친 길 가장자리·얼룩진 곳을 땅 지도로 채움(땅 지도는 길 덩어리와 이어진 길 색만 담고 있어 더 정확함)
+for gp in grounds:
+    gc = ground_cells(gp, common.shape)
+    print(gp, 'adds', int((gc & ~common).sum()))
+    common = common | gc
 # 닫기(넓혔다가 같은 만큼 줄이기): 길 가장자리의 작은 홈·튀어나온 점을 정리
 def erode(m, r):
     return ~dilate(~m, r)
