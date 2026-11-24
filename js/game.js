@@ -575,6 +575,8 @@
   function updateCamera(dt) {
     var t = camTarget(), k = 1 - Math.exp(-PARK.camera.follow * dt);
     cam.s += (t.s - cam.s) * k;
+    // 확대·축소가 거의 끝나면 목표 배율에 딱 맞춤(지도 배경을 미리 그려 둔 그림을 다시 쓸 수 있게)
+    if (Math.abs(t.s - cam.s) < t.s * 0.002) cam.s = t.s;
     cam.cx += (t.cx - cam.cx) * k; cam.cy += (t.cy - cam.cy) * k;
     if (state.view === 'play' && state.phase === 'play' && Math.abs(cam.s - t.s) < 0.02) {
       var c = clampCenter(cam.cx, cam.cy, cam.s); cam.cx = c.cx; cam.cy = c.cy;
@@ -852,11 +854,37 @@
   }
 
   // ---------- 그리기 ----------
+  // 지도 배경 미리 그려 두기
+  // 지도 그림(2896×2172)을 매 장면 화면 크기로 줄여 그리면, 카메라가 조금씩 움직일 때마다
+  // 바닥 벽돌 같은 잔무늬가 지글지글 흔들려 보이고(어지러움) 무거움.
+  // 그래서 지금 화면 배율로 한 번만 줄여 그려 두고, 매 장면은 화면 점에 딱 맞춰 그대로 붙임.
+  // 확대·축소가 움직이는 중이거나, 원본보다 크게 키워야 하는 큰 화면이면 예전처럼 바로 그림.
+  var mapCache = { cv: null, img: null, k: 0 };
+  function drawMapLayer(si, k, tx, ty) {
+    var w = Math.round(si.rect.w * k), h = Math.round(si.rect.h * k);
+    var still = cam.s === camTarget().s && k <= si.img.naturalWidth / si.rect.w + 0.01;
+    if (!still) { ctx.drawImage(si.img, si.rect.x, si.rect.y, si.rect.w, si.rect.h); return; }
+    if (mapCache.img !== si.img || mapCache.k !== k) {
+      var cv = mapCache.cv || document.createElement('canvas');
+      cv.width = w; cv.height = h;
+      var c = cv.getContext('2d');
+      c.imageSmoothingEnabled = true; c.imageSmoothingQuality = 'high';
+      c.drawImage(si.img, 0, 0, w, h);
+      mapCache.cv = cv; mapCache.img = si.img; mapCache.k = k;
+    }
+    ctx.save();
+    ctx.setTransform(1, 0, 0, 1, 0, 0);
+    ctx.drawImage(mapCache.cv, Math.round(tx + si.rect.x * k), Math.round(ty + si.rect.y * k));
+    ctx.restore();
+  }
+
   function draw() {
-    var d = view.dpr;
+    var d = view.dpr, k = d * cam.s;
     ctx.setTransform(1, 0, 0, 1, 0, 0);
     ctx.fillStyle = '#9fcf8a'; ctx.fillRect(0, 0, canvas.width, canvas.height);
-    ctx.setTransform(d * cam.s, 0, 0, d * cam.s, d * (view.w / 2 - cam.cx * cam.s), d * (view.h / 2 - cam.cy * cam.s));
+    // 화면 점 단위로 맞춘 위치(반 점씩 어긋나며 그림이 떨리지 않게)
+    var tx = Math.round(d * (view.w / 2 - cam.cx * cam.s)), ty = Math.round(d * (view.h / 2 - cam.cy * cam.s));
+    ctx.setTransform(k, 0, 0, k, tx, ty);
     ctx.imageSmoothingEnabled = true; ctx.imageSmoothingQuality = 'high';
     // 바꾼 계절 지도를 아직 받는 중이면 그동안은 받아 둔 다른 계절 지도를 보여 줌(빈 초록 화면 대신)
     var cur = seasonImgs[state.season] || seasonImgs[fade.from] || seasonImgs[firstSeason], prev = fade.from && seasonImgs[fade.from];
@@ -864,7 +892,7 @@
       ctx.drawImage(prev.img, prev.rect.x, prev.rect.y, prev.rect.w, prev.rect.h);
       ctx.globalAlpha = fade.t;
     }
-    if (cur) ctx.drawImage(cur.img, cur.rect.x, cur.rect.y, cur.rect.w, cur.rect.h);
+    if (cur) drawMapLayer(cur, k, tx, ty);
     ctx.globalAlpha = 1;
     if (state.phase !== 'play') return;
 
