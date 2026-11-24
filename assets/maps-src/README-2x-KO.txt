@@ -71,3 +71,11 @@
 - 원본: makepark-hanok-v3-2000x1500.png(기본), makepark-christmas-hanok-v3-2000x1500.png(크리스마스) — 이 PC에만 둠
 - 기본 지도는 이전 그림과 배치가 똑같음(어긋남 0). 크리스마스 지도는 세로로 최대 4픽셀 어긋나 기본 지도에 맞춰 폄(아핀, 남은 차이 2픽셀 이하)
 - 2896×2172로 키움 → build_walkmask.py → build_ground_mask.py → build_walkmask.py --ground 순서로 다시 만듦. 입구·가림·걷기 수정 값은 그대로
+
+2026-11-24 두 지도를 고화질 원본(4096×3072)으로 교체
+- 원본: makepark-hanok-v4-4096x3072.png(기본), makepark-christmas-hanok-v4-4096x3072.png(크리스마스) — 이 PC에만 둠
+  (다운로드 폴더의 hanok-fountain-final-4096.png, hanok-christmas-tree-final-4096.png)
+- 2000×1500 원본과 같은 그림이지만 잔무늬(바닥 벽돌·꽃)가 살아 있음
+- 기본 지도는 지금 지도와 어긋남 0 → 2896×2172로 줄이기만 함
+- 크리스마스 지도는 세로로 최대 6픽셀 어긋나 지금 지도에 맞춰 폄(아핀, 남은 차이 1픽셀 이하)
+- 배치가 그대로라 걷기 격자·땅 지도·입구·가림 값은 다시 만들지 않음. webp 품질 90
