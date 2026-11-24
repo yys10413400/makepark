@@ -299,7 +299,7 @@
   // 이름표: 모두 같은 모양(흰 바탕 + 얇은 갈색 글씨), 선생님은 이름 앞에 'GM'
   function nameTag(ctx, text, x, y) {
     ctx.save();
-    ctx.font = '400 10.5px "Malgun Gothic", "Apple SD Gothic Neo", "Noto Sans KR", sans-serif';
+    ctx.font = '400 10.5px "Song Myung", Gungsuh, Batang, serif';
     ctx.textAlign = 'center'; ctx.textBaseline = 'bottom';
     var w = ctx.measureText(text).width + 10, hgt = 15;
     var r = 7, bx = x - w / 2, by = y - hgt;
@@ -334,9 +334,9 @@
     ctx.globalAlpha = Math.max(0, Math.min(1, left / 400));
     var pop = Math.min(1, (SAY_MS - left) / 160), sc = 0.7 + 0.3 * pop;
     ctx.translate(x, y); ctx.scale(sc, sc);
-    // 문장은 이름표처럼 얇은 글꼴(굵은 Jua 대신)
+    // 문장은 게임 글씨(간판 글씨체 Song Myung)
     ctx.font = emoji ? '20px "Malgun Gothic", "Apple SD Gothic Neo", "Noto Sans KR", sans-serif'
-      : '400 11.5px "Malgun Gothic", "Apple SD Gothic Neo", "Noto Sans KR", sans-serif';
+      : '400 12px "Song Myung", Gungsuh, Batang, serif';
     ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
     var w = Math.max(emoji ? 34 : 30, ctx.measureText(text).width + (emoji ? 12 : 18)), h = emoji ? 30 : 22, r = h / 2;
     var bx = -w / 2, by = -h - 6;
