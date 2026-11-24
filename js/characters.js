@@ -3,7 +3,8 @@
  * ------------------------------------------------------------
  * 그림: assets/characters/<id>.webp (tools/build_characters.py 가 제미나이 원본에서 만듦)
  *       칸 위치·발 기준점: js/data/character-sprites.js (window.MP_CHAR_SPRITES)
- * 방향: down(앞) up(뒤) right(옆) 세 칸. 왼쪽은 옆모습을 좌우로 뒤집어 그립니다.
+ * 방향: down(앞) up(뒤) right(옆) 칸. 왼쪽(left) 칸이 있으면 그대로, 없으면 옆모습을 좌우로 뒤집어 그립니다.
+ * 기본·건물 보상 캐릭터(F·R)는 한옥 옷 걷기 그림 12장(tools/build_hanok_walk.py)을 씁니다.
  * 걷기(좋은 것부터): ① 움직이는 걷기 GIF 프레임(<id>-anim.webp) ② 걷는 자세 그림과 서 있기를 번갈아
  *       ③ 그림이 없으면 걸음마다 살짝 위아래로 움직이고 옆모습은 가는 쪽으로 조금 숙여 걷습니다.
  *
@@ -28,6 +29,8 @@
     { id: 'R5', kind: 'reward', facility: 'ghost', name: '꼬마 유령' },
     { id: 'R6', kind: 'reward', facility: 'arcade', name: '게임 챔피언' },
     { id: 'R7', kind: 'reward', facility: 'star', name: '별빛 요정' },
+    { id: 'R8', kind: 'reward', facility: 'picnic', name: '소풍 도시락 친구' },
+    { id: 'R9', kind: 'reward', facility: 'shop', name: '추억 수집가' },
     { id: 'S1', kind: 'shop', price: 2, name: '정글 탐험가' },
     { id: 'S2', kind: 'shop', price: 2, name: '꼬마 요리사' },
     { id: 'S3', kind: 'shop', price: 2, name: '해변 서퍼' },
@@ -77,15 +80,19 @@
     }
     return e;
   }
+  // 왼쪽 걷기 그림이 따로 있으면(한옥 캐릭터) 그대로 쓰고, 없으면 옆모습(right)을 뒤집어 씀
+  function viewOf(m, dir) {
+    return dir === 'up' ? 'up' : dir === 'down' ? 'down' : dir === 'left' && m.views.left ? 'left' : 'right';
+  }
   function drawAnim(ctx, sid, x, y, dir, h, t) {
     var A = SPR[sid] && SPR[sid].anim, e = loadAnim(sid);
     if (!A || !e || !e.ok) return false;
     var k = Math.floor(t * 1000 / A.ms) % A.frames;
-    var view = dir === 'up' ? 'up' : dir === 'down' ? 'down' : 'right';
+    var view = viewOf(A, dir);
     var r = A.views[view], s = h / (BODY_H * (A.k || 1));
     ctx.save();
     ctx.translate(x, y);
-    ctx.scale((dir === 'left' ? -1 : 1) * s, s);
+    ctx.scale((dir === 'left' && view !== 'left' ? -1 : 1) * s, s);
     ctx.drawImage(e.img, r[0], r[1] + k * A.rowH, r[2], r[3], -r[4], -r[5], r[2], r[3]);
     ctx.restore();
     return true;
@@ -98,9 +105,9 @@
     // 걷기 GIF 가 있는 캐릭터는 서 있을 때도 GIF 그림(두 발이 가장 모인 장)을 씀 → 걷기와 서 있기 그림이 같음
     var A = SPR[sid] && SPR[sid].anim, ae = A && !opt.walk && loadAnim(sid);
     if (ae && ae.ok) {
-      var av = dir === 'up' ? 'up' : dir === 'down' ? 'down' : 'right';
+      var av = viewOf(A, dir);
       var ar = A.views[av], as = h / (BODY_H * (A.k || 1)), ak = (A.idle && A.idle[av]) || 0;
-      var aflip = (dir === 'left') !== !!opt.mirror;
+      var aflip = (dir === 'left' && av !== 'left') !== !!opt.mirror;
       ctx.save();
       ctx.translate(x, y - (opt.bob || 0));
       if (opt.tilt) ctx.rotate(opt.tilt);
@@ -112,9 +119,9 @@
     var useWalk = opt.walk && hasWalk(sid);
     var e = load(useWalk ? sid + '-walk' : sid), m = SPR[sid] && (useWalk ? SPR[sid].walk : SPR[sid]);
     if (!e.ok || !m) return false;
-    var view = dir === 'up' ? 'up' : dir === 'down' ? 'down' : 'right';
-    var r = m.views[view], s = h / BODY_H;
-    var flip = (dir === 'left') !== !!opt.mirror;
+    var view = viewOf(m, dir);
+    var r = m.views[view], s = h / (BODY_H * (m.k || 1));
+    var flip = (dir === 'left' && view !== 'left') !== !!opt.mirror;
     ctx.save();
     ctx.translate(x, y - (opt.bob || 0));
     if (opt.tilt) ctx.rotate(opt.tilt);

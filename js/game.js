@@ -396,6 +396,8 @@
     if (fid === 'parade') return !!(s.parade && s.parade.cleared);   // 무지개 행진길 현수막을 꾸며 퍼레이드를 끝까지 한 번
     if (fid === 'arcade') return !!(s.arcade && s.arcade.cleared);   // 별줍는 오락실 별빛 팡팡 본게임을 끝까지 한 판
     if (fid === 'thrill') return !!(s.thrill && s.thrill.cleared);   // 콩콩 범퍼카 토토의 범퍼카 연구소: 어느 학년이든 미션 하나 완료
+    if (fid === 'picnic') return !!(s.picnic && s.picnic.cleared);   // 토리네 도시락: 어느 학년이든 주문 3개를 모두 전달
+    if (fid === 'shop') return charSave(s).owned.length > 0;         // 추억 상점: 티켓 가게 캐릭터를 하나라도 삼
     return false;
   }
   // 받침에 따라 조사 고르기: josa('탐험가', '을', '를') → '탐험가를'
@@ -484,6 +486,8 @@
         : d.facility === 'parade' ? '무지개 행진길에서 현수막을 꾸며 퍼레이드를 끝까지 한 번 보면 받을 수 있어요.'
         : d.facility === 'arcade' ? '별줍는 오락실에서 별빛 팡팡 30초 본게임을 한 판 끝내면 받을 수 있어요.'
         : d.facility === 'thrill' ? '콩콩 범퍼카에서 토토와 범퍼카 미션을 하나 끝내면 받을 수 있어요.'
+        : d.facility === 'picnic' ? '토리네 도시락에서 토리와 도시락 주문 3개를 모두 전달하면 받을 수 있어요.'
+        : d.facility === 'shop' ? '추억 상점에서 티켓으로 캐릭터를 하나 사면 받을 수 있어요.'
         : josa(facilityName(d.facility), '이', '가') + ' 문을 열면 받을 수 있어요.';
       return;
     }
