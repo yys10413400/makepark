@@ -2,7 +2,8 @@
 한옥 옷 학생 캐릭터(기본·건물 보상)의 걷기 그림 모음(makepark-walk-sprites-v4)을 게임용 프레임 시트로 만듭니다.
 
   python tools/build_hanok_walk.py <풀어 둔 폴더>      # 예: python tools/build_hanok_walk.py assets/characters-src/hanok-walk
-  python tools/build_hanok_walk.py --pack <팩 폴더> [...] # walk.json 이 든 다시 그린 팩(아래 PACK 의 캐릭터만 바꿈)
+
+걷기 그림 팩(walk.json + PNG)으로 바꾼 캐릭터(js/data/character-packs.js 의 map)는 PNG 를 그대로 쓰므로 여기서 만들지 않습니다.
 
 원본: <폴더>/<세트>/boy.png, girl.png  (2304x768, 192px 칸 12열 x 4줄, 줄 = 앞·왼쪽·오른쪽·뒤)
       <폴더>/<세트>/boy-front.png 가 있으면 그 그림을 앞모습 서 있기 그림으로 씀
@@ -10,7 +11,7 @@
       시트: 줄 = 프레임(12장 + 맨 끝 서 있기 1장), 칸 = down·left·right·up
 js/characters.js 는 이 시트로 걷기(12장 차례로)와 서 있기(idle 프레임)를 그립니다.
 """
-import json, os, sys, time
+import json, os, re, sys, time
 
 import numpy as np
 from PIL import Image
@@ -19,6 +20,7 @@ from scipy import ndimage
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 OUT = os.path.join(ROOT, 'assets', 'characters')
 JS = os.path.join(ROOT, 'js', 'data', 'character-sprites.js')
+PACKS = os.path.join(ROOT, 'js', 'data', 'character-packs.js')
 CELL, COLS = 192, 12
 ROWS = ['down', 'left', 'right', 'up']          # 원본 줄 순서
 VIEWS = ['down', 'left', 'right', 'up']          # 결과 시트 칸 순서
@@ -36,15 +38,6 @@ SETS = {
     'star-courtyard': ('R7b', 'R7g'),
     'tori-lunchbox': ('R8b', 'R8g'),
     'souvenir': ('R9b', 'R9g'),
-}
-# 다시 그린 걷기 팩(walk.json: 224x320 칸 12열 x 4줄, 줄 = front·left·right·back)의 캐릭터 이름 → 게임 그림 id
-PACK = {
-    'goggles-boy': 'R1b', 'goggles-girl': 'R1g',
-    'sogo': 'R2b', 'rainbow-drum-girl': 'R2g',
-    'flute-boy': 'R3b', 'flute': 'R3g',
-    'star': 'R7b', 'star-girl': 'R7g',
-    'lunchbox-boy': 'R8b', 'lunchbox-girl': 'R8g',
-    'flower-charm-boy': 'R9b', 'flower-charm-girl': 'R9g',
 }
 
 
@@ -130,32 +123,12 @@ def old_idle_h(m):
     return m['views']['down'][3], m.get('k', 1)
 
 
-def build_pack(srcdir, meta):
-    """walk.json 이 있는 새 걷기 팩: 텍스처 이름 → 게임 그림 id(PACK). 키는 지금 그 캐릭터와 같게 맞춤."""
-    info = json.load(open(os.path.join(srcdir, 'walk.json'), encoding='utf-8'))
-    cw, ch, ms = info['frameWidth'], info['frameHeight'], info.get('frameDurationMs', MS)
-    assert info['directions'] == ['front', 'left', 'right', 'back'] and info['columns'] == COLS
-    for name, c in info['characters'].items():
-        sid = PACK.get(name)
-        if not sid:
-            print('건너뜀(어느 캐릭터인지 모름):', name); continue
-        fr = load_frames(os.path.join(srcdir, c['texture']), cw, ch)
-        oh, ok = old_idle_h(meta[sid])
-        k = round(ok * idle_h(fr, None) / oh, 4)
-        meta[sid] = build(fr, None, sid, k, ms)
-        print(sid, '<-', name, 'ok')
-
-
 def main():
     if len(sys.argv) < 2:
         print(__doc__); sys.exit(1)
     txt = open(JS, encoding='utf-8').read()
     head = txt[:txt.index('window.MP_CHAR_SPRITES')]
     meta = json.loads(txt[txt.index('{'):txt.index('};') + 1])
-    if sys.argv[1] == '--pack':
-        for d in sys.argv[2:]:
-            build_pack(d, meta)
-        return save(head, meta)
     srcdir = sys.argv[1]
     data = {}
     for s, ids in SETS.items():
@@ -171,7 +144,10 @@ def main():
         c = front if front is not None else fr['down'][int(np.argmin([leg_width(c) for c in fr['down']]))]
         b = bbox(c); hs.append(b[3] - b[1])
     k = round(float(np.mean(hs)) / BODY_H, 4)
+    packed = set(re.findall(r"^\s+(R\d+[bg]): \[", open(PACKS, encoding='utf-8').read(), re.M))
     for sid, (fr, front) in data.items():
+        if sid in packed:
+            continue   # 걷기 그림 팩 PNG 를 그대로 씀
         meta[sid] = build(fr, front, sid, k)
         print(sid, 'ok')
     save(head, meta)

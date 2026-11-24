@@ -10,7 +10,13 @@
  *
  * 캐릭터 종류
  *  free   : 처음부터 고를 수 있음 (기본 남자아이 F1, 기본 여자아이 F2)
- *  reward : 그 건물(스테이지)을 통과하면 받음. 남자아이(b)·여자아이(g) 두 그림 중 내 성별 쪽을 씀
+ *  reward : 그 건물(스테이지)을 통과하면 받음. 남자아이(b)·여자아이(g) 그림이 따로 있고 고르기 화면에서 하나를 고름
+ *
+ * 걷기 그림 팩(js/data/character-packs.js 의 map 에 있는 그림 id):
+ *  walk.json 의 texture PNG 에서 224x320 한 칸만 잘라 그대로 그림(좌우 뒤집기·여백 자르기 없음).
+ *  방향 줄: 아래로 front(0) · 왼쪽 left(1) · 오른쪽 right(2) · 위로 back(3).
+ *  칸 안의 발 기준점(anchorPixels)이 캐릭터의 지도 좌표(발밑)에 오고, 몸 키 bodyPx 를 DRAW_H 로 맞춰 같은 비율로 줄임.
+ *  걸을 때만 frameDurationMs(80ms)마다 다음 열(0~11 반복), 멈추면 그 방향의 서 있기 열(idle)을 고정.
  *  shop   : 추억 상점 티켓으로 삼
  */
 (function () {
@@ -51,8 +57,68 @@
     return c && c.kind === 'reward' ? id + (gender === 'girl' ? 'g' : 'b') : id;
   }
 
+  // ---------- 걷기 그림 팩 ----------
+  var PK = window.MP_CHAR_PACKS || { packs: {}, map: {}, idle: {} };
+  var PACK_DIR = { down: 'front', left: 'left', right: 'right', up: 'back' };
+  var packInfo = {}, packImgs = {};
+  function isPack(sid) { return !!PK.map[sid]; }
+  function loadPackInfo(pack) {
+    var e = packInfo[pack];
+    if (e) return e;
+    e = packInfo[pack] = { info: null, done: false };
+    fetch(PK.packs[pack].dir + 'walk.json' + (window.MP_CHAR_VER ? '?v=' + window.MP_CHAR_VER : ''))
+      .then(function (r) { return r.json(); })
+      .then(function (j) { e.info = j; e.done = true; })
+      .catch(function () { e.done = true; console.error('걷기 그림 팩 walk.json 을 불러오지 못했어요: ' + pack); });
+    return e;
+  }
+  // 팩 캐릭터 그림: walk.json 과 texture PNG 가 둘 다 준비되면 ok
+  function loadPack(sid) {
+    var m = PK.map[sid], pi = loadPackInfo(m[0]), e = packImgs[sid];
+    if (!e) {
+      e = packImgs[sid] = { img: new Image(), started: false, imgOk: false, imgDone: false, ch: null };
+      Object.defineProperty(e, 'ok', { get: function () { return e.imgOk && !!e.ch; } });
+      Object.defineProperty(e, 'done', { get: function () { return e.imgDone || (pi.done && !pi.info); } });
+      e.img.onload = function () { e.imgOk = e.imgDone = true; };
+      e.img.onerror = function () { e.imgDone = true; console.error('캐릭터 그림을 불러오지 못했어요: ' + sid); };
+    }
+    if (!e.started && pi.info) {
+      e.started = true;
+      e.ch = pi.info.characters[m[1]] || null;
+      if (!e.ch) { e.imgDone = true; console.error('walk.json 에 없는 캐릭터예요: ' + m[0] + '/' + m[1]); }
+      else e.img.src = PK.packs[m[0]].dir + e.ch.texture;
+    } else if (!e.started && !pi.done && !e.waiting) {
+      // walk.json 을 받는 대로 PNG 도 받기 시작
+      e.waiting = true;
+      var t = setInterval(function () { if (pi.done) { clearInterval(t); e.waiting = false; loadPack(sid); } }, 50);
+    }
+    return e;
+  }
+  // 팩 그림 한 칸 그리기. col: 0~11(그 방향 애니메이션 안의 몇 번째 프레임)
+  function drawPack(ctx, sid, x, y, dir, h, col) {
+    var e = loadPack(sid);
+    if (!e.ok) return false;
+    var m = PK.map[sid], info = packInfo[m[0]].info, a = e.ch.animations[PACK_DIR[dir] || 'front'];
+    if (!a) return false;
+    var fw = info.frameWidth, fh = info.frameHeight, ax = info.anchorPixels.x, ay = info.anchorPixels.y;
+    var s = h / PK.packs[m[0]].bodyPx, c = a.firstColumn + (col % a.frameCount);
+    ctx.drawImage(e.img, c * fw, a.row * fh, fw, fh, x - ax * s, y - ay * s, fw * s, fh * s);
+    return true;
+  }
+  function packIdleCol(sid, dir) {
+    var m = PK.map[sid], id = PK.idle[m[0] + '/' + m[1]];
+    return (id && id[PACK_DIR[dir] || 'front']) || 0;
+  }
+  function packWalkCol(sid, ms) {
+    var e = loadPack(sid), info = packInfo[PK.map[sid][0]].info;
+    return Math.floor(ms / (info.frameDurationMs || 80));
+  }
+  // 고르기 화면 이름(팩 캐릭터는 그 캐릭터 이름)
+  function spriteName(sid) { return PK.map[sid] ? PK.map[sid][2] : null; }
+
   var images = {};
   function load(sid) {
+    if (isPack(sid)) return loadPack(sid);
     var e = images[sid];
     if (e) return e;
     e = images[sid] = { img: new Image(), ok: false, done: false };
@@ -70,6 +136,7 @@
   // 시트: 줄 = 프레임, 칸 = down·up·right. 프레임은 작게(k배) 저장돼 있음. 왼쪽은 옆모습을 뒤집음
   var anims = {};
   function loadAnim(sid) {
+    if (isPack(sid)) return loadPack(sid);
     var A = SPR[sid] && SPR[sid].anim;
     if (!A) return null;
     var e = anims[sid];
@@ -85,6 +152,7 @@
     return dir === 'up' ? 'up' : dir === 'down' ? 'down' : dir === 'left' && m.views.left ? 'left' : 'right';
   }
   function drawAnim(ctx, sid, x, y, dir, h, t) {
+    if (isPack(sid)) return loadPack(sid).ok && drawPack(ctx, sid, x, y, dir, h, packWalkCol(sid, t * 1000));
     var A = SPR[sid] && SPR[sid].anim, e = loadAnim(sid);
     if (!A || !e || !e.ok) return false;
     var k = Math.floor(t * 1000 / A.ms) % A.frames;
@@ -102,6 +170,7 @@
   // opt.walk: 걷는 자세 그림(<id>-walk.webp)을 씀, opt.mirror: 좌우를 한 번 더 뒤집음(앞·뒤 모습의 반대 발)
   function drawSprite(ctx, sid, x, y, dir, h, opt) {
     opt = opt || {};
+    if (isPack(sid)) return drawPack(ctx, sid, x, y, dir, h, packIdleCol(sid, dir));
     // 걷기 GIF 가 있는 캐릭터는 서 있을 때도 GIF 그림(두 발이 가장 모인 장)을 씀 → 걷기와 서 있기 그림이 같음
     var A = SPR[sid] && SPR[sid].anim, ae = A && !opt.walk && loadAnim(sid);
     if (ae && ae.ok) {
@@ -142,11 +211,25 @@
     this.sid = spriteId(this.id, this.gender);
     load(this.sid);
     loadAnim(this.sid);   // 걷기 GIF 프레임도 미리
+    this.walkMs = 0; this.lastT = null;
   };
   Object.defineProperty(Walker.prototype, 'isPlaceholder', { get: function () { return !load(this.sid).ok; } });
   Walker.prototype.draw = function (ctx, x, y, dir, moving, t) {
     var e = load(this.sid);
     if (!e.ok) { if (this.fallback) this.fallback.draw(ctx, x, y, dir, moving, t); return; }
+    if (isPack(this.sid)) {
+      // 걷기 시계: 이 캐릭터가 실제로 움직이는 동안만 흐름(화면을 다시 그릴 때마다 0 으로 돌아가지 않음).
+      // 멈추면 0 으로 돌려 다음 걸음은 0열부터, 멈춘 동안은 마지막 방향의 서 있기 열을 고정
+      var dt = this.lastT == null ? 0 : Math.min(0.25, Math.max(0, t - this.lastT));
+      this.lastT = t;
+      this.walkMs = moving ? this.walkMs + dt * 1000 : 0;
+      ctx.save();
+      ctx.fillStyle = 'rgba(30,40,60,0.25)';
+      ctx.beginPath(); ctx.ellipse(x, y - 1, 16, 5.2, 0, 0, Math.PI * 2); ctx.fill();
+      ctx.restore();
+      drawPack(ctx, this.sid, x, y, dir, DRAW_H, moving ? packWalkCol(this.sid, this.walkMs) : packIdleCol(this.sid, dir));
+      return;
+    }
     var opt;
     if (moving && SPR[this.sid] && SPR[this.sid].anim && loadAnim(this.sid).ok) {
       // 움직이는 걷기 GIF 가 있으면 그 한 걸음 프레임을 GIF 빠르기대로 차례로 보여 줌
@@ -188,6 +271,6 @@
 
   window.MPChars = {
     ROSTER: ROSTER, byId: function (id) { return BY_ID[id] || null; },
-    spriteId: spriteId, load: load, loadAnim: loadAnim, drawSprite: drawSprite, drawAnim: drawAnim, Walker: Walker, BODY_H: BODY_H, DRAW_H: DRAW_H
+    spriteId: spriteId, spriteName: spriteName, isPack: isPack, load: load, loadAnim: loadAnim, drawSprite: drawSprite, drawAnim: drawAnim, Walker: Walker, BODY_H: BODY_H, DRAW_H: DRAW_H
   };
 })();

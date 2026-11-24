@@ -378,7 +378,7 @@
   // ---------- 캐릭터 고르기 ----------
   // 저장: makepark.save.v1 의 character = { id, gender, owned: [산 캐릭터 id] }, tickets(코스터 미션이 줌)
   // 무료(F1·F2)는 언제나, 건물 보상(R)은 그 건물을 통과하면, 가게(S)는 티켓으로 사면 고를 수 있습니다.
-  // 보상 캐릭터는 마지막으로 고른 기본 캐릭터의 성별(gender)에 맞는 그림(남 b / 여 g)을 씁니다.
+  // 보상 캐릭터는 남자아이(b)·여자아이(g) 카드가 따로 있고, 고른 카드의 gender 를 저장해 그 그림을 씁니다.
   function charSave(s) {
     var c = (s && s.character) || {}, M = window.MPChars;
     return {
@@ -423,7 +423,7 @@
   function renderChars() {
     var s = readSave() || {}, cs = charSave(s), tickets = s.tickets || 0;
     ui.charTickets.textContent = charMode === 'create' ? '건물 보상·티켓 가게 캐릭터는 공원에서 모을 수 있어요.' : '내 티켓 ' + tickets + '장';
-    if (CHAR_TEST || isTester()) ui.charTickets.textContent = (CHAR_TEST ? '시험 모드' : '테스터') + ': 모든 캐릭터를 골라 볼 수 있어요 (보상 캐릭터는 기본 남자/여자를 먼저 골라 성별을 바꿔요)';
+    if (CHAR_TEST || isTester()) ui.charTickets.textContent = (CHAR_TEST ? '시험 모드' : '테스터') + ': 모든 캐릭터를 골라 볼 수 있어요';
     ui.charList.textContent = '';
     CHAR_SECTIONS.forEach(function (sec) {
       if (charMode === 'create' && sec[0] !== 'free' && !CHAR_TEST && !isTester()) return;
@@ -431,19 +431,28 @@
       h.textContent = sec[1] + ' ';
       var sm = document.createElement('small'); sm.textContent = sec[2]; h.appendChild(sm);
       var grid = document.createElement('div'); grid.className = 'char-grid';
+      var cards = [];
       MPChars.ROSTER.filter(function (d) { return d.kind === sec[0]; }).forEach(function (d) {
-        var open = charUnlocked(d, cs), cur = charMode !== 'create' && cs.id === d.id;
+        if (d.kind === 'reward') { cards.push([d, 'boy']); cards.push([d, 'girl']); }
+        else cards.push([d, d.kind === 'free' ? d.gender : null]);
+      });
+      cards.forEach(function (cd) {
+        var d = cd[0], gd = cd[1], sid = MPChars.spriteId(d.id, gd || cs.gender);
+        var label = (MPChars.spriteName && MPChars.spriteName(sid)) || (d.kind === 'reward' ? d.name + (gd === 'girl' ? ' (여)' : ' (남)') : d.name);
+        var open = charUnlocked(d, cs), cur = charMode !== 'create' && cs.id === d.id && (d.kind !== 'reward' || cs.gender === gd);
         var b = document.createElement('button'); b.type = 'button';
         b.className = 'char-card' + (cur ? ' current' : '') + (open ? '' : ' locked') + (pendingBuy === d.id ? ' confirm' : '');
         b.dataset.id = d.id;
+        if (d.kind === 'reward') b.dataset.gender = gd;
+        b.dataset.name = label;
         var cv = document.createElement('canvas'); cv.width = 96; cv.height = 112;
-        drawCard(cv, MPChars.spriteId(d.id, d.kind === 'free' ? d.gender : cs.gender), !open);
-        var nm = document.createElement('span'); nm.className = 'char-name'; nm.textContent = d.name;
+        drawCard(cv, sid, !open);
+        var nm = document.createElement('span'); nm.className = 'char-name'; nm.textContent = label;
         var st = document.createElement('span'); st.className = 'char-state';
         st.textContent = cur ? '지금 캐릭터' : open ? '고르기'
           : d.kind === 'reward' ? '🔒 ' + facilityName(d.facility)
           : pendingBuy === d.id ? '한 번 더 누르면 사요' : '🎟 ' + d.price + '장';
-        b.setAttribute('aria-label', d.name + ', ' + st.textContent);
+        b.setAttribute('aria-label', label + ', ' + st.textContent);
         b.appendChild(cv); b.appendChild(nm); b.appendChild(st); grid.appendChild(b);
       });
       ui.charList.appendChild(h); ui.charList.appendChild(grid);
@@ -462,21 +471,22 @@
     var ae = MPChars.loadAnim ? MPChars.loadAnim(sid) : null;
     if (paint() && (!ae || ae.ok)) return;
     var e = MPChars.load(sid), tries = 0;
-    (function wait() { if ((ae ? ae.ok : e.done) || tries++ > 100) paint(); else setTimeout(wait, 60); })();
+    (function wait() { if ((ae ? ae.ok || ae.done : e.done) || tries++ > 400) paint(); else setTimeout(wait, 60); })();
   }
-  function selectChar(d, cs) {
-    var gender = d.kind === 'free' ? d.gender : cs.gender;
+  // gender: 보상 캐릭터는 누른 카드(남/여), 기본은 그 캐릭터의 성별, 가게 캐릭터는 지금 성별 그대로
+  function selectChar(d, cs, gender, label) {
+    gender = d.kind === 'free' ? d.gender : (gender === 'girl' || gender === 'boy') ? gender : cs.gender;
     patchSave({ character: { id: d.id, gender: gender, owned: cs.owned } });
     character.set(d.id, gender);
     if (charMode === 'create') { var en = charEntry; closeChars(); if (en) enterPark(en.name, en.grade); return; }
     renderChars();
-    ui.charMsg.textContent = josa(d.name, '으로') + ' 바꿨어요!';
+    ui.charMsg.textContent = josa(label || d.name, '으로') + ' 바꿨어요!';
   }
   function onCharClick(e) {
     var b = e.target.closest && e.target.closest('.char-card');
     if (!b) return;
     var d = MPChars.byId(b.dataset.id), s = readSave() || {}, cs = charSave(s);
-    if (charUnlocked(d, cs)) { pendingBuy = null; selectChar(d, cs); return; }
+    if (charUnlocked(d, cs)) { pendingBuy = null; selectChar(d, cs, b.dataset.gender, b.dataset.name); return; }
     if (d.kind === 'reward') {
       pendingBuy = null; renderChars();
       ui.charMsg.textContent = d.facility === 'coaster'
@@ -607,9 +617,10 @@
       stopMoving();
       var len = Math.hypot(ix, iy), dx = ix / len * speed * dt, dy = iy / len * speed * dt;
       // 한 번에 2px 이하로 나눠 움직여 가장자리에서 자연스럽게 미끄러지게
-      var steps = Math.max(1, Math.ceil(Math.hypot(dx, dy) / 2));
-      for (var k = 0; k < steps; k++) tryMove(dx / steps, dy / steps);
-      setDir(ix, iy); p.moving = true;
+      var steps = Math.max(1, Math.ceil(Math.hypot(dx, dy) / 2)), moved = false;
+      for (var k = 0; k < steps; k++) if (tryMove(dx / steps, dy / steps)) moved = true;
+      // 방향은 누른 쪽으로 바꾸되, 벽에 막혀 한 걸음도 못 가면 멈춘 것으로 봄(서 있기 그림)
+      setDir(ix, iy); p.moving = moved;
       return;
     }
     if (state.path && state.path.length) {
