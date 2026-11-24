@@ -76,7 +76,7 @@
   function loadPack(sid) {
     var m = PK.map[sid], pi = loadPackInfo(m[0]), e = packImgs[sid];
     if (!e) {
-      e = packImgs[sid] = { img: new Image(), started: false, imgOk: false, imgDone: false, ch: null };
+      e = packImgs[sid] = { sid: sid, img: new Image(), started: false, imgOk: false, imgDone: false, ch: null };
       Object.defineProperty(e, 'ok', { get: function () { return e.imgOk && !!e.ch; } });
       Object.defineProperty(e, 'done', { get: function () { return e.imgDone || (pi.done && !pi.info); } });
       e.img.onload = function () { e.imgOk = e.imgDone = true; };
@@ -103,8 +103,37 @@
     if (!a) return false;
     var fw = info.frameWidth, fh = info.frameHeight, ax = info.anchorPixels.x, ay = info.anchorPixels.y;
     var s = h / PK.packs[m[0]].bodyPx, c = a.firstColumn + (col % a.frameCount);
-    ctx.drawImage(e.img, c * fw, a.row * fh, fw, fh, x - ax * s, y - ay * s, fw * s, fh * s);
+    var dx = x - ax * s, dy = y - ay * s, T = ctx.getTransform ? ctx.getTransform() : null;
+    var src = e.img, k = 1;
+    if (T && !T.b && !T.c && T.a > 0 && T.d > 0) {
+      // ① 화면 점에 맞춤: 지도는 화면 점 단위로 그려지는데 캐릭터만 반 점씩 어긋나면 움직일 때
+      //    땅 위에서 미세하게 떨리고 윤곽이 겹쳐 보임 → 칸의 왼쪽 위 모서리를 화면 점에 맞춤(기준점은 그대로 따라감)
+      dx = (Math.round(T.a * dx + T.e) - T.e) / T.a;
+      dy = (Math.round(T.d * dy + T.f) - T.f) / T.d;
+      // ② 미리 줄여 둔 그림: 큰 그림(2688x1280)을 매 장면 1/3 정도로 줄여 그리면 느린 기기에서 무겁고 반짝이므로
+      //    지금 화면 크기에 맞게 한 번 줄여 둔 그림에서 거의 1:1 로 잘라 그림(크기가 바뀌면 다시 만듦)
+      var cache = scaledAtlas(e, T.a * s);
+      if (cache) { src = cache.cv; k = cache.k; }
+    }
+    ctx.drawImage(src, Math.round(c * fw * k), Math.round(a.row * fh * k), Math.round(fw * k), Math.round(fh * k), dx, dy, fw * s, fh * s);
     return true;
+  }
+  // 화면에 그려질 배율(devScale)에 맞춰 한 번 줄여 둔 걷기 그림. 배율은 2^(1/4) 단계로 묶어 확대·축소 중 자꾸 다시 만들지 않음
+  function scaledAtlas(e, devScale) {
+    var k = Math.pow(2, Math.ceil(Math.log(devScale) / Math.LN2 * 4) / 4);   // 조금 크게(흐려지지 않게)
+    if (!(k > 0) || k >= 0.85) return null;                                    // 거의 원래 크기면 원본 그대로
+    if (e.scaled && e.scaled.k === k) return e.scaled;
+    var W = e.img.naturalWidth, H = e.img.naturalHeight, cv = document.createElement('canvas');
+    cv.width = Math.round(W * k); cv.height = Math.round(H * k);
+    var g = cv.getContext('2d');
+    g.imageSmoothingEnabled = true; g.imageSmoothingQuality = 'high';
+    // 칸마다 따로 줄여 칸 경계가 정확히 정수 위치에 오게 함(옆 칸 그림이 섞여 들어오지 않게)
+    var info = packInfo[PK.map[e.sid][0]].info, fw = info.frameWidth, fh = info.frameHeight;
+    for (var r = 0; r * fh < H; r++) for (var q = 0; q * fw < W; q++) {
+      g.drawImage(e.img, q * fw, r * fh, fw, fh, Math.round(q * fw * k), Math.round(r * fh * k), Math.round(fw * k), Math.round(fh * k));
+    }
+    e.scaled = { k: k, cv: cv };
+    return e.scaled;
   }
   function packIdleCol(sid, dir) {
     var m = PK.map[sid], id = PK.idle[m[0] + '/' + m[1]];
@@ -232,7 +261,7 @@
     this.sid = spriteId(this.id, this.gender);
     load(this.sid);
     loadAnim(this.sid);   // 걷기 GIF 프레임도 미리
-    this.walkMs = 0; this.lastT = null;
+    this.walkMs = 0; this.lastT = null; this.stillMs = 1e9;
   };
   Object.defineProperty(Walker.prototype, 'isPlaceholder', { get: function () { return !load(this.sid).ok; } });
   Walker.prototype.draw = function (ctx, x, y, dir, moving, t) {
@@ -243,13 +272,23 @@
       // 멈추면 0 으로 돌려 다음 걸음은 0열부터, 멈춘 동안은 마지막 방향의 서 있기 열을 고정
       var dt = this.lastT == null ? 0 : Math.min(0.25, Math.max(0, t - this.lastT));
       this.lastT = t;
-      this.walkMs = moving ? this.walkMs + dt * 1000 : 0;
+      // ③ 아주 잠깐 멈춘 것(벽을 따라 미끄러질 때, 친구 위치를 받는 사이)은 멈춤으로 보지 않음:
+      //    0.15초보다 짧게 멈추면 걷기를 이어 가고, 그보다 길게 멈춰야 서 있기 그림 + 다음 걸음은 0열부터
+      if (moving) { this.walkMs += dt * 1000; this.stillMs = 0; }
+      else { this.stillMs = (this.stillMs || 0) + dt * 1000; if (this.stillMs >= 150) this.walkMs = 0; }
+      var walking = moving || this.stillMs < 150;
       ctx.save();
       ctx.fillStyle = 'rgba(30,40,60,0.25)';
       ctx.beginPath(); ctx.ellipse(x, y - 1, 16, 5.2, 0, 0, Math.PI * 2); ctx.fill();
       ctx.restore();
-      drawPack(ctx, this.sid, x, y, dir, DRAW_H, moving ? packWalkCol(this.sid, this.walkMs) : packIdleCol(this.sid, dir));
+      drawPack(ctx, this.sid, x, y, dir, DRAW_H, walking && this.walkMs > 0 ? packWalkCol(this.sid, this.walkMs) : packIdleCol(this.sid, dir));
       return;
+    }
+    // 예전 방식 그림도 발 위치를 화면 점에 맞춤(지도와 따로 반 점씩 떨리지 않게)
+    var T = ctx.getTransform ? ctx.getTransform() : null;
+    if (T && !T.b && !T.c && T.a > 0 && T.d > 0) {
+      x = (Math.round(T.a * x + T.e) - T.e) / T.a;
+      y = (Math.round(T.d * y + T.f) - T.f) / T.d;
     }
     var opt;
     if (moving && SPR[this.sid] && SPR[this.sid].anim && loadAnim(this.sid).ok) {
