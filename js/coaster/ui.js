@@ -182,7 +182,7 @@
     if (!turtleImgs[d]) { turtleImgs[d] = new Image(); turtleImgs[d].src = BASE + 'turtle-' + d + '.webp'; }
     return turtleImgs[d];
   }
-  // 대기실 역장 대기 움직임(assets/coaster-src/turtle-idle, 384×384 고정 캔버스 8프레임: 도면을 펼쳐 보고 접은 뒤 손 흔들기)
+  // 대기실 역장 대기 움직임(assets/coaster-src/turtle-idle-hanok.webp → tools/build_hanok_npcs.py, 384×384 고정 캔버스 8프레임: 도면을 펼쳐 보고 접은 뒤 손 흔들기)
   // 대화 중에는 정면 자세(turtle-front) 한 장으로 멈춤. 발 위치는 프레임마다 거의 같음(아래 끝 353)
   var IDLE = { size: 384, ms: [1200, 180, 220, 1200, 220, 180, 250, 1000], foot: 353, draw: 236 };
   IDLE.total = IDLE.ms.reduce(function (a, b) { return a + b; }, 0);

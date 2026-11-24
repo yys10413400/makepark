@@ -56,7 +56,7 @@
     });
   }
 
-  // ---------- 토리 인사 움직임(assets/picnic-src/tori-sprites.png, 384×384 고정 캔버스 8프레임) ----------
+  // ---------- 토리 인사 움직임(assets/picnic-src/tori-sprites-hanok.webp → tools/build_hanok_npcs.py, 384×384 고정 캔버스 8프레임) ----------
   var TORI = { ms: [180, 110, 100, 100, 110, 125, 145, 170], size: 384, foot: 353, imgs: [] };
   TORI.total = TORI.ms.reduce(function (a, b) { return a + b; }, 0);
   for (var ti = 0; ti < 8; ti++) { TORI.imgs[ti] = new Image(); TORI.imgs[ti].src = BASE + 'tori-idle-0' + ti + '.webp'; }

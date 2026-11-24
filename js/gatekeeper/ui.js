@@ -238,7 +238,7 @@
     ui.root.hidden = false;
     document.body.classList.add('gate-open');
     showScene('lobby');
-    S.me = { x: 836, y: 822, dir: 'up', moving: false };   // 계단 위(카펫 끝)에서 시작
+    S.me = { x: 836, y: 822, dir: 'up', moving: false };   // 아래쪽 가운데(입구 쪽)에서 시작
     S.dest = null; S.keys = {}; S.dialog = false; ui.dialog.hidden = true;
     ui.tip.textContent = TIP;
     S.last = performance.now();
@@ -294,10 +294,10 @@
 
   // ---------- 로비 걷기 ----------
   // 걸을 수 있는 바닥(그림 좌표 다각형)과 막힌 가구(발 기준 타원)
-  var FLOOR = [[60, 600], [120, 520], [180, 470], [430, 450], [470, 432], [1580, 432], [1640, 470], [1660, 560],
-    [1660, 930], [1075, 930], [1070, 815], [962, 815], [958, 941], [712, 941], [708, 815], [600, 815], [595, 930], [10, 930], [10, 640]];
-  // 의자·스탠드 탁자·괘종시계 받침
-  var BLOCKS = [{ x: 275, y: 448, rx: 95, ry: 30 }, { x: 382, y: 440, rx: 45, ry: 20 }, { x: 565, y: 422, rx: 70, ry: 18 }];
+  var FLOOR = [[0, 640], [60, 580], [150, 502], [300, 502], [505, 494], [1600, 494], [1640, 540], [1662, 575],
+    [1662, 930], [10, 930]];
+  // 등불 탁자·반닫이 받침
+  var BLOCKS = [{ x: 230, y: 506, rx: 72, ry: 16 }, { x: 410, y: 500, rx: 98, ry: 13 }];
   var GHOST = { x: 1095, y: 520, h: 195 };
   var EXIT_Y = 868;   // 아래 카펫(입구)으로 내려가면 '공원으로 나가기'
   function inPoly(x, y, p) {
@@ -316,7 +316,7 @@
   // 캐릭터 몸 키: 공원에서 돌아다닐 때 화면에 보이는 크기와 똑같이(그림 좌표로 바꿔서)
   // 캐릭터 몸 키: 공원에서 걸을 때 화면 크기의 1.3배(로비는 방 안을 가까이 그린 그림이라 의자 높이쯤이 자연스러움)
   // + 원근: 방 안쪽(위)은 조금 작게, 앞쪽(아래)은 조금 크게
-  var LOBBY_SCALE = 1.3, FLOOR_TOP = 432;
+  var LOBBY_SCALE = 1.3, FLOOR_TOP = 494;
   function charH(y) {
     var r = ui.canvas.getBoundingClientRect(), px = api().charScreenH ? api().charScreenH() : 94;
     var base = r.height ? px * IH / r.height : 125;
@@ -355,9 +355,9 @@
     if (!ghostImgs[n]) { ghostImgs[n] = new Image(); ghostImgs[n].src = SPR.base + 'ghost-' + n + '.webp'; }
     return ghostImgs[n];
   }
-  // 로비 유령 대기 움직임(assets/gatekeeper-src/ghost-float, 384×384 고정 캔버스 8프레임 — 떠오르기가 그림에 들어 있어 따로 흔들지 않음)
+  // 로비 유령 대기 움직임(assets/gatekeeper-src/ghost-float-hanok.webp → tools/build_hanok_npcs.py, 384×384 고정 캔버스 8프레임 — 떠오르기가 그림에 들어 있어 따로 흔들지 않음)
   // 대화 중에는 정면 자세(ghost-float-idle) 한 장으로 멈춤. bottom: 프레임마다 유령 아래 끝(그림자 크기용)
-  var FLOAT = { size: 384, ms: [500, 300, 300, 300, 500, 300, 300, 500], bottom: [346, 335, 322, 319, 320, 326, 341, 348], base: 346, draw: 253 };
+  var FLOAT = { size: 384, ms: [500, 300, 300, 300, 500, 300, 300, 500], bottom: [345, 334, 323, 334, 338, 344, 350, 340], base: 346, draw: 253 };
   FLOAT.total = FLOAT.ms.reduce(function (a, b) { return a + b; }, 0);
   function floatFrame(t) {
     var ms = (t * 1000) % FLOAT.total;
