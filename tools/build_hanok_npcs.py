@@ -14,7 +14,7 @@
   arcade-src/pixel-hanok-sheet.webp (4×2)     → arcade/pixel-walk(8칸 띠), pixel-idle(0번)
   thrill-src/toto-hanok-sheet.webp (4×2)      → thrill/toto(8칸 띠), toto-face(0번 윗부분)
   gatekeeper-src/ghost-float-hanok.webp (4×2) → gatekeeper/ghost-float-00~07, ghost-float-idle, ghost-hello, ghost-idle
-  parade-src/riri-opening-hanok-a/b.webp (2×2 두 장) → parade/riri-opening(640 칸 4×2)
+  parade-src/riri-opening-hanok-a/b.webp (2×2 두 장) → parade/riri-opening(640 칸 4×2, 발 (370, 608))
   gatekeeper-src/lobby.webp                   → gatekeeper/lobby.webp
 """
 import os
@@ -135,8 +135,10 @@ report['ghost bottoms'] = [int(bbox(f)[3]) for f in fr]
 a = cells('parade-src/riri-opening-hanok-a.webp', 2, 2)
 b = cells('parade-src/riri-opening-hanok-b.webp', 2, 2)
 order = [b[0], a[0], b[1], a[1], a[2], b[2], a[3], b[3]]
-anc, hgt = old_anchor('parade/riri-opening.webp', (0, 0, 640, 640))
-fr = place_all(order, (640, 640), anc, hgt)
+# 발 기준점을 (370, 608)에 둠 — 꼬리깃을 활짝 편 7번 프레임이 발보다 왼쪽으로 345px 넘게 펼쳐져
+# 예전 기준(320)이면 칸 왼쪽에서 잘림. 몸 키 581(예전 그림과 같음). js/parade 의 RIRI_FOOT_X 와 같은 값
+RIRI_FOOT = (370, 608)
+fr = place_all(order, (640, 640), RIRI_FOOT, 581)
 sheet = Image.new('RGBA', (2560, 1280), (0, 0, 0, 0))
 for i, f in enumerate(fr):
     sheet.alpha_composite(f, ((i % 4) * 640, (i // 4) * 640))

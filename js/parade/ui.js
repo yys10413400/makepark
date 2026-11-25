@@ -51,7 +51,8 @@
     eraser: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15.1 3.6 21 9.5c.8.8.8 2 0 2.8L12.3 21H6.8l-3.6-3.6c-.8-.8-.8-2 0-2.8L12.3 3.6c.8-.8 2-.8 2.8 0z" fill="#f2a0b0"/><path d="M8.6 9.1 15.5 16l-5 5H6.8l-3.6-3.6c-.8-.8-.8-2 0-2.8z" fill="#fff"/><path d="M12 21h9" stroke="#b77" stroke-width="1.6"/></svg>'
   };
 
-  // ---------- 리리 인사(오프닝 8프레임, 640 칸, 발 (320,608)) ----------
+  // ---------- 리리 인사(오프닝 8프레임, 640 칸, 발 (370,608) — tools/build_hanok_npcs.py 의 RIRI_FOOT) ----------
+  var RIRI_FOOT_X = 370;
   var OPEN_MS = [220, 110, 290, 135, 110, 130, 125, 760];
   var riri = new Image(); riri.src = BASE + 'riri-opening.webp';
   function openingFrame(ms) {
@@ -195,7 +196,7 @@
   function drawFace() {
     var g = ui.face.getContext('2d');
     g.clearRect(0, 0, 320, 320);
-    if (riri.complete && riri.naturalWidth) g.drawImage(riri, 150, 30, 340, 340, 0, 0, 320, 320);   // 프레임 0의 얼굴·가슴
+    if (riri.complete && riri.naturalWidth) g.drawImage(riri, RIRI_FOOT_X - 170, 30, 340, 340, 0, 0, 320, 320);   // 프레임 0의 얼굴·가슴
   }
   function openStart() {
     if (S.start) return;
@@ -559,7 +560,7 @@
     shadow(c, RIRI_POS.x, RIRI_POS.y, 68);
     if (riri.complete && riri.naturalWidth) {
       var bob = f === 0 ? Math.sin(now / 420) * 3 : 0;
-      c.drawImage(riri, f % 4 * 640, Math.floor(f / 4) * 640, 640, 640, RIRI_POS.x - 320 * k, RIRI_POS.y - 608 * k + bob, 640 * k, 640 * k);
+      c.drawImage(riri, f % 4 * 640, Math.floor(f / 4) * 640, 640, 640, RIRI_POS.x - RIRI_FOOT_X * k, RIRI_POS.y - 608 * k + bob, 640 * k, 640 * k);
     }
   }
   function drawMe(c, t) {

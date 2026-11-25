@@ -2,7 +2,7 @@
  * 무지개 행진길 — 퍼레이드 보기(그리기만 담당)
  * ------------------------------------------------------------
  * 현수막 꾸미기 화면(js/parade/ui.js)의 퍼레이드 팝업 안에 그립니다.
- *  1. 리리가 8프레임 오프닝으로 인사하고 무지개 꼬리를 펼침(assets/parade/riri-opening.webp, 640 칸, 발 (320,608))
+ *  1. 리리가 8프레임 오프닝으로 인사하고 무지개 꼬리를 펼침(assets/parade/riri-opening.webp, 640 칸, 발 (370,608) — 활짝 편 꼬리깃이 칸 안에 다 들어가게 발을 오른쪽에 둠)
  *  2. 시작 1120ms(오프닝 README 의 카트 신호)에 모모·루루가 현수막을 들고 왼쪽에서 걸어 들어옴.
  *     리리는 행렬이 가까이 오면 걷기 그림으로 바꿔 맨 앞에서 같이 걸음
  *  3. 현수막 가운데가 화면 가운데에 오면 잠깐 멈춰 작품을 보여 주고, 다시 걸어서 오른쪽으로 퇴장
@@ -17,6 +17,7 @@
   'use strict';
   var IW = 1672, IH = 941;
   var OPEN_MS = [220, 110, 290, 135, 110, 130, 125, 760], CART_CUE = 1120;
+  var RIRI_FOOT_X = 370;                                       // 인사 그림 칸 안 발 가운데 x (tools/build_hanok_npcs.py 의 RIRI_FOOT)
   var WALK = { size: 448, frameMs: 95, speed: 0.33 };          // 걷기 칸·한 프레임 시간·화면 px/ms
   var K = 1.08;                                                // 걷기 그림 배율(몸 키 약 440px)
   var KO = K * 408 / 580;                                      // 오프닝 배율: 오프닝 몸 키(580)를 걷기 몸 키(408)에 맞춤
@@ -248,7 +249,7 @@
       if (lead <= GREET_X) {
         shadow(GREET_X, 140 * K);
         var f = openingFrame(ms), s = 640;
-        ctx.drawImage(imgs.open, f % 4 * s, Math.floor(f / 4) * s, s, s, GREET_X - 320 * KO, GROUND - 608 * KO, s * KO, s * KO);
+        ctx.drawImage(imgs.open, f % 4 * s, Math.floor(f / 4) * s, s, s, GREET_X - RIRI_FOOT_X * KO, GROUND - 608 * KO, s * KO, s * KO);
       } else {
         shadow(lead, 110 * K);
         sheet(imgs.riri, frame, lead - RIRI.mid * K, GROUND - RIRI.foot * K);
