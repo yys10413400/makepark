@@ -54,7 +54,7 @@
 | `js/thrill/ui.js`, `css/thrill.css` | 콩콩 범퍼카 화면: 광장 걷기·토토에게 말 걸기 → 학년 → 하는 방법 → 자유 연습 → 카드 모으기·이야기 → 퀴즈 → 결과 |
 | `assets/thrill/`, `assets/thrill-src/` | 범퍼카 연구소 그림(로비, 낮·밤 경기장, 토토 8프레임, 범퍼카 8방향·주행·충돌, 소품 11종)과 받은 원본. `python -I tools/build_thrill.py`로 만듦 |
 | `tools/verify_thrill.js` | 범퍼카 움직임·미션 자동 검증 (`node tools/verify_thrill.js`) |
-| `js/geulmaru/words.js` | 우리말 글마루 낱말 문제 은행(학년별 10문제 × 6 = 60문제, 유형 4가지: 뜻·빈칸·바른 문장·상황)과 출제 로직(학년 안에서 낱말 안 겹치게 10개, 선택지 섞기·정답 번호 다시 계산, 오답 복습). 화면과 분리된 데이터라 문제를 더 넣기 쉬움 |
+| `js/geulmaru/words.js` | 우리말 글마루 낱말 문제 은행(학년별 낱말 10개 × 유형이 다른 문제 2개 = 학년 20문제, 모두 120문제. 유형 4가지: 뜻·빈칸·바른 문장·상황)과 출제 로직(학년 안에서 낱말 안 겹치게 10개 — 낱말마다 두 문제 중 하나가 무작위로, 선택지 섞기·정답 번호 다시 계산, 오답 복습). 화면과 분리된 데이터라 문제를 더 넣기 쉬움 |
 | `js/geulmaru/ui.js`, `css/geulmaru.css` | 우리말 글마루 화면(시설 id `star` 그대로): 한옥 서재 로비 걷기·범이와 소리 입장 인사 → 시작 창(학년) → 게임 방법 → 낱말 놀이(펼친 책 문제판, 별등 10개, 범이·소리 정답/오답 움직임) → 결과(틀린 낱말 다시 풀기·한 번 더·로비로). 저장 `geulmaru`, 티켓은 공통 `awardTicket('star', 학년)` |
 | `assets/geulmaru/`, `assets/geulmaru-src/` | 글마루 그림(로비, 빈 책, 별등 꺼짐·켜짐, 범이 16칸·소리 16칸·입장 인사 8칸 띠)과 받은 원본. `python -I tools/build_geulmaru.py`로 만듦(칸마다 잘라 발 기준 정렬) |
 | `tools/verify_geulmaru.js` | 글마루 문제 은행·출제 자동 검증 (`node tools/verify_geulmaru.js`) |

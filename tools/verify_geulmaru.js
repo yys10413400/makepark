@@ -1,5 +1,5 @@
 // 우리말 글마루 문제 은행·출제 검증: node tools/verify_geulmaru.js
-// 학년마다 정해진 낱말 10개, 문제 칸이 모두 차 있는지, 선택지 3개가 서로 다른지, 빈칸 문제에 빈칸이 하나인지,
+// 학년마다 정해진 낱말 10개(낱말마다 유형이 다른 문제 2개 = 학년 20문제, 모두 120문제), 문제 칸이 모두 차 있는지, 선택지 3개가 서로 다른지, 빈칸 문제에 빈칸이 하나인지,
 // 예문이 문제 문장과 다른지, 섞은 뒤에도 정답이 그대로인지, 한 판에 낱말이 겹치지 않는지 확인합니다.
 'use strict';
 var G = require('../js/geulmaru/words.js');
@@ -16,7 +16,7 @@ var WORDS = {
 };
 var TYPES = ['meaning', 'blank', 'usage', 'situation'];
 
-if (G.QUESTIONS.length !== 60) fail('전체 문제가 60개가 아님: ' + G.QUESTIONS.length);
+if (G.QUESTIONS.length !== 120) fail('전체 문제가 120개가 아님: ' + G.QUESTIONS.length);
 var ids = {};
 G.QUESTIONS.forEach(function (q) {
   var tag = q.id + ' ' + q.word;
@@ -40,13 +40,24 @@ G.QUESTIONS.forEach(function (q) {
 
 for (var g = 1; g <= 6; g++) {
   var b = G.bank(g), words = b.map(function (q) { return q.word; });
-  if (b.length !== 10) fail(g + '학년 문제 수 ' + b.length);
-  WORDS[g].forEach(function (w) { if (words.indexOf(w) < 0) fail(g + '학년 낱말 없음: ' + w); });
+  if (b.length !== 20) fail(g + '학년 문제 수 ' + b.length);
+  if (new Set(words).size !== 10) fail(g + '학년 낱말이 10개가 아님');
+  WORDS[g].forEach(function (w) {
+    var qs = b.filter(function (q) { return q.word === w; });
+    if (qs.length !== 2) fail(g + '학년 ' + w + ' 문제가 2개가 아님: ' + qs.length);
+    else {
+      if (qs[0].type === qs[1].type) fail(g + '학년 ' + w + ' 두 문제 유형이 같음');
+      // 한 문제의 예문이 같은 낱말 다른 문제의 문장·선택지와 같으면 답이 보이므로 막음
+      qs.forEach(function (a, i) { var o = qs[1 - i], text = o.sentence.replace(/[{}]/g, '') + ' ' + o.options.join(' ');
+        if (text.indexOf(a.example) >= 0) fail(a.id + ' 예문이 ' + o.id + ' 문제에 나옴'); });
+      if (qs[0].example === qs[1].example) fail(g + '학년 ' + w + ' 두 문제 예문이 같음');
+    }
+  });
   var types = {}; b.forEach(function (q) { types[q.type] = (types[q.type] || 0) + 1; });
   if (Object.keys(types).length < 3) fail(g + '학년 문제 유형이 3가지보다 적음 ' + JSON.stringify(types));
   console.log(g + '학년 ' + G.THEMES[g] + ' · 유형 ' + JSON.stringify(types));
-  // 출제 200번: 10문제·낱말 안 겹침·섞은 뒤 정답이 원래 정답 글과 같음·선택지 순서가 실제로 섞임
-  var firstPos = {};
+  // 출제 200번: 10문제·낱말 안 겹침·섞은 뒤 정답이 원래 정답 글과 같음·선택지 순서가 실제로 섞임·문제 20개가 모두 나옴
+  var firstPos = {}, seenIds = {};
   for (var t = 0; t < 200; t++) {
     var r = G.makeRound(g);
     if (r.length !== 10) { fail(g + '학년 한 판이 10문제가 아님'); break; }
@@ -58,8 +69,10 @@ for (var g = 1; g <= 6; g++) {
       if (new Set(it.options).size !== 3) fail(it.q.id + ' 섞은 선택지가 겹침');
     });
     firstPos[r[0].correct] = true;
+    r.forEach(function (it) { seenIds[it.q.id] = true; });
   }
   if (Object.keys(firstPos).length < 3) fail(g + '학년 정답 자리가 섞이지 않음');
+  if (Object.keys(seenIds).length !== 20) fail(g + '학년 200판 동안 안 나온 문제가 있음');
 }
 
 // 복습: 틀린 id 만, 선택지 다시 섞기
