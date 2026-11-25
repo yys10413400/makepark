@@ -4,7 +4,7 @@
  * - 언제나 인터넷에서 최신 파일을 먼저 받고(GitHub 에 올리면 바로 반영), 끊겼을 때만 전에 받아 둔 파일을 씀
  * - 실시간 연결(Firebase)·글꼴 같은 다른 주소의 요청은 건드리지 않음
  */
-var CACHE = 'makepark-v3';
+var CACHE = 'makepark-v4';
 
 self.addEventListener('install', function () { self.skipWaiting(); });
 self.addEventListener('activate', function (e) {

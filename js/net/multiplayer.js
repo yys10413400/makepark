@@ -540,7 +540,7 @@
 
   // ---------- 선생님 모드: 선생님 화면의 '공원에 들어가기' → index.html?teacher=반코드&avatar=동물 ----------
   // 선생님 구글 계정(그 반을 만든 선생님)으로 확인한 뒤, 고른 동물 선생님으로 바로 그 반 공원에 들어감
-  function backToTeacher() { location.href = 'teacher.html' + (S.code ? '#room=' + S.code : ''); }
+  function backToTeacher() { location.href = 'teacher/' + (S.code ? '#room=' + S.code : ''); }
   var TQ = /[?&]teacher=(\d{5})/.exec(location.search), TA = /[?&]avatar=([a-z]+)/.exec(location.search);
   if (TQ && NET.teacher) {
     S.isTeacher = true;
@@ -548,12 +548,12 @@
     var started = false;
     NET.teacher.watch(function (user) {
       if (started) return;
-      if (!user) { location.href = 'teacher.html'; return; }
+      if (!user) { location.href = 'teacher/'; return; }
       started = true;
       var code = TQ[1];
       NET.getRoom(code).then(function (meta) {
-        if (!meta || !NET.isOwner(meta)) { alert('내가 만든 반 공원이 아니에요. 선생님 화면으로 돌아갈게요.'); location.href = 'teacher.html'; return; }
-        if (!meta.open) { alert('공원이 닫혀 있어요. 선생님 화면에서 공원을 다시 연 뒤 들어와 주세요.'); location.href = 'teacher.html#room=' + code; return; }
+        if (!meta || !NET.isOwner(meta)) { alert('내가 만든 반 공원이 아니에요. 선생님 화면으로 돌아갈게요.'); location.href = 'teacher/'; return; }
+        if (!meta.open) { alert('공원이 닫혀 있어요. 선생님 화면에서 공원을 다시 연 뒤 들어와 주세요.'); location.href = 'teacher/#room=' + code; return; }
         S.code = code; S.teacher = meta.teacher || user.name; S.className = meta.name || (code + '반');
         var avatar = TA && window.MPTeacherChars && MPTeacherChars.valid(TA[1]) ? TA[1] : (window.MPTeacherChars && MPTeacherChars.first());
         // 위쪽 오른쪽에 '선생님 화면으로' 버튼

@@ -353,7 +353,7 @@
     if (!S.code || !avatar) return;
     if (S.meta && !S.meta.open) { msg('tMsg', '공원이 닫혀 있어요. 먼저 공원을 다시 열어 주세요.'); closeWalk(); return; }
     if (S.handle) S.handle.leave();
-    location.href = 'index.html?teacher=' + S.code + '&avatar=' + avatar;
+    location.href = 'park/?teacher=' + S.code + '&avatar=' + avatar;
   }
   $('tWalkOpen').addEventListener('click', openWalk);
   $('tWalkClose').addEventListener('click', closeWalk);

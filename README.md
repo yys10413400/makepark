@@ -198,7 +198,7 @@
 - 서버 경로: `rooms/{반코드}/names`(등록된 닉네임) · `students/{학생}`(비밀번호·기록, 본인과 선생님만 읽기) · `claims/{기기}`(비밀번호 확인 — 규칙이 맞을 때만 그 학생 기록을 열어 줌)
 
 ## 학생 앱·선생님 앱
-- **별마당**(학생, `index.html`, `student.webmanifest`)와 **별마당 선생님**(`teacher.html`, `teacher.webmanifest`)을 각각 앱으로 설치할 수 있어요. 아이콘은 `assets/icons/`(`python tools/build_icons.py`).
+- **별마당**(학생, `park/` 화면, `student.webmanifest`)와 **별마당 선생님**(`teacher/` 화면, `teacher.webmanifest`)을 각각 앱으로 설치할 수 있어요. 두 앱은 범위(`park/`·`teacher/`)가 겹치지 않아 한 폰에 둘 다 설치돼요. 화면 파일은 `park/index.html`·`teacher/index.html`(`<base href="../">`로 맨 위 파일을 읽음), 맨 위 `index.html`·`teacher.html`은 예전 주소를 새 폴더로 넘겨 주는 페이지예요. 아이콘은 `assets/icons/`(`python tools/build_icons.py`).
 - 학생 앱에는 선생님 화면 링크가 없어요. 설치 버튼은 `js/pwa.js`(브라우저가 설치할 수 있을 때만 보임), 서비스 워커 `sw.js`는 언제나 최신 파일을 먼저 받고 끊겼을 때만 저장해 둔 파일을 써요.
 - 설치는 https 주소에서만 돼요. 순서: `docs/install-apps.md`
 
