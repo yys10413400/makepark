@@ -1,4 +1,4 @@
-/* 상상마루 - 공원 이동 / 시설 접근 / 입장 안내 */
+/* 별마당 - 공원 이동 / 시설 접근 / 입장 안내 */
 (function () {
   'use strict';
   var PARK = window.MP_PARK;

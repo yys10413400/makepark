@@ -1,5 +1,5 @@
 /*
- * 상상마루 캐릭터 (완성형 캐릭터 고르기)
+ * 별마당 캐릭터 (완성형 캐릭터 고르기)
  * ------------------------------------------------------------
  * 그림: assets/characters/<id>.webp (tools/build_characters.py 가 제미나이 원본에서 만듦)
  *       칸 위치·발 기준점: js/data/character-sprites.js (window.MP_CHAR_SPRITES)

@@ -1,5 +1,5 @@
 /* ---------- 첫 입장 화면 ----------
-   배경: 상상마루 정문 그림(assets/ui/title-bg.webp)을 화면에 꽉 차게.
+   배경: 별마당 정문 그림(assets/ui/title-bg.webp)을 화면에 꽉 차게.
    입장 창: 무지개 행진길 시작 창(css/parade.css .pr-card)과 같은 모양
      크림색 판 + 겨자색 굵은 테두리 + 아래로 진한 그림자, 라즈베리색 제목과 버튼.
    css/style.css 의 예전 입장 화면 규칙(.entry-panel·.entry-main)은 이 카드에 쓰지 않음(클래스가 다름).

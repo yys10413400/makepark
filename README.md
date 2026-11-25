@@ -1,4 +1,4 @@
-# 상상마루 (첫 플레이 버전)
+# 별마당 (첫 플레이 버전)
 
 초등학생용 2D 놀이공원 웹 게임. 이번 단계 범위: **공원 이동 → 시설 접근 → 입장 안내**.
 
@@ -176,7 +176,7 @@
 - 서버 경로: `rooms/{반코드}/names`(등록된 닉네임) · `students/{학생}`(비밀번호·기록, 본인과 선생님만 읽기) · `claims/{기기}`(비밀번호 확인 — 규칙이 맞을 때만 그 학생 기록을 열어 줌)
 
 ## 학생 앱·선생님 앱
-- **상상마루**(학생, `index.html`, `student.webmanifest`)와 **상상마루 선생님**(`teacher.html`, `teacher.webmanifest`)을 각각 앱으로 설치할 수 있어요. 아이콘은 `assets/icons/`(`python tools/build_icons.py`).
+- **별마당**(학생, `index.html`, `student.webmanifest`)와 **별마당 선생님**(`teacher.html`, `teacher.webmanifest`)을 각각 앱으로 설치할 수 있어요. 아이콘은 `assets/icons/`(`python tools/build_icons.py`).
 - 학생 앱에는 선생님 화면 링크가 없어요. 설치 버튼은 `js/pwa.js`(브라우저가 설치할 수 있을 때만 보임), 서비스 워커 `sw.js`는 언제나 최신 파일을 먼저 받고 끊겼을 때만 저장해 둔 파일을 써요.
 - 설치는 https 주소에서만 돼요. 순서: `docs/install-apps.md`
 

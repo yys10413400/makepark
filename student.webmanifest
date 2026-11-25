@@ -1,7 +1,7 @@
 {
   "id": "./?app=student",
-  "name": "상상마루",
-  "short_name": "상상마루",
+  "name": "별마당",
+  "short_name": "별마당",
   "description": "초등학생용 놀이공원 메타버스. 반 코드로 친구들과 함께 놀아요.",
   "lang": "ko",
   "start_url": "./?app=student",
