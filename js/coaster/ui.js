@@ -312,7 +312,7 @@
     else if (b.type === 'left') { w.appendChild(el('span', 'cs-ico', '↰')); w.appendChild(document.createTextNode('왼쪽 돌기')); }
     else if (b.type === 'right') { w.appendChild(el('span', 'cs-ico', '↱')); w.appendChild(document.createTextNode('오른쪽 돌기')); }
     else if (b.type === 'repeat') { w.appendChild(el('span', 'cs-ico', '↻')); w.appendChild(num(b.n || 2)); w.appendChild(document.createTextNode('번 반복')); }
-    else if (b.type === 'until') { w.appendChild(el('span', 'cs-ico', '↻')); w.appendChild(pic('station', 'cs-bpic')); w.appendChild(document.createTextNode('역에 닿을 때까지 반복')); }
+    else if (b.type === 'until') { w.appendChild(el('span', 'cs-ico', '↻')); w.appendChild(pic('station-goal', 'cs-bpic')); w.appendChild(document.createTextNode('역에 닿을 때까지 반복')); }
     else if (b.type === 'if' || b.type === 'ifelse') {
       w.appendChild(document.createTextNode('만약 바로 앞에 '));
       w.appendChild(pic(b.cond, 'cs-bpic'));
@@ -729,9 +729,9 @@
       var p = fk.split(',').map(Number), f = pic(W.flowers[fk], 'cs-flower', W.flowers[fk] === 'tulip' ? '튤립' : '해바라기');
       place(f, p[0], p[1], L); g.appendChild(f);
     }
-    // 역: 도착역(goal) 또는 순환 판의 출발역
+    // 역: 도착역(goal, 체크무늬 깃발) 또는 순환 판의 출발역(파란 깃발)
     var st = L.goal || (L.loop ? L.start : null);
-    if (st) { ui.station = pic('station', 'cs-station', L.loop ? '출발역' : '도착역'); place(ui.station, st[0], st[1], L); g.appendChild(ui.station); }
+    if (st) { ui.station = pic(L.loop ? 'station' : 'station-goal', 'cs-station', L.loop ? '출발역' : '도착역'); place(ui.station, st[0], st[1], L); g.appendChild(ui.station); }
     // 첫 판 점선 힌트
     ui.hint = null;
     if (L.hint && !S.ranOnce && !(buildSave().done || {})[S.mission.id]) {
@@ -757,6 +757,7 @@
     g.appendChild(ui.turtle);
     ui.failMark = el('div', 'cs-failmark', '!'); ui.failMark.hidden = true; g.appendChild(ui.failMark);
     ui.car = pic('coaster', 'cs-car', '손님이 탄 코스터'); ui.car.hidden = true; g.appendChild(ui.car);
+    ui.car2 = pic('car-E', 'cs-car cs-car2', ''); ui.car2.hidden = true; g.appendChild(ui.car2);
     placeTurtle(true);
     renderLayoutTabs();
   }
@@ -920,17 +921,30 @@
 
   // ---------- 성공: 완성된 선로 위로 손님 코스터가 달림 ----------
   async function ride(token) {
-    var path = S.world.path, car = ui.car, cell = S.cell;
+    var path = S.world.path, car = ui.car, car2 = ui.car2, cell = S.cell;
     if (!path || path.length < 2) return;
     ui.turtle.classList.add('aside');
     car.hidden = false;
     car.style.width = cell * 1.25 + 'px';
+    car2.style.height = cell * 0.62 + 'px';
+    function dirOf(a, b) { return b[0] > a[0] ? 'E' : b[0] < a[0] ? 'W' : b[1] < a[1] ? 'N' : 'S'; }
+    function move(e, x, y, tf, instant) {
+      if (instant) { e.style.transition = 'none'; void e.offsetWidth; }
+      e.style.transform = 'translate(' + x + 'px,' + y + 'px) ' + tf;
+      if (instant) { void e.offsetWidth; e.style.transition = ''; }
+    }
+    // 맨 앞: 손님이 탄 칸(옆모습, 왼쪽으로 갈 때만 뒤집음) / 한 칸 뒤: 빈 칸이 가는 방향의 모습(옆·앞·뒤)으로 따라옴
     function put(i, instant) {
       var p = path[i], q = path[Math.min(i + 1, path.length - 1)], o = path[Math.max(i - 1, 0)];
       var dx = (q[0] - o[0]), flip = dx < 0 ? -1 : 1;
-      if (instant) { car.style.transition = 'none'; void car.offsetWidth; }
-      car.style.transform = 'translate(' + (p[0] * cell + cell / 2) + 'px,' + (p[1] * cell + cell / 2) + 'px) translate(-50%,-62%) scaleX(' + flip + ')';
-      if (instant) { void car.offsetWidth; car.style.transition = ''; }
+      move(car, p[0] * cell + cell / 2, p[1] * cell + cell / 2, 'translate(-50%,-62%) scaleX(' + flip + ')', instant);
+      car.style.zIndex = 6 + p[1] * 2;
+      if (i < 1) { car2.hidden = true; return; }
+      var b = path[i - 1], d = dirOf(b, p);
+      car2.src = BASE + 'car-' + d + '.webp';
+      move(car2, b[0] * cell + cell / 2, b[1] * cell + cell / 2, 'translate(-50%,-58%)', instant || car2.hidden);
+      car2.style.zIndex = 6 + b[1] * 2 + (d === 'N' ? 1 : 0);
+      car2.hidden = false;
     }
     put(0, true);
     say('선로 완성! 손님을 태운 코스터가 출발해요!', 'good');

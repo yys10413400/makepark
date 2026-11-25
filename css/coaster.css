@@ -97,9 +97,9 @@ body.coaster-open #hud, body.coaster-open #enterFacility { display: none !import
 }
 .cs-cell::before {
   content: ''; position: absolute; inset: 3px; border-radius: 10%;
-  background: rgba(214, 245, 170, 0.42); border: 2px solid rgba(76, 140, 46, 0.55);
+  background: url(../assets/coaster/grass.webp) center / 100% 100% no-repeat;
 }
-.cs-cell.target::before { background: rgba(255, 244, 190, 0.5); border: 3px dashed rgba(200, 120, 30, 0.75); }
+.cs-cell.target::before { background: linear-gradient(rgba(255, 244, 190, 0.45), rgba(255, 244, 190, 0.45)), url(../assets/coaster/grass.webp) center / 100% 100% no-repeat; border: 3px dashed rgba(200, 120, 30, 0.8); }
 .cs-layer { position: absolute; inset: 0; pointer-events: none; }
 .cs-rail { position: absolute; display: block; }
 .cs-rail.new { animation: cs-rail 0.35s ease-out; }
@@ -127,6 +127,7 @@ body.coaster-open #hud, body.coaster-open #enterFacility { display: none !import
 @keyframes cs-dash { to { stroke-dashoffset: -18; } }
 .cs-car { position: absolute; left: 0; top: 0; z-index: 5; pointer-events: none; transition: transform 0.26s linear; filter: drop-shadow(0 5px 3px rgba(0, 0, 0, 0.3)); }
 .cs-car[hidden] { display: none; }
+.cs-car2 { width: auto; }
 
 /* 꽃밭 위쪽 띠: 미션 제목(+꽃밭 1·2) → 역장 얼굴과 말풍선 */
 .cs-ftop { position: absolute; left: 14px; right: 14px; top: 10px; z-index: 6; display: flex; flex-direction: column; align-items: flex-start; gap: 0.45em; }
