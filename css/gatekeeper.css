@@ -67,35 +67,39 @@ kbd { font-family: inherit; font-size: 0.75em; padding: 0 0.4em; border-radius: 
 .gk-dialog-acts { display: flex; gap: 0.8cqw; flex-wrap: wrap; }
 
 /* ---------- 검문대 ---------- */
-/* 가로 손님 기록판(1600×820): 왼쪽 벽 위. 너비 47% → 높이 약 42.8% */
-.gk-board { left: 1.6%; top: 3%; width: 47%; aspect-ratio: 1600 / 820; container-type: inline-size; }
+/* 한옥 검문대(assets/gatekeeper/hanok, 배경 1672×941). 그림 좌표 → % 로 놓음
+   왼쪽 회벽: 손님 기록 두루마리(1049×1499) — 그림에 '손님 기록'·'통과'·'잠깐!'이 이미 있어 글자를 덧쓰지 않음.
+   두루마리 아래 마루: 판정한 손님 줄. 가운데 창호문 앞: 손님. 오른쪽: 등불 든 안내 귀신. 아래 접수대: 판정 버튼 */
+.gk-board { left: 14.95%; top: 0.85%; height: 62.7%; aspect-ratio: 1049 / 1499; container-type: inline-size; }
 .gk-board-img { position: absolute; inset: 0; width: 100%; height: 100%; }
-.gk-slot { position: absolute; border-radius: 2.6cqw; }
-.gk-slot .gk-fig { position: absolute; left: 50%; top: 50%; width: 92%; transform: translate(-50%, -50%); }
-/* 기록판 아래 가로 줄: 판정한 손님이 왼쪽부터 하나씩 쌓임 */
+/* 칸: 위 두 칸 통과, 아래 두 칸 잠깐(두루마리 그림의 둥근 칸 안쪽). 초상은 칸 아래에 붙여 둥근 모서리로 자름 */
+.gk-slot { position: absolute; border-radius: 6.5cqw; overflow: hidden; }
+.gk-slot .gk-fig { position: absolute; left: 50%; bottom: 1.5%; width: 96%; transform: translateX(-50%); }
+/* 두루마리 아래 가로 줄: 판정한 손님(과 새로 꺼낸 기록)이 왼쪽부터 하나씩 쌓임 */
 .gk-log {
-  left: 1.6%; top: 47.2%; width: 47%; height: 31%; z-index: 2; container-type: inline-size;
-  padding: 0.9cqw 1.4cqw 1.2cqw; border-radius: 2.2cqw;
-  background: rgba(246, 234, 214, 0.95); border: 0.45cqw solid #d8b98a; box-shadow: 0 0.6cqw 0 rgba(40, 10, 60, 0.35);
+  left: 1.3%; top: 64.3%; width: 41.5%; height: 16.6%; z-index: 2; container-type: inline-size;
+  padding: 0.6cqw 1.2cqw 0.9cqw; border-radius: 2cqw;
+  background: rgba(250, 240, 220, 0.96); border: 0.4cqw solid #9a6a3a; box-shadow: 0 0.6cqw 0 rgba(50, 20, 10, 0.4);
   display: flex; flex-direction: column;
 }
-.gk-log-title { margin: 0 0 0.4cqw; font-size: 3.4cqw; color: #4a2a14; }
-.gk-log-list { flex: 1; min-height: 0; display: flex; gap: 1.4cqw; overflow-x: auto; overflow-y: hidden; scroll-behavior: smooth; padding: 0.6cqw 0.4cqw; }
+.gk-log-title { margin: 0 0 0.3cqw; font-size: 2.6cqw; line-height: 1.2; color: #4a2a14; }
+.gk-log-list { flex: 1; min-height: 0; display: flex; gap: 1.2cqw; overflow-x: auto; overflow-y: hidden; scroll-behavior: smooth; padding: 0.3cqw 0.4cqw 0.5cqw; }
 .gk-log-empty {
-  position: absolute; left: 1.4cqw; right: 1.4cqw; top: 22%; bottom: 10%; margin: 0;
-  display: flex; align-items: center; justify-content: center; border: 0.3cqw dashed #c9a37a; border-radius: 1.6cqw;
+  position: absolute; left: 1.2cqw; right: 1.2cqw; top: 30%; bottom: 12%; margin: 0;
+  display: flex; align-items: center; justify-content: center; border: 0.3cqw dashed #c9a37a; border-radius: 1.4cqw;
   font-size: 2.6cqw; color: #8a6a4a;
 }
 .gk-lcard {
-  position: relative; flex: none; height: 100%; aspect-ratio: 0.74; border-radius: 1.6cqw;
+  position: relative; flex: none; height: 100%; aspect-ratio: 1.08; border-radius: 1.6cqw; overflow: hidden;
   background: #fbf3e6; border: 0.35cqw solid #c9a37a;
 }
-.gk-lcard.is-pass { border-color: #7aa45c; }
-.gk-lcard.is-stop { border-color: #8a4567; }
-.gk-lcard .gk-fig { position: absolute; left: 50%; top: 3%; width: 94%; transform: translateX(-50%); }
+.gk-lcard.is-pass { border-color: #6f9a4e; }
+.gk-lcard.is-stop { border-color: #8a3550; }
+.gk-lcard .gk-fig { position: absolute; left: 50%; bottom: 0; width: 100%; transform: translateX(-50%); }
 .gk-lcard.pop { animation: gk-drop 0.45s ease-out; }
 @keyframes gk-drop { from { transform: translateY(-30%) scale(0.8); opacity: 0; } to { transform: none; opacity: 1; } }
-.gk-lcard .gk-tag { font-size: 3cqw; bottom: 0.6cqw; padding: 0.2cqw 1.6cqw; }
+.gk-lcard .gk-tag { font-size: 2.3cqw; left: auto; right: 0.4cqw; bottom: auto; top: 0.4cqw; transform: none; padding: 0.1cqw 1cqw; }
+.gk-lcard.is-hint { overflow: visible; }
 .gk-tag {
   position: absolute; left: 50%; bottom: 0.7cqw; transform: translateX(-50%); white-space: nowrap; z-index: 2;
   padding: 0.15cqw 1cqw; border-radius: 99px; font-size: 2cqw; color: #fff8e8;
@@ -105,34 +109,55 @@ kbd { font-family: inherit; font-size: 0.75em; padding: 0 0.4em; border-radius: 
 .is-hint { animation: gk-glow 1.1s ease-in-out infinite; z-index: 2; }
 @keyframes gk-glow { 0%, 100% { box-shadow: 0 0 0 0.45cqw rgba(255, 214, 90, 0.95), 0 0 1.5cqw rgba(255, 214, 90, 0.9); } 50% { box-shadow: 0 0 0 0.2cqw rgba(255, 214, 90, 0.5), 0 0 0.5cqw rgba(255, 214, 90, 0.4); } }
 
-/* 아이 그림 겹치기(틀 기준 %) */
+/* 손님 그림: 받은 완성 그림 한 장(머리 장식·손 물건이 이미 그려져 있음). 그 위에 아이콘을 얹지 않음 */
 .gk-fig { position: relative; }
-.gk-fig > img { position: absolute; display: block; pointer-events: none; }
-.gk-badge { filter: drop-shadow(0 0.1em 0.08em rgba(0, 0, 0, 0.25)); }
+.gk-fig > img { position: absolute; inset: 0; width: 100%; height: 100%; display: block; pointer-events: none; }
+/* 규칙 공개 때 단서 자리(머리 장식·손)를 가리키는 빛 고리 — 평소엔 안 보임 */
+.gk-ring {
+  position: absolute; width: 30%; aspect-ratio: 1; transform: translate(-50%, -50%); border-radius: 50%;
+  pointer-events: none; opacity: 0; z-index: 2;
+}
+.gk-fig-full .gk-ring { width: 24%; }
+.gk-ring.gk-spot { opacity: 1; animation: gk-ring 0.9s ease-in-out infinite; }
+@keyframes gk-ring {
+  0%, 100% { box-shadow: 0 0 0 0.35em rgba(255, 214, 90, 0.95), 0 0 1.1em 0.3em rgba(255, 210, 63, 0.85); }
+  50% { box-shadow: 0 0 0 0.15em rgba(255, 214, 90, 0.6), 0 0 0.5em 0.1em rgba(255, 210, 63, 0.5); }
+}
 
-/* 황금문 앞 손님: 틀(300×535) 높이를 화면의 47%로, 문 가운데(그림 x≈1250) 계단 앞에 서게 */
-.gk-guest { left: 68.4%; top: 31.5%; height: 47%; transition: transform 0.6s ease, opacity 0.6s ease; z-index: 2; }
+/* 창호문 앞 손님(700×887): 화면 높이의 51%, 가운데 x≈905 */
+.gk-guest { left: 42.8%; top: 21%; height: 51%; transition: transform 0.6s ease, opacity 0.6s ease; z-index: 2; }
 .gk-guest .gk-fig { height: 100%; }
-.gk-guest.enter { transform: translateX(45%); opacity: 0; transition: none; }
-.gk-guest.leave-pass { transform: translate(-4%, -8%) scale(0.72); opacity: 0; }
-.gk-guest.leave-stop { transform: translateX(60%); opacity: 0; }
+.gk-guest.enter { transform: translateX(40%); opacity: 0; transition: none; }
+.gk-guest.leave-pass { transform: translate(8%, -10%) scale(0.72); opacity: 0; }
+.gk-guest.leave-stop { transform: translateX(-35%); opacity: 0; }
 
-/* 문지기 유령: 손님 왼쪽 옆자리(손님의 배지·오른손 소품을 가리지 않게) */
-.gk-ghost { left: 50%; top: 33%; height: 37%; width: 17%; object-fit: contain; object-position: center bottom; z-index: 1; animation: gk-float 2.6s ease-in-out infinite; }
-@keyframes gk-float { 50% { transform: translateY(-1.2%); } }
+/* 등불 든 안내 귀신: 4×2 시트(칸 444×444)를 왼쪽 위부터 줄 순서대로 한 칸씩 — 칸 안에 떠오르는 움직임이 그려져 있음.
+   손님보다 작게(칸 355 → 귀신 키 약 300), 오른쪽 달빛 창문 앞 */
+.gk-guide {
+  left: 66.5%; top: 30.4%; width: 21.2%; aspect-ratio: 1; z-index: 1; pointer-events: none;
+  background: url(../assets/gatekeeper/hanok/guide-4x2.webp) 0 0 / 400% 200% no-repeat;
+  animation: gk-guide 1.6s step-end infinite;
+}
+@keyframes gk-guide {
+  0% { background-position: 0 0; } 12.5% { background-position: 33.333% 0; } 25% { background-position: 66.667% 0; } 37.5% { background-position: 100% 0; }
+  50% { background-position: 0 100%; } 62.5% { background-position: 33.333% 100%; } 75% { background-position: 66.667% 100%; } 87.5% { background-position: 100% 100%; }
+  100% { background-position: 100% 100%; }
+}
+.gk-guide[data-pose="cheer"] { filter: drop-shadow(0 0 1.2cqw rgba(255, 220, 120, 0.85)); }
 .gk-bubble {
-  left: 50%; top: 4.5%; width: 25%; min-height: 10%; z-index: 4; display: flex; align-items: center; justify-content: center;
-  padding: 1cqw 1.4cqw; border-radius: 1.4cqw; font-size: 1.55cqw; line-height: 1.35; text-align: center;
+  left: 66%; top: 18.4%; width: 31%; min-height: 9%; z-index: 4; display: flex; align-items: center; justify-content: center;
+  padding: 0.9cqw 1.3cqw; border-radius: 1.4cqw; font-size: 1.5cqw; line-height: 1.35; text-align: center;
   background: #fff8ea; color: #3b2410; border: 0.18cqw solid #d9b878; box-shadow: 0 0.35cqw 0 rgba(40, 10, 60, 0.45);
 }
 .gk-bubble::after {
-  content: ''; position: absolute; left: 30%; bottom: -1.3cqw; border: 0.7cqw solid transparent; border-top: 0.8cqw solid #fff8ea;
+  content: ''; position: absolute; left: 26%; bottom: -1.3cqw; border: 0.7cqw solid transparent; border-top: 0.8cqw solid #fff8ea;
 }
 .gk-bubble.pop { animation: gk-pop 0.25s ease-out; }
 @keyframes gk-pop { from { transform: scale(0.94); } to { transform: none; } }
+/* 진행(몇 단계 · 손님 몇 명): 창호문 위 가운데 */
 .gk-info {
-  right: 1.6%; top: 10.2%; z-index: 4; padding: 0.4cqw 1.2cqw; border-radius: 99px; font-size: 1.2cqw;
-  background: rgba(30, 10, 50, 0.72); color: #fdf0d2; white-space: nowrap;
+  left: 54.1%; top: 2.6%; transform: translateX(-50%); z-index: 4; padding: 0.4cqw 1.2cqw; border-radius: 99px; font-size: 1.2cqw;
+  background: rgba(40, 18, 10, 0.72); color: #fdf0d2; white-space: nowrap;
 }
 
 .gk-help { right: 9.6%; top: 2.6%; z-index: 6; }
@@ -145,7 +170,7 @@ kbd { font-family: inherit; font-size: 0.75em; padding: 0 0.4em; border-radius: 
 }
 .gk-tickets b { font-weight: 400; min-width: 1.4em; text-align: center; color: #b3261e; }
 .gk-tickets.at-lobby { left: 1.6%; top: 2.6%; }
-.gk-tickets.at-gate { right: 1.6%; top: 16.6%; }
+.gk-tickets.at-gate { right: 1.6%; top: 10.2%; }
 .gk-tickets.gain { animation: gk-gain 0.5s ease-in-out infinite alternate; }
 @keyframes gk-gain { to { transform: scale(1.12); box-shadow: 0 0 1.2cqw rgba(255, 210, 63, 0.9); } }
 .gk-tickets-plus {
@@ -197,7 +222,8 @@ kbd { font-family: inherit; font-size: 0.75em; padding: 0 0.4em; border-radius: 
 .gk-stamp.now { color: #4a2370; border: 0.2cqw solid #6a3d9a; }
 .gk-stamp.done { color: #fff6e0; background: #e2a93b; border: 0.2cqw solid #b98a2e; transform: rotate(-8deg); }
 
-/* 내 규칙이 뭘까? */
+/* 내 규칙이 뭘까? (이 창이 떠 있는 동안 접수대 판정 버튼은 숨김 — ui.js showModal 의 modal-log) */
+.gk-gate.modal-log .gk-judge, .gk-gate.modal-log .gk-watch { visibility: hidden; }
 .gk-quiz { display: grid; gap: 0.6cqw; margin: 0.4cqw 0 0.2cqw; }
 .gk-modal.side .gk-quiz-opt { padding: 0.5cqw 0.8cqw; }
 .gk-quiz-opt {
@@ -207,11 +233,11 @@ kbd { font-family: inherit; font-size: 0.75em; padding: 0 0.4em; border-radius: 
 .gk-quiz-opt:hover { background: #f3e8ff; border-color: #6a3d9a; }
 .gk-quiz-text { font-size: 1.2cqw; color: #6e4b2f; }
 
-/* 퀴즈·규칙 공개: 손님 기록판 바로 아래 '판정한 손님' 줄 위에 뜸(기록판은 그대로 보임) */
+/* 퀴즈·규칙 공개: 두루마리 아래 '판정한 손님' 줄을 덮고 마루·접수대 쪽으로 넓게(두루마리 기록 네 칸은 그대로 보임) */
 .gk-modal.log { background: transparent; pointer-events: none; }
 .gk-modal.log .gk-card {
-  position: absolute; left: 1.2%; top: 46.4%; width: 47.8%; min-height: 33.6%; max-height: 52%; pointer-events: auto;
-  /* '판정한 손님' 줄(위 47.2%~78.2% + 그림자)을 빈틈없이 덮게. 내용은 가운데로 */
+  position: absolute; left: 1%; top: 63.4%; width: 64%; min-height: 19.4%; max-height: 35.6%; pointer-events: auto;
+  /* '판정한 손님' 줄(위 64.3%~80.9% + 그림자)을 빈틈없이 덮게. 내용은 가운데로 */
   display: flex; flex-direction: column; justify-content: center;
   padding: 1cqw 1.4cqw 1.2cqw; border-radius: 1.6cqw; animation: gk-pop 0.25s ease-out;
 }
@@ -241,13 +267,13 @@ kbd { font-family: inherit; font-size: 0.75em; padding: 0 0.4em; border-radius: 
 
 /* 손님 한마디 · 연속 정답 */
 .gk-guest-say {
-  left: 74%; top: 24%; z-index: 4; padding: 0.4cqw 1.2cqw; border-radius: 99px; font-size: 1.6cqw;
+  left: 45%; top: 17%; z-index: 4; padding: 0.4cqw 1.2cqw; border-radius: 99px; font-size: 1.6cqw;
   color: #fff8e6; animation: gk-pop 0.25s ease-out;
 }
 .gk-guest-say.pass { background: #6f9a4e; }
 .gk-guest-say.stop { background: #7e3f5f; }
 .gk-gate.combo::after {
-  content: '★ ★ ★'; position: absolute; left: 66%; top: 18%; z-index: 5; font-size: 3cqw; color: #ffd23f;
+  content: '★ ★ ★'; position: absolute; left: 49%; top: 12%; z-index: 5; font-size: 3cqw; color: #ffd23f;
   text-shadow: 0 0 1cqw #fff3a0; pointer-events: none; animation: gk-combo 1.4s ease-out forwards;
 }
 @keyframes gk-combo { from { transform: translateY(2cqw) scale(0.6); opacity: 0; } 30% { opacity: 1; transform: none; } to { transform: translateY(-3cqw); opacity: 0; } }
@@ -255,16 +281,19 @@ kbd { font-family: inherit; font-size: 0.75em; padding: 0 0.4em; border-radius: 
 /* 친구 규칙 미리보기 */
 .gk-build-preview { margin: 1cqw 0 0; }
 
-/* 검문대 위 판정 버튼: 실제 HTML 버튼, 불투명 단색 + 얇은 아이보리 테두리 + 둥근 모서리 */
+/* 나무 접수대 위 판정 버튼: 실제 HTML 버튼(마우스·터치). 왼쪽 쑥색 ✓ 통과, 오른쪽 팥색 ✋ 잠깐! */
 .gk-judge {
-  top: 84.2%; width: 15.5%; height: 10.4%; z-index: 4;
-  border-radius: 99px; border: 0.2cqw solid #f6e9c8; font-size: 2.7cqw; line-height: 1; color: #fff8e6;
-  box-shadow: 0 0.35cqw 0 rgba(30, 10, 30, 0.55); transition: transform 0.1s, filter 0.1s;
+  top: 82.9%; width: 27.2%; height: 13.6%; z-index: 4; touch-action: manipulation;
+  display: flex; align-items: center; justify-content: center; gap: 1.2cqw;
+  border-radius: 99px; border: 0.3cqw solid #f6e9c8; font-size: 3.5cqw; line-height: 1; color: #fff8e6;
+  text-shadow: 0 0.2cqw 0 rgba(30, 15, 5, 0.35);
+  box-shadow: inset 0 0.5cqw 0 rgba(255, 255, 255, 0.18), 0 0.5cqw 0 rgba(45, 22, 8, 0.65); transition: transform 0.1s, filter 0.1s;
 }
-.gk-judge-pass { left: 33.5%; background: #6f9a4e; }
-.gk-judge-stop { left: 51%; background: #7e3f5f; }
+.gk-judge-pass { left: 21.5%; background: linear-gradient(#7d9c4f, #5a7a35); }
+.gk-judge-stop { left: 51.1%; background: linear-gradient(#9c3a55, #742339); }
+.gk-judge-mark { font-size: 1.1em; }
 .gk-judge:hover:not(:disabled) { filter: brightness(1.08); }
-.gk-judge:active:not(:disabled) { transform: translateY(0.25cqw); box-shadow: 0 0.1cqw 0 rgba(30, 10, 30, 0.55); }
+.gk-judge:active:not(:disabled) { transform: translateY(0.35cqw); box-shadow: inset 0 0.5cqw 0 rgba(255, 255, 255, 0.18), 0 0.15cqw 0 rgba(45, 22, 8, 0.65); }
 .gk-judge:disabled { filter: saturate(0.4) brightness(0.85); cursor: default; }
 .gk-judge.shake { animation: gk-shake 0.35s; }
 @keyframes gk-shake { 25% { transform: translateX(-0.5cqw); } 75% { transform: translateX(0.5cqw); } }
@@ -320,7 +349,8 @@ kbd { font-family: inherit; font-size: 0.75em; padding: 0 0.4em; border-radius: 
 .gk-handoff .gk-choice { font-size: 2cqw; padding: 0.9cqw 3cqw; }
 
 @media (prefers-reduced-motion: reduce) {
-  .gk-ghost, .gk-prompt, .is-hint, .gk-spot, .gk-lcard.pop, .gk-tickets.gain { animation: none; }
+  .gk-guide, .gk-prompt, .is-hint, .gk-spot, .gk-lcard.pop, .gk-tickets.gain { animation: none; }
+  .gk-ring.gk-spot { box-shadow: 0 0 0 0.3em rgba(255, 214, 90, 0.95); }
   .gk-spot { filter: drop-shadow(0 0 0.2em #ffd23f); }
   .is-hint { box-shadow: 0 0 0 0.6cqw rgba(255, 214, 90, 0.95); }
   .gk-guest { transition: none; }
@@ -328,7 +358,7 @@ kbd { font-family: inherit; font-size: 0.75em; padding: 0 0.4em; border-radius: 
 
 /* 같이 놀기: 구경하는 쪽은 판정 버튼 자리에 안내 */
 .gk-watch {
-  left: 30%; top: 85.5%; width: 40%; height: 8%; z-index: 4; display: flex; align-items: center; justify-content: center;
+  left: 21.5%; top: 85.5%; width: 56.8%; height: 8.5%; z-index: 4; display: flex; align-items: center; justify-content: center;
   border-radius: 99px; font-size: 1.5cqw; color: #4a2370; background: rgba(255, 248, 234, 0.92); border: 0.16cqw solid #d9b878;
 }
 .gk-pick-list { margin-bottom: 0.8cqw; }

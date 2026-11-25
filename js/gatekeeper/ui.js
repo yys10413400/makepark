@@ -2,7 +2,9 @@
  * 유령의 집 — 문지기의 비밀 규칙 화면
  * ------------------------------------------------------------
  * 장면 1 로비(assets/gatekeeper/lobby.webp): 공원 캐릭터로 걸어 다니다 문지기 유령에게 '말 걸기'
- * 장면 2 검문대(checkpoint.webp): 왼쪽 손님 기록판, 황금문 앞 손님, 옆자리 유령, 검문대 위 '통과'·'잠깐!' 버튼
+ * 장면 2 한옥 검문대(hanok/checkpoint.webp): 왼쪽 회벽 손님 기록 두루마리(위 통과·아래 잠깐) + 아래 판정한 손님 줄,
+ *        창호문 앞 손님(완성 그림 한 장), 오른쪽 등불 든 안내 귀신(8프레임), 나무 접수대 위 '✓ 통과'·'✋ 잠깐!' 버튼
+ *        단서: 머리 장식(홍매화·은행잎·없음)과 손에 든 물건(열쇠·복주머니·빈손) — rules.js 의 badge·item 값
  * 장면 3 친구랑 문지기: 규칙 만들기 → 봉인 → 기기 건네기 → 검문대
  * 위치는 모두 배경 그림(1672×941) 기준 %라서 창 크기가 바뀌어도 함께 커지고 작아집니다.
  * 규칙·기록·판정·힌트·설명은 js/gatekeeper/rules.js 한 곳에서, 그림 기준점은 js/gatekeeper/sprites.js 에서.
@@ -20,7 +22,7 @@
   var TIP = '방향키나 바닥을 눌러 걸어가서, 문 앞 문지기 유령에게 말을 걸어 봐요';
   var GHOST_SAYS = '어떤 손님이 이 문을 지날 수 있을까? 내 기록을 보고 비밀 규칙을 찾아봐!';
   var FIRST_GUIDE = '네 손님의 기록을 살펴보고, 다음 손님이 지나갈 수 있을지 골라봐.';
-  var NAMES = { star: '별 배지', moon: '달 배지', none: '배지 없음', key: '열쇠', lantern: '호박등', empty: '빈손' };
+  var NAMES = (G && G.NOUN) || {};   // 홍매화·은행잎·장식 없음 / 열쇠·복주머니·빈손 (rules.js 와 같은 말)
 
   var S = {
     open: false, scene: 'lobby', grade: 1, mode: 'solo',
@@ -50,47 +52,48 @@
   }
   function rand(n) { return Math.floor(Math.random() * n); }
 
-  // ---------- 아이 그림 + 배지 + 손 소품 겹치기 ----------
-  // look = { gender:'boy'|'girl', pin: 0~3, shoes: 0~3 }  (판정과 상관없는 꾸밈)
-  // combo = { badge, item }
+  // ---------- 손님 그림: 받은 완성 그림 한 장 ----------
+  // look = { gender:'boy'|'girl' }  (판정과 상관없음)   combo = { badge, item } (rules.js 값)
+  // 파일 이름은 손님 데이터로 한 번만 정함 → 전신(guest-)·초상(face-)이 같은 이름. 머리 장식·손 물건이 이미 그려져 있어 아이콘을 얹지 않음
+  function guestName(look, combo) {
+    var g = look && look.gender === 'girl' ? 'girl' : 'boy';
+    return g + '-' + SPR.head[combo.badge] + '-' + SPR.hand[combo.item];
+  }
+  function clueText(combo) {
+    return (combo.badge === 'none' ? '머리 장식이 없고' : '머리에 ' + josa(NAMES[combo.badge], '을', '를') + ' 꽂고') + ' ' +
+      (combo.item === 'empty' ? '빈손인' : josa(NAMES[combo.item], '을', '를') + ' 든');
+  }
   function figure(kind, look, combo) {
-    var id = look.gender + '-' + kind, K = SPR.kids[id], F = K.frame;
-    var box = el('div', 'gk-fig gk-fig-' + kind);
-    box.style.aspectRatio = F.w + ' / ' + F.h;
-    function put(node, x, y, w, h) { place(node, x - F.x, y - F.y, w, h, F.w, F.h); box.appendChild(node); return node; }
-    put(img(id, 'gk-kid'), 0, 0, K.w, K.h);
-    if (K.pin) put(img(K.pin, 'gk-tint'), 0, 0, K.w, K.h).style.filter = 'hue-rotate(' + SPR.pinHues[look.pin || 0] + 'deg)';
-    if (K.shoes) put(img(K.shoes, 'gk-tint'), 0, 0, K.w, K.h).style.filter = 'hue-rotate(' + SPR.shoeHues[look.shoes || 0] + 'deg)';
-    if (combo.badge !== 'none') {
-      var b = SPR.items[combo.badge], bw = K.badge.w, bh = bw * b.h / b.w;
-      put(img(b.src, 'gk-badge', NAMES[combo.badge]), K.badge.x - bw / 2, K.badge.y - bh / 2, bw, bh);
-    }
-    if (combo.item !== 'empty') {
-      var it = SPR.items[combo.item], h = K[combo.item], s = h / it.h;
-      put(img(it.src, 'gk-item gk-item-' + combo.item, NAMES[combo.item]), K.fist.x - it.grip.x * s, K.fist.y - it.grip.y * s, it.w * s, h);
-      // 쥔 손을 소품 위에 한 번 더: 열쇠 자루·호박등 손잡이가 주먹 안으로 들어간 것처럼
-      var fist = put(img(id, 'gk-fist'), 0, 0, K.w, K.h);
-      fist.style.clipPath = 'ellipse(' + pct(K.fist.r, K.w) + ' ' + pct(K.fist.r, K.h) + ' at ' + pct(K.fist.x, K.w) + ' ' + pct(K.fist.y, K.h) + ')';
-    }
+    var full = kind === 'full', size = full ? SPR.full : SPR.face, g = look && look.gender === 'girl' ? 'girl' : 'boy';
+    var box = el('div', 'gk-fig gk-fig-' + (full ? 'full' : 'bust'));
+    box.style.aspectRatio = size.w + ' / ' + size.h;
+    var name = guestName(look, combo);
+    box.dataset.guest = name;
+    box.appendChild(img(SPR.hanok + (full ? 'guest-' : 'face-') + name, 'gk-kid'));
+    // 규칙 공개 때 단서 자리를 가리킬 빛 고리(평소엔 안 보임)
+    var R = SPR.rings[full ? 'full' : 'face'][g];
+    ['head', 'hand'].forEach(function (k) {
+      var r = el('span', 'gk-ring gk-ring-' + k); r.style.left = R[k][0] + '%'; r.style.top = R[k][1] + '%'; box.appendChild(r);
+    });
     box.setAttribute('role', 'img');
-    box.setAttribute('aria-label', (combo.badge === 'none' ? '배지 없음' : NAMES[combo.badge]) + ', ' + (combo.item === 'empty' ? '빈손' : NAMES[combo.item] + '을 든') + ' 손님');
+    box.setAttribute('aria-label', clueText(combo) + ' ' + (g === 'girl' ? '여자' : '남자') + ' 귀신 손님');
     return box;
   }
-  // 외형: 상반신 카드에서 보이는 모습(남/여+머리핀) 기준으로 서로 다르게
-  var LOOKS = [{ gender: 'boy', pin: 0 }, { gender: 'girl', pin: 0 }, { gender: 'girl', pin: 1 }, { gender: 'girl', pin: 2 }, { gender: 'girl', pin: 3 }];
-  function lookKey(l) { return l.gender + (l.gender === 'girl' ? l.pin : ''); }
+  // 외형: 남자·여자 귀신(판정과 상관없음). 기록 네 장에는 둘 다 나오게
+  function lookOf(g) { return { gender: g }; }
   function recordLooks(n) {
-    var all = G.shuffle(LOOKS, Math.random);
-    // 남자아이가 기록에 꼭 한 명은 들어가게
-    if (all.slice(0, n).every(function (l) { return l.gender === 'girl'; })) { var bi = all.findIndex(function (l) { return l.gender === 'boy'; }); var t = all[0]; all[0] = all[bi]; all[bi] = t; }
-    return all.slice(0, n).map(function (l) { return { gender: l.gender, pin: l.pin, shoes: rand(4) }; });
+    var out = [];
+    for (var i = 0; i < n; i++) out.push(lookOf(rand(2) ? 'girl' : 'boy'));
+    if (n > 1 && out.every(function (l) { return l.gender === out[0].gender; })) out[rand(n)] = lookOf(out[0].gender === 'boy' ? 'girl' : 'boy');
+    return out;
   }
+  // avoid: 바로 전 손님 모습 — 같은 귀신이 세 번 이어 나오지 않게만 살짝 섞음
   function guestLook(avoid) {
-    var used = {};
-    avoid.forEach(function (l) { used[lookKey(l)] = 1; });
-    var free = LOOKS.filter(function (l) { return !used[lookKey(l)]; });
-    var l = (free.length ? free : LOOKS)[rand(free.length || LOOKS.length)];
-    return { gender: l.gender, pin: l.pin, shoes: rand(4) };
+    var last = avoid && avoid.length === 1 ? avoid[0].gender : null;
+    if (last && S.sameLook >= 1) { S.sameLook = 0; return lookOf(last === 'boy' ? 'girl' : 'boy'); }
+    var l = lookOf(rand(2) ? 'girl' : 'boy');
+    S.sameLook = last && l.gender === last ? (S.sameLook || 0) + 1 : 0;
+    return l;
   }
 
   // ---------- 화면 만들기 ----------
@@ -117,9 +120,9 @@
 
     // 검문대
     var gate = ui.gate = el('div', 'gk-scene gk-gate'); gate.hidden = true;
-    gate.style.backgroundImage = 'url(' + SPR.base + 'checkpoint.webp)';
+    gate.style.backgroundImage = 'url(' + SPR.base + SPR.checkpoint + '.webp)';
     var board = ui.board = el('div', 'gk-board');
-    board.appendChild(img(SPR.board.src, 'gk-board-img', '손님 기록판: 왼쪽 두 칸은 통과, 오른쪽 두 칸은 잠깐'));
+    board.appendChild(img(SPR.board.src, 'gk-board-img', '손님 기록 두루마리: 위 두 칸은 통과, 아래 두 칸은 잠깐'));
     ui.slots = SPR.boardSlots.map(function (s, i) {
       var d = el('div', 'gk-slot ' + (i < 2 ? 'is-pass' : 'is-stop'));
       d.style.left = s.x + '%'; d.style.top = s.y + '%'; d.style.width = s.w + '%'; d.style.height = s.h + '%';
@@ -135,7 +138,9 @@
     gate.appendChild(ui.log);
     ui.guestWrap = el('div', 'gk-guest'); gate.appendChild(ui.guestWrap);
     ui.guestSay = el('p', 'gk-guest-say'); ui.guestSay.hidden = true; gate.appendChild(ui.guestSay);
-    ui.ghost = img('ghost-think', 'gk-ghost', '문지기 유령'); gate.appendChild(ui.ghost);
+    // 등불 든 안내 귀신(4×2 시트 8프레임, css .gk-guide). 표정 바꾸기 대신 dataset.pose 만 바꿈(같이 놀기 화면 맞추기용)
+    ui.ghost = el('div', 'gk-guide'); ui.ghost.setAttribute('role', 'img'); ui.ghost.setAttribute('aria-label', '등불 든 안내 귀신');
+    gate.appendChild(ui.ghost);
     ui.bubble = el('p', 'gk-bubble'); ui.bubble.setAttribute('role', 'status'); ui.bubble.setAttribute('aria-live', 'polite');
     gate.appendChild(ui.bubble);
     ui.info = el('p', 'gk-info'); gate.appendChild(ui.info);
@@ -143,8 +148,10 @@
     gate.appendChild(ui.gateExit);
     ui.helpBtn = btn('gk-pill gk-help', '? 어떻게 해요', openHelp);
     gate.appendChild(ui.helpBtn);
-    ui.passBtn = btn('gk-judge gk-judge-pass', '통과', function () { judge(true); });
-    ui.stopBtn = btn('gk-judge gk-judge-stop', '잠깐!', function () { judge(false); });
+    ui.passBtn = btn('gk-judge gk-judge-pass', '', function () { judge(true); });
+    ui.passBtn.innerHTML = '<span class="gk-judge-mark" aria-hidden="true">✓</span>통과';
+    ui.stopBtn = btn('gk-judge gk-judge-stop', '', function () { judge(false); });
+    ui.stopBtn.innerHTML = '<span class="gk-judge-mark" aria-hidden="true">✋</span>잠깐!';
     gate.appendChild(ui.passBtn); gate.appendChild(ui.stopBtn);
     ui.modal = el('div', 'gk-modal'); ui.modal.hidden = true;
     ui.modalCard = el('div', 'gk-card'); ui.modalCard.setAttribute('role', 'dialog'); ui.modalCard.setAttribute('aria-modal', 'true');
@@ -154,7 +161,7 @@
 
     // 친구: 규칙 만들기 / 기기 건네기
     ui.builder = el('div', 'gk-scene gk-builder'); ui.builder.hidden = true;
-    ui.builder.style.backgroundImage = 'url(' + SPR.base + 'checkpoint.webp)';
+    ui.builder.style.backgroundImage = 'url(' + SPR.base + SPR.checkpoint + '.webp)';
     st.appendChild(ui.builder);
     ui.handoff = el('div', 'gk-scene gk-handoff'); ui.handoff.hidden = true;
     st.appendChild(ui.handoff);
@@ -174,7 +181,7 @@
     ['float-00', 'float-01', 'float-02', 'float-03', 'float-04', 'float-05', 'float-06', 'float-07', 'float-idle'].forEach(function (n) {
       var i = ghostImg(n); if (i.decode) i.decode().catch(function () {});
     });
-    ['ghost-hello', 'ghost-think', 'ghost-pass', 'ghost-stop', 'ghost-cheer'].forEach(function (n) { var i = new Image(); i.src = SPR.base + n + '.webp'; });
+    ['ghost-hello', SPR.checkpoint, SPR.board.src, SPR.hanok + 'guide-4x2'].forEach(function (n) { var i = new Image(); i.src = SPR.base + n + '.webp'; });
   }
 
   // ---------- 로비 대화: 첫 대사 → 학년 → 놀이 고르기 ----------
@@ -500,10 +507,10 @@
     var plan = run.plans[run.stage - 1];
     beginStage(G.newRound({ rule: plan.rule, domain: plan.domain, shapes: plan.shapes, guests: GUESTS }), plan.tip, withHowTo);
   }
-  // 그 단계에 나오는 모습 안내(배지 없음·빈손)
+  // 그 단계에 나오는 모습 안내(머리 장식 없음·빈손)
   function domainNote(R) {
     var d = G.DOMAINS[R.domain], n = [];
-    if (d.badges.indexOf('none') >= 0) n.push('배지가 없는 손님');
+    if (d.badges.indexOf('none') >= 0) n.push('머리 장식이 없는 손님');
     if (d.items.indexOf('empty') >= 0) n.push('빈손인 손님');
     return n.length ? n.join('과 ') + '도 와요.' : '';
   }
@@ -518,7 +525,7 @@
     setJudgeEnabled(false);
     updateInfo();
     var lines = [tip];
-    if (domainNote(R)) lines.push(domainNote(R));   // 배지 없는 손님·빈손인 손님도 오는지
+    if (domainNote(R)) lines.push(domainNote(R));   // 머리 장식 없는 손님·빈손인 손님도 오는지
     lines.push(FIRST_GUIDE);
     var title = S.online ? josa(onlineMakerNick(), '이', '가') + ' 만든 비밀 규칙' : S.mode === 'friend' ? '친구가 만든 비밀 규칙' : S.run.stage + '단계';
     showModal(title, lines, [{ text: '시작!', main: true, fn: function () { hideModal(); nextGuest(); } }], null,
@@ -564,7 +571,7 @@
     var R = S.round, head = S.online ? '👥 ' + josa(onlinePartnerNick(), '과', '와') + ' 함께' : S.mode === 'friend' ? '친구 규칙' : S.run.stage + '단계 / ' + STAGES;
     ui.info.textContent = head + ' · 손님 ' + Math.min(R.count, R.total) + ' / ' + R.total;
   }
-  function setGhost(pose) { ui.ghost.src = SPR.base + 'ghost-' + pose + '.webp'; ui.ghost.dataset.pose = pose; }
+  function setGhost(pose) { ui.ghost.dataset.pose = pose; }
   function say(text) { ui.bubble.textContent = text; ui.bubble.classList.remove('pop'); void ui.bubble.offsetWidth; ui.bubble.classList.add('pop'); }
   function setJudgeEnabled(on) { ui.passBtn.disabled = !on; ui.stopBtn.disabled = !on; }
   function clearMarks() {
@@ -677,16 +684,16 @@
     showModal(title, lines, btns, R.text, f, 'log');
     pub('reveal', { right: right, pick: S.lastPick || null });
   }
-  // 규칙에 쓰인 배지·소품을 기록 카드에서 반짝이게
+  // 규칙에 쓰인 머리 장식·손 물건 자리를 기록 카드에서 빛 고리로 반짝이게(완성 그림 위 단서 자리)
   function spotlight(rule) {
     var atoms = G.atomsOf(rule);
     S.round.known.forEach(function (k) {
       if (!k.el) return;
-      if (atoms.indexOf(k.badge) >= 0) { var b = k.el.querySelector('.gk-badge'); if (b) b.classList.add('gk-spot'); }
-      if (atoms.indexOf(k.item) >= 0) { var it = k.el.querySelector('.gk-item'); if (it) it.classList.add('gk-spot'); }
+      if (atoms.indexOf(k.badge) >= 0) { var b = k.el.querySelector('.gk-ring-head'); if (b) b.classList.add('gk-spot'); }
+      if (atoms.indexOf(k.item) >= 0) { var it = k.el.querySelector('.gk-ring-hand'); if (it) it.classList.add('gk-spot'); }
     });
   }
-  // 그림 공식: [⭐] → 통과 / [⭐] + [🔑] → 통과 / [⭐] 또는 [🔑] → 통과 / [🎃] → 잠깐!(나머지는 통과)
+  // 그림 공식: [홍매화] → 통과 / [홍매화] + [열쇠] → 통과 / [홍매화] 또는 [열쇠] → 통과 / [복주머니] → 잠깐!(나머지는 통과)
   function fchip(a) {
     var c = el('span', 'gk-fchip');
     if (a === 'none' || a === 'empty') c.appendChild(el('span', 'gk-fchip-x', '✕'));
@@ -758,6 +765,7 @@
   function showModal(title, lines, btns, ruleText, extra, variant) {
     var c = ui.modalCard; c.textContent = '';
     ui.modal.className = 'gk-modal' + (variant ? ' ' + variant : '');
+    ui.gate.classList.toggle('modal-log', variant === 'log');   // 퀴즈·규칙 공개 창이 접수대 쪽까지 덮으므로 판정 버튼은 잠깐 숨김
     var h = el('h2', 'gk-card-title', title); h.id = 'gkModalTitle'; c.setAttribute('aria-labelledby', 'gkModalTitle');
     c.appendChild(h);
     var top = variant === 'side' || variant === 'log';
@@ -775,7 +783,7 @@
     first = first || c.querySelector('button');
     if (first) setTimeout(function () { first.focus(); }, 30);
   }
-  function hideModal() { ui.modal.hidden = true; }
+  function hideModal() { ui.modal.hidden = true; ui.gate.classList.remove('modal-log'); }
 
   // ---------- 어떻게 놀아요? ----------
   function howTo() {
@@ -789,12 +797,12 @@
       r.appendChild(t); box.appendChild(r);
     }
     var pics = el('div', 'gk-howto-pics');
-    pics.appendChild(el('span', 'gk-howto-group', '가슴 배지'));
+    pics.appendChild(el('span', 'gk-howto-group', '머리 장식'));
     ['star', 'moon'].forEach(function (v) { pics.appendChild(fchip(v)); });
     pics.appendChild(el('span', 'gk-howto-group', '손에 든 것'));
     ['key', 'lantern'].forEach(function (v) { pics.appendChild(fchip(v)); });
-    row('1', '배지와 손에 든 것만 봐요 (얼굴·머리핀·신발은 상관없어요)', pics);
-    row('2', '‘통과’ 손님들끼리 똑같은 걸 찾아요', el('p', 'gk-howto-sub', '예) 통과한 손님이 모두 별 배지를 달았다면?'));
+    row('1', '머리 장식과 손에 든 것만 봐요 (남자 귀신·여자 귀신은 상관없어요)', pics);
+    row('2', '‘통과’ 손님들끼리 똑같은 걸 찾아요', el('p', 'gk-howto-sub', '예) 통과한 손님이 모두 머리에 홍매화를 꽂았다면?'));
     var ex = el('div', 'gk-howto-ex'); ex.appendChild(formula({ op: 'is', a: 'star' }));
     row('3', '그게 비밀 규칙! 새 손님이 맞으면 ‘통과’, 아니면 ‘잠깐!’', ex);
     return box;
@@ -886,9 +894,9 @@
     } else {
       if (dom.badges.indexOf(P.badge) < 0) P.badge = dom.badges[0];
       if (dom.items.indexOf(P.item) < 0) P.item = dom.items[0];
-      slots.appendChild(slot(dom.badges, 'badge', '배지 카드'));
+      slots.appendChild(slot(dom.badges, 'badge', '머리 장식 카드'));
       slots.appendChild(el('span', 'gk-build-link', P.link === 'and' ? '그리고' : '또는'));
-      slots.appendChild(slot(dom.items, 'item', '소품 카드'));
+      slots.appendChild(slot(dom.items, 'item', '손 물건 카드'));
     }
     panel.appendChild(slots);
     var rule = G.buildRule(P), chk = G.checkRule(rule, band);

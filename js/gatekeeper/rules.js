@@ -2,19 +2,21 @@
  * 문지기의 비밀 규칙 — 규칙 정의와 퍼즐 만들기 (화면과 분리된 순수 로직)
  * ------------------------------------------------------------
  * 손님 = { badge: 'star'|'moon'|'none', item: 'key'|'lantern'|'empty' }
+ * 한옥 검문대(2026-11-25)부터 화면에 보이는 단서: badge = 머리 장식(star 홍매화 · moon 은행잎 · none 장식 없음),
+ *   item = 손에 든 물건(key 열쇠 · lantern 복주머니 · empty 빈손). 안쪽 값 이름은 예전 그대로 씁니다.
  * 규칙은 여기 한 곳에서만 정의하고, 기록 만들기·정답 판정·힌트·규칙 맞히기 퀴즈·마지막 설명이 모두 같은 정의를 씁니다.
- * 남녀·머리핀·신발색은 판정에 쓰지 않습니다(화면에서만 섞음).
+ * 남녀 귀신은 판정에 쓰지 않습니다(화면에서만 섞음).
  *
  * 한 판 = 3단계 (단계마다 비밀 규칙이 하나, 손님 3명, 끝나면 '내 규칙이 뭘까?' 퀴즈)
- *   1단계  배지 하나만 보기      예) 별 배지면 통과
- *   2단계  손 소품 하나만 보기   예) 호박등을 들면 통과
+ *   1단계  머리 장식 하나만 보기  예) 홍매화를 꽂으면 통과
+ *   2단계  손 물건 하나만 보기    예) 복주머니를 들면 통과
  *   3단계  학년별 도전
- *          1~2학년  한 가지 그대로(다른 단서)      — 별·달 × 열쇠·호박등 4가지 모습만
+ *          1~2학년  한 가지 그대로(다른 단서)      — 홍매화·은행잎 × 열쇠·복주머니 4가지 모습만
  *          3~4학년  둘 다 있어야(그리고)           — 빈손도 나옴
- *          5~6학년  둘 중 하나만 있어도(또는) / ~만 빼고 모두 — 배지 없음·빈손까지 전부
+ *          5~6학년  둘 중 하나만 있어도(또는) / ~만 빼고 모두 — 장식 없음·빈손까지 전부
  *
  * 규칙 모양: { op:'is', a } | { op:'not', a } | { op:'and', a, b } | { op:'or', a, b }
- *   a·b: 배지 star·moon·none, 손 소품 key·lantern·empty
+ *   a·b: 머리 장식 star·moon·none, 손 물건 key·lantern·empty
  *
  * 공정성: 지금 보이는 기록과 맞는 '그 단계 규칙 후보'가 다음 손님에 대해 서로 다른 답을 내면 그 손님은 내지 않습니다.
  *   맞는 후보끼리 답이 같은 손님을 먼저 내고, 그런 손님이 없으면 후보를 가르는 기록을 한 장 더 꺼냅니다.
@@ -63,9 +65,9 @@
   function bit(mask, g) { return !!(mask & (1 << comboIndex(g))); }
 
   // ---------- 말로 풀기 ----------
-  var ADJ = { star: '별 배지를 단', moon: '달 배지를 단', none: '배지가 없는', key: '열쇠를 든', lantern: '호박등을 든', empty: '빈손인' };
-  var CONN = { star: '별 배지를 달고', moon: '달 배지를 달고', none: '배지 없이' };
-  var NOUN = { star: '별 배지', moon: '달 배지', none: '배지 없음', key: '열쇠', lantern: '호박등', empty: '빈손' };
+  var ADJ = { star: '머리에 홍매화를 꽂은', moon: '머리에 은행잎을 꽂은', none: '머리 장식이 없는', key: '열쇠를 든', lantern: '복주머니를 든', empty: '빈손인' };
+  var CONN = { star: '머리에 홍매화를 꽂고', moon: '머리에 은행잎을 꽂고', none: '머리 장식 없이' };
+  var NOUN = { star: '홍매화', moon: '은행잎', none: '장식 없음', key: '열쇠', lantern: '복주머니', empty: '빈손' };
   function badgeFirst(a, b) { return kindOf(a) === 'item' ? [b, a] : [a, b]; }
   function describe(rule) {
     var p;
@@ -113,14 +115,14 @@
   function masksOf(c) { return c.map(function (x) { return x.mask; }); }
 
   // ---------- 단계 정하기 (코스터처럼: 학년마다 배울 '틀'은 그대로, 어떤 단서인지는 무작위, 바로 전 판과 다르게) ----------
-  // 1·2단계: 한 가지만 보기(배지 한 번, 손 소품 한 번 — 어느 쪽이 먼저인지도 무작위)
+  // 1·2단계: 한 가지만 보기(머리 장식 한 번, 손 물건 한 번 — 어느 쪽이 먼저인지도 무작위)
   // 3단계: 1~2학년 다른 한 가지 / 3~4학년 그리고 / 5~6학년 또는·~만 빼고
   var BAND = {
     low: { domain: 'd4', shapes: ['single'], tip: '마지막 단계! 이번에도 한 가지만 보면 돼.' },
     middle: { domain: 'd6', shapes: ['single', 'and'], tip: '마지막 단계! 두 가지가 모두 있어야 할 수도 있어.' },
     high: { domain: 'd9', shapes: ['single', 'and', 'or'], tip: '마지막 단계! 둘 중 하나만 있어도 되거나, 하나만 빼고 모두 통과일 수도 있어.' }
   };
-  // 1·2단계에 나오는 단서와 손님 모습: 학년이 올라가면 '배지 없음'·'빈손'도 단서가 됨
+  // 1·2단계에 나오는 단서와 손님 모습: 학년이 올라가면 '장식 없음'·'빈손'도 단서가 됨
   var POOL = {
     low: { domain: 'd4', badge: ['star', 'moon'], item: ['key', 'lantern'] },
     middle: { domain: 'd6', badge: ['star', 'moon'], item: ['key', 'lantern', 'empty'] },
@@ -301,19 +303,19 @@
   }
 
   // ---------- 돋보기 힌트: 정답 대신 볼 곳 하나 ----------
-  var SUBJ_BADGE = { star: '별 배지를 단 손님들', moon: '달 배지를 단 손님들', none: '배지가 없는 손님들' };
-  var SUBJ_ITEM = { key: '열쇠를 든 손님들', lantern: '호박등을 든 손님들', empty: '빈손인 손님들' };
+  var SUBJ_BADGE = { star: '머리에 홍매화를 꽂은 손님들', moon: '머리에 은행잎을 꽂은 손님들', none: '머리 장식이 없는 손님들' };
+  var SUBJ_ITEM = { key: '열쇠를 든 손님들', lantern: '복주머니를 든 손님들', empty: '빈손인 손님들' };
   function hint(rule, known, g) {
     var sameB = known.filter(function (k) { return k.badge === g.badge; });
     var sameI = known.filter(function (k) { return k.item === g.item; });
     function mixed(list) { var o = {}; list.forEach(function (k) { o[k.pass] = 1; }); return o[true] && o[false]; }
-    // 같은 배지 손님이 모두 같은 쪽에 있으면 → 그 배지를 보라고
+    // 같은 머리 장식 손님이 모두 같은 쪽에 있으면 → 그 장식을 보라고
     if (sameB.length && !mixed(sameB)) return { text: SUBJ_BADGE[g.badge] + '을 봐! 모두 어느 쪽에 있지?', show: sameB };
     if (sameI.length && !mixed(sameI)) return { text: SUBJ_ITEM[g.item] + '을 봐! 모두 어느 쪽에 있지?', show: sameI };
     var both = known.filter(function (k) { return sameCombo(k, g); });
-    if (both.length) return { text: '이 손님과 배지도 소품도 똑같은 손님이 기록에 있어! 찾아봐.', show: both };
+    if (both.length) return { text: '이 손님과 머리 장식도 손에 든 것도 똑같은 손님이 기록에 있어! 찾아봐.', show: both };
     if (sameB.length) return { text: SUBJ_BADGE[g.badge] + '을 봐. 손에 든 것도 함께 살펴봐!', show: sameB };
-    if (sameI.length) return { text: SUBJ_ITEM[g.item] + '을 봐. 배지도 함께 살펴봐!', show: sameI };
+    if (sameI.length) return { text: SUBJ_ITEM[g.item] + '을 봐. 머리 장식도 함께 살펴봐!', show: sameI };
     return { text: '통과한 손님들끼리 같은 점을 찾아봐!', show: [] };
   }
 

@@ -47,7 +47,7 @@ function playStage(R, label) {
     var plans = G.planRound(band, rand, prev);
     // 바로 전 판과 1·2단계 규칙이 겹치지 않음(후보가 둘 이상이라 늘 피할 수 있음)
     if (prev.length) { ok(plans.sigs[0] !== prev[0] || plans.sigs[1] !== prev[1], band + ': 바로 전 판과 같은 문제 #' + seed); if (plans.sigs[2] === prev[2]) st.repeat++; }
-    ok(G.kindOf(plans[0].rule.a) !== G.kindOf(plans[1].rule.a), band + ': 1·2단계는 배지 한 번·소품 한 번');
+    ok(G.kindOf(plans[0].rule.a) !== G.kindOf(plans[1].rule.a), band + ': 1·2단계는 머리 장식 한 번·손 물건 한 번');
     ok(G.atomsOf(plans[2].rule).every(function (a) { return a !== plans[0].rule.a && a !== plans[1].rule.a; }), band + ': 3단계가 1·2단계 단서를 다시 씀 ' + plans.sigs.join(' '));
     prev = plans.sigs;
     plans.forEach(function (plan, i) {
