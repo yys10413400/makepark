@@ -22,6 +22,7 @@
   <link rel="stylesheet" href="css/parade.css">
   <link rel="stylesheet" href="css/arcade.css">
   <link rel="stylesheet" href="css/thrill.css">
+  <link rel="stylesheet" href="css/geulmaru.css">
   <link rel="stylesheet" href="css/net.css">
   <link rel="stylesheet" href="css/title.css">
   <link rel="stylesheet" href="css/buttons.css">
@@ -107,6 +108,8 @@
 
     <!-- 토리네 도시락: 도시락 주문 수학 놀이 (예전 매표소 자리, 화면은 js/picnic/ui.js 가 만듦) -->
     <section id="picnic" class="pc-overlay" hidden aria-label="토리네 도시락"></section>
+    <!-- 우리말 글마루: 범이·소리와 낱말 놀이 (예전 스타 페스티벌 자리, 시설 id star, 화면은 js/geulmaru/ui.js 가 만듦) -->
+    <section id="geulmaru" class="gm-overlay" hidden aria-label="우리말 글마루"></section>
 
     <!-- 무지개 행진길: 대기실 걷기·리리에게 말 걸기 → 현수막 꾸미기 → 퍼레이드 팝업. 화면은 js/parade/ui.js 가 만듦 -->
     <section id="parade" class="pr-overlay" hidden aria-label="무지개 행진길"></section>
@@ -213,6 +216,8 @@
   <script>document.write('<script src="js/thrill/people.js?t=' + Date.now() + '"><' + '/script>');</script>
   <script>document.write('<script src="js/thrill/missions.js?t=' + Date.now() + '"><' + '/script>');</script>
   <script>document.write('<script src="js/thrill/ui.js?t=' + Date.now() + '"><' + '/script>');</script>
+  <script>document.write('<script src="js/geulmaru/words.js?t=' + Date.now() + '"><' + '/script>');</script>
+  <script>document.write('<script src="js/geulmaru/ui.js?t=' + Date.now() + '"><' + '/script>');</script>
   <script>document.write('<script src="js/data/teacher-sprites.js?t=' + Date.now() + '"><\/script>');</script>
   <script>document.write('<script src="js/teacher-chars.js?t=' + Date.now() + '"><' + '/script>');</script>
   <!-- 선생님 모드(?teacher=반코드): 선생님 구글 계정으로 연결 -->

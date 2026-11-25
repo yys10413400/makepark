@@ -397,6 +397,7 @@
     if (fid === 'arcade') return !!(s.arcade && s.arcade.cleared);   // 별줍는 오락실 별빛 팡팡 본게임을 끝까지 한 판
     if (fid === 'thrill') return !!(s.thrill && s.thrill.cleared);   // 콩콩 범퍼카 토토의 범퍼카 연구소: 어느 학년이든 미션 하나 완료
     if (fid === 'picnic') return !!(s.picnic && s.picnic.cleared);   // 토리네 도시락: 어느 학년이든 주문 3개를 모두 전달
+    if (fid === 'star') return !!(s.geulmaru && s.geulmaru.cleared);   // 우리말 글마루: 어느 학년이든 낱말 10문제를 끝까지
     if (fid === 'shop') return charSave(s).owned.length > 0;         // 추억 상점: 티켓 가게 캐릭터를 하나라도 삼
     return false;
   }
@@ -499,6 +500,7 @@
         : d.facility === 'arcade' ? '별줍는 오락실에서 별빛 팡팡 30초 본게임을 한 판 끝내면 받을 수 있어요.'
         : d.facility === 'thrill' ? '콩콩 범퍼카에서 토토와 범퍼카 미션을 하나 끝내면 받을 수 있어요.'
         : d.facility === 'picnic' ? '토리네 도시락에서 토리와 도시락 주문 3개를 모두 전달하면 받을 수 있어요.'
+        : d.facility === 'star' ? '우리말 글마루에서 범이와 낱말 10문제를 끝까지 풀면 받을 수 있어요.'
         : d.facility === 'shop' ? '추억 상점에서 티켓으로 캐릭터를 하나 사면 받을 수 있어요.'
         : josa(facilityName(d.facility), '이', '가') + ' 문을 열면 받을 수 있어요.';
       return;
@@ -714,8 +716,8 @@
   function openFacility(f) {
     if (!f || state.modalFacility || state.rideOpen) return;
     stopMoving(); state.keys = {};
-    // 놀이기구 화면이 따로 있는 시설: 바람 타는 구름열차(코딩), 유령의 집(문지기의 비밀 규칙), 별소리 음악당(댄스·자유 연주), 토리네 도시락(도시락 주문 수학 놀이), 무지개 행진길(현수막 꾸미기), 별줍는 오락실(별빛 팡팡·캡슐 뽑기), 콩콩 범퍼카(토토의 범퍼카 연구소)
-    var ride = f.id === 'coaster' ? window.MPCoaster : f.id === 'ghost' ? window.MPGate : f.id === 'melody' ? window.MPMelody : f.id === 'picnic' ? window.MPPicnic : f.id === 'parade' ? window.MPParade : f.id === 'arcade' ? window.MPArcade : f.id === 'thrill' ? window.MPThrill : null;
+    // 놀이기구 화면이 따로 있는 시설: 바람 타는 구름열차(코딩), 유령의 집(문지기의 비밀 규칙), 별소리 음악당(댄스·자유 연주), 토리네 도시락(도시락 주문 수학 놀이), 무지개 행진길(현수막 꾸미기), 별줍는 오락실(별빛 팡팡·캡슐 뽑기), 콩콩 범퍼카(토토의 범퍼카 연구소), 우리말 글마루(범이와 낱말 놀이)
+    var ride = f.id === 'coaster' ? window.MPCoaster : f.id === 'ghost' ? window.MPGate : f.id === 'melody' ? window.MPMelody : f.id === 'picnic' ? window.MPPicnic : f.id === 'parade' ? window.MPParade : f.id === 'arcade' ? window.MPArcade : f.id === 'thrill' ? window.MPThrill : f.id === 'star' ? window.MPGeulmaru : null;
     if (ride) {
       state.rideOpen = f.id; state.nearby = null; ui.enter.hidden = true;
       ride.open();
@@ -1172,6 +1174,7 @@
       else if (state.rideOpen === 'parade' && window.MPParade) MPParade.close();
       else if (state.rideOpen === 'arcade' && window.MPArcade) MPArcade.close();
       else if (state.rideOpen === 'thrill' && window.MPThrill) MPThrill.close();
+      else if (state.rideOpen === 'star' && window.MPGeulmaru) MPGeulmaru.close();
       if (state.modalFacility) closeFacility();
       if (state.charOpen) closeChars();
       if (state.profileOpen) closeProfile();
@@ -1211,7 +1214,8 @@
     exitPicnic: function () { exitRide('picnic'); },
     exitParade: function () { exitRide('parade'); },
     exitArcade: function () { exitRide('arcade'); },
-    exitThrill: function () { exitRide('thrill'); }
+    exitThrill: function () { exitRide('thrill'); },
+    exitGeulmaru: function () { exitRide('star'); }
   };
 
   // 개발·검증용 핸들 (게임 동작에는 쓰이지 않음)

@@ -104,7 +104,7 @@ window.MP_PARK = {
       entrance: { x: 1158, y: 856 }, radius: 60, pin: { x: 1160, y: 761 }, label: { x: 1162, y: 780 } },
     { id: 'arcade', name: '별줍는 오락실', desc: '여러 가지 게임기가 모여 있는 오락실이에요.',
       entrance: { x: 825, y: 838 }, radius: 60, pin: { x: 806, y: 727 }, label: { x: 806, y: 746 } },
-    { id: 'star', name: '우리말 글마루', desc: '반짝이는 작품을 뽐내는 축제 마당이에요.',
+    { id: 'star', name: '우리말 글마루', desc: '호랑이 임금님 범이와 까치 소리랑 낱말의 뜻을 알아보는 한옥 서재예요.',
       entrance: { x: 1180, y: 410 }, radius: 60, pin: { x: 1170, y: 282 }, label: { x: 1170, y: 298 } },
     { id: 'mypark', name: '마이파크', desc: '내가 만든 놀이기구를 세울 나만의 공원이에요.',
       entrance: { x: 1130, y: 232 }, radius: 60, pin: { x: 1130, y: 150 }, label: { x: 1131, y: 168 } },
