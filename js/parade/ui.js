@@ -496,7 +496,8 @@
   // ---------- 대기실 걷기 ----------
   // 걸을 수 있는 바닥(그림 좌표 다각형): 벽·화분 아래부터. 자동차 받침대 앞은 조금 더 아래부터
   var FLOOR = [[0, 520], [200, 498], [1160, 498], [1170, 514], [1545, 514], [1672, 520], [1672, 935], [0, 935]];
-  var RIRI_POS = { x: 836, y: 585, k: 0.52 };   // 발 위치와 오프닝 그림 배율(몸 키 약 300)
+  var RIRI_POS = { x: 836, y: 585, k: 0.39 };   // 발 위치와 오프닝 그림 배율(몸 키 약 225 — 토리네 도시락 토리와 같은 크기)
+  var RIRI_H = 580 * RIRI_POS.k;                 // 오프닝 그림 몸 키 580px(28~608)
   var EXIT_Y = 890;
   function inPoly(x, y, p) {
     var c = false;
@@ -507,7 +508,7 @@
   }
   function walkable(x, y) {
     if (!inPoly(x, y, FLOOR)) return false;
-    var tx = (x - RIRI_POS.x) / 80, ty = (y - RIRI_POS.y) / 28;
+    var tx = (x - RIRI_POS.x) / 65, ty = (y - RIRI_POS.y) / 24;
     return tx * tx + ty * ty >= 1;
   }
   // 캐릭터 몸 키: 공원에서 보이는 크기의 1.3배 + 원근(안쪽은 조금 작게)
@@ -544,7 +545,7 @@
     S.nearExit = !S.nearRiri && me.y > EXIT_Y;
     ui.talk.hidden = !S.nearRiri;
     ui.leave.hidden = !S.nearExit;
-    if (S.nearRiri) { ui.talk.style.left = pct(RIRI_POS.x, IW); ui.talk.style.top = pct(RIRI_POS.y - 345, IH); }
+    if (S.nearRiri) { ui.talk.style.left = pct(RIRI_POS.x, IW); ui.talk.style.top = pct(RIRI_POS.y - RIRI_H - 70, IH); }
     if (S.nearExit) { ui.leave.style.left = pct(me.x, IW); ui.leave.style.top = pct(me.y - charH(me.y) - 70, IH); }
   }
   function shadow(c, x, y, w) {
@@ -555,7 +556,7 @@
   }
   function drawRiri(c, now) {
     var k = RIRI_POS.k, f = S.nearRiri || S.start ? openingFrame(now - S.greetAt) : 0;
-    shadow(c, RIRI_POS.x, RIRI_POS.y, 90);
+    shadow(c, RIRI_POS.x, RIRI_POS.y, 68);
     if (riri.complete && riri.naturalWidth) {
       var bob = f === 0 ? Math.sin(now / 420) * 3 : 0;
       c.drawImage(riri, f % 4 * 640, Math.floor(f / 4) * 640, 640, 640, RIRI_POS.x - 320 * k, RIRI_POS.y - 608 * k + bob, 640 * k, 640 * k);
@@ -626,7 +627,7 @@
       if (S.start) return;
       var p = lobbyPoint(e);
       // 리리를 누르면 그 앞으로 걸어가서 말 걸기
-      if (Math.abs(p.x - RIRI_POS.x) < 110 && p.y > RIRI_POS.y - 320 && p.y < RIRI_POS.y + 20) {
+      if (Math.abs(p.x - RIRI_POS.x) < 90 && p.y > RIRI_POS.y - RIRI_H - 20 && p.y < RIRI_POS.y + 20) {
         if (S.nearRiri) { openStart(); return; }
         p = { x: RIRI_POS.x + 40, y: RIRI_POS.y + 100 }; S.destTalk = true;
       } else S.destTalk = false;
