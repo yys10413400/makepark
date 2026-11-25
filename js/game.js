@@ -427,7 +427,7 @@
   function renderChars() {
     var s = readSave() || {}, cs = charSave(s);
     ui.charTickets.textContent = charMode === 'create' ? '건물 보상 캐릭터는 공원에서 모을 수 있어요. 고른 성별의 친구로 받아요.'
-      : '건물 보상 캐릭터는 ' + (cs.gender === 'girl' ? '여자아이' : '남자아이') + ' 그림으로 받아요.';
+      : '내 티켓 ' + (s.tickets || 0) + '장 · 건물 보상 캐릭터는 ' + (cs.gender === 'girl' ? '여자아이' : '남자아이') + ' 그림으로 받아요.';
     if (CHAR_TEST || isTester()) ui.charTickets.textContent = (CHAR_TEST ? '시험 모드' : '테스터') + ': 모든 캐릭터를 골라 볼 수 있어요';
     ui.charList.textContent = '';
     CHAR_SECTIONS.forEach(function (sec) {
