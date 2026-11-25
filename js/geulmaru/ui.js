@@ -34,8 +34,8 @@
   // 게임 화면 배치(그림 좌표): 발 위치와 배율. 범이는 책 왼쪽, 소리는 책 오른쪽(책·선택지·버튼을 가리지 않게)
   var G_BEOMI = { x: 196, y: 878, k: 1.72 };
   var G_SORI = { x: 1494, y: 850, k: 1.16 };
-  // 로비: 범이 발 위치와 배율(범이 키 약 250)
-  var L_PAIR = { x: 760, y: 716, k: 0.74 };
+  // 로비: 범이 발 위치와 배율(범이 키 약 225 — 모든 로비 안내 캐릭터와 같은 크기)
+  var L_PAIR = { x: 760, y: 716, k: 0.666 };
   var GREET_MS = [240, 130, 130, 300, 170, 130, 130, 140];
 
   var S = {
@@ -392,11 +392,11 @@
     S.nearExit = !S.nearNpc && me.y > EXIT_Y;
     ui.talk.hidden = !S.nearNpc;
     ui.leave.hidden = !S.nearExit;
-    if (S.nearNpc) { ui.talk.style.left = pct(L_PAIR.x, IW); ui.talk.style.top = pct(L_PAIR.y - 330, IH); }
+    if (S.nearNpc) { ui.talk.style.left = pct(L_PAIR.x, IW); ui.talk.style.top = pct(L_PAIR.y - 300, IH); }
     if (S.nearExit) { ui.leave.style.left = pct(me.x, IW); ui.leave.style.top = pct(me.y - charH(me.y) - 70, IH); }
     if (S.talkNow) { S.talkNow = false; if (S.nearNpc) { me.dir = 'up'; openStart(); } }
   }
-  function placeHello() { ui.hello.style.left = pct(L_PAIR.x + 60, IW); ui.hello.style.top = pct(L_PAIR.y - 300, IH); }
+  function placeHello() { ui.hello.style.left = pct(L_PAIR.x + 60, IW); ui.hello.style.top = pct(L_PAIR.y - 270, IH); }
   function greetFrame(now) {
     if (S.greetT < 0) return 0;
     var ms = now - S.greetT;
@@ -411,7 +411,7 @@
   }
   function drawPair(c, now) {
     var sp = SP.greet, im = IMGS.greet, k = L_PAIR.k, fi = greetFrame(now);
-    shadow(c, L_PAIR.x, L_PAIR.y, 70); shadow(c, L_PAIR.x + 160, L_PAIR.y - 4, 44);
+    shadow(c, L_PAIR.x, L_PAIR.y, 63); shadow(c, L_PAIR.x + 144, L_PAIR.y - 4, 40);
     if (!(im.complete && im.naturalWidth)) return;
     c.drawImage(im, fi * sp.cw, 0, sp.cw, sp.ch, L_PAIR.x - sp.fx * k, L_PAIR.y - sp.fy * k, sp.cw * k, sp.ch * k);
   }
@@ -714,7 +714,7 @@
       if (S.modal) return;
       var p = lobbyPoint(e);
       // 범이와 소리를 누르면 그 앞으로 걸어가서 말 걸기
-      if (p.x > L_PAIR.x - 90 && p.x < L_PAIR.x + 250 && p.y > L_PAIR.y - 270 && p.y < L_PAIR.y + 20) {
+      if (p.x > L_PAIR.x - 90 && p.x < L_PAIR.x + 230 && p.y > L_PAIR.y - 250 && p.y < L_PAIR.y + 20) {
         if (S.nearNpc) { openStart(); return; }
         p = { x: L_PAIR.x + 60, y: L_PAIR.y + 110 }; S.destTalk = true;
       } else S.destTalk = false;

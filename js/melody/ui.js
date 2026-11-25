@@ -165,7 +165,7 @@
   // 걸을 수 있는 광장 바닥(그림 좌표). 벤치·화분·피아노·무대 앞면은 바깥
   var FLOOR = [[0, 705], [130, 672], [400, 655], [520, 648], [690, 662], [980, 662], [1150, 648], [1265, 645], [1500, 660], [1580, 684], [1672, 700],
     [1672, 935], [0, 935]];
-  var NPC = { x: 836, y: 576, size: 205 };        // 무대 가운데 유니콘(발 기준점), 그림 상자 크기
+  var NPC = { x: 836, y: 576, size: 257 };   // 320 캔버스 안 몸 키 280 → 그리면 225(모든 로비 안내 캐릭터와 같은 크기)        // 무대 가운데 유니콘(발 기준점), 그림 상자 크기
   var TALK = { x: 836, y: 700 };                 // 이 근처(계단 앞)에 오면 '말 걸기'
   var EXIT_Y = 895;
   function inPoly(x, y, p) {
@@ -176,7 +176,7 @@
     return c;
   }
   function walkable(x, y) { return inPoly(x, y, FLOOR); }
-  var LOBBY_SCALE = 1.2, FLOOR_TOP = 645;
+  var LOBBY_SCALE = 1.3, FLOOR_TOP = 645;
   function charH(y) {
     var r = ui.canvas.getBoundingClientRect(), px = api().charScreenH ? api().charScreenH() : 94;
     var base = r.height ? px * IH / r.height : 125;

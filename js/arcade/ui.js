@@ -90,13 +90,13 @@
   // 걸을 수 있는 분홍 바닥(그림 좌표 다각형). 오락기·캡슐 기계 앞까지
   var FLOOR = [[0, 660], [225, 640], [505, 640], [525, 604], [1195, 604], [1210, 636], [1465, 636], [1545, 646], [1671, 664], [1671, 934], [0, 934]];
   // 로비 주인공 픽셀 자리(발바닥) · 손 흔들기 그림 칸(300×420, 발 y=400, 몸 x=160) · 못 지나가는 발밑 타원
-  var NPC = { x: 700, y: 676, cw: 300, ch: 420, foot: 400, bx: 160, bodyH: 396, rx: 58, ry: 22 };
+  var NPC = { x: 700, y: 676, cw: 300, ch: 420, foot: 400, bx: 160, bodyH: 396, h: 225, rx: 58, ry: 22 };   // h = 그릴 몸 키(모든 로비 안내 캐릭터와 같은 225)
   var SPOTS = {
     game: { x: 364, y: 668, box: [222, 230, 506, 640], stand: { x: 364, y: 712 }, label: '별빛 팡팡 하기', top: 220 },
-    pixel: { x: NPC.x, y: NPC.y, box: [NPC.x - 95, NPC.y - 330, NPC.x + 95, NPC.y + 20], stand: { x: NPC.x + 150, y: NPC.y + 40 }, label: '픽셀에게 말 걸기', top: NPC.y - 360 },
+    pixel: { x: NPC.x, y: NPC.y, box: [NPC.x - 95, NPC.y - NPC.h - 20, NPC.x + 95, NPC.y + 20], stand: { x: NPC.x + 150, y: NPC.y + 40 }, label: '픽셀에게 말 걸기', top: NPC.y - NPC.h - 70 },
     capsule: { x: 1335, y: 664, box: [1205, 220, 1465, 634], stand: { x: 1335, y: 708 }, label: '캡슐 뽑기', top: 212 }
   };
-  var EXIT_Y = 900, LOBBY_SCALE = 1.2, FLOOR_TOP = 604;
+  var EXIT_Y = 900, LOBBY_SCALE = 1.3, FLOOR_TOP = 604;
   function inPoly(x, y, p) {
     var c = false;
     for (var i = 0, j = p.length - 1; i < p.length; j = i++) {
@@ -248,9 +248,9 @@
       c.beginPath(); c.moveTo(0, EXIT_Y); c.lineTo(IW, EXIT_Y); c.stroke();
     }
   }
-  // 픽셀: 공원 캐릭터보다 조금 크게, 발바닥을 NPC.y 에 맞춤. 대화 중이면 손을 계속 흔듦
+  // 픽셀: 몸 키 NPC.h(다른 로비 안내 캐릭터와 같은 크기), 발바닥을 NPC.y 에 맞춤. 대화 중이면 손을 계속 흔듦
   function drawPixel(c, t) {
-    var h = charH(NPC.y) * 1.12, k = h / NPC.bodyH;
+    var k = NPC.h / NPC.bodyH;
     var g = c.createRadialGradient(NPC.x, NPC.y, 0, NPC.x, NPC.y, 80);
     g.addColorStop(0, 'rgba(110,40,50,0.35)'); g.addColorStop(1, 'rgba(110,40,50,0)');
     c.save(); c.translate(NPC.x, NPC.y); c.scale(1, 0.28); c.translate(-NPC.x, -NPC.y);

@@ -298,7 +298,7 @@
     [1662, 930], [10, 930]];
   // 등불 탁자·반닫이 받침
   var BLOCKS = [{ x: 230, y: 506, rx: 72, ry: 16 }, { x: 410, y: 500, rx: 98, ry: 13 }];
-  var GHOST = { x: 1095, y: 520, h: 195 };
+  var GHOST = { x: 1095, y: 520, h: 225 };   // 몸 키(모든 로비 안내 캐릭터와 같은 225)
   var EXIT_Y = 868;   // 아래 카펫(입구)으로 내려가면 '공원으로 나가기'
   function inPoly(x, y, p) {
     var c = false;
@@ -357,7 +357,7 @@
   }
   // 로비 유령 대기 움직임(assets/gatekeeper-src/ghost-float-hanok.webp → tools/build_hanok_npcs.py, 384×384 고정 캔버스 8프레임 — 떠오르기가 그림에 들어 있어 따로 흔들지 않음)
   // 대화 중에는 정면 자세(ghost-float-idle) 한 장으로 멈춤. bottom: 프레임마다 유령 아래 끝(그림자 크기용)
-  var FLOAT = { size: 384, ms: [500, 300, 300, 300, 500, 300, 300, 500], bottom: [345, 334, 323, 334, 338, 344, 350, 340], base: 346, draw: 253 };
+  var FLOAT = { size: 384, ms: [500, 300, 300, 300, 500, 300, 300, 500], bottom: [345, 334, 323, 334, 338, 344, 350, 340], base: 346, draw: 297 };   // 384 캔버스 안 몸 키 291 → 그리면 225
   FLOAT.total = FLOAT.ms.reduce(function (a, b) { return a + b; }, 0);
   function floatFrame(t) {
     var ms = (t * 1000) % FLOAT.total;

@@ -63,9 +63,9 @@
   // ================================================================
   // 걸을 수 있는 분홍 광장(그림 좌표 다각형)과 막힌 곳(기록대·가로등·토토 발 기준 타원)
   var FLOOR = [[0, 560], [150, 520], [300, 478], [372, 470], [380, 432], [520, 432], [548, 482], [580, 508], [760, 518], [1110, 518], [1262, 490], [1290, 446], [1420, 498], [1672, 548], [1672, 934], [0, 934]];
-  var TOTO = { x: 560, y: 500, h: 210 };
+  var TOTO = { x: 560, y: 500, h: 225 };   // 발 위치·몸 키(모든 로비 안내 캐릭터와 같은 225)
   var BLOCKS = [{ x: 428, y: 470, rx: 56, ry: 22 }, { x: 322, y: 462, rx: 30, ry: 14 }, { x: TOTO.x, y: TOTO.y, rx: 50, ry: 20 }];
-  var EXIT_Y = 900, LOBBY_SCALE = 1.2, FLOOR_TOP = 470;
+  var EXIT_Y = 900, LOBBY_SCALE = 1.3, FLOOR_TOP = 470;
   function inPoly(x, y, p) {
     var c = false;
     for (var i = 0, j = p.length - 1; i < p.length; j = i++) {
@@ -204,7 +204,7 @@
   }
   function drawToto(c, x, y, h, t, still) {
     var im = img('toto'); if (!ready(im)) return;
-    var k = h / 410, fi = still ? 4 : totoFrame(t);
+    var k = h / 388, fi = still ? 4 : totoFrame(t);
     c.save(); c.fillStyle = 'rgba(90,40,40,0.25)';
     c.beginPath(); c.ellipse(x, y, 58, 14, 0, 0, Math.PI * 2); c.fill(); c.restore();
     c.drawImage(im, fi * 300, 0, 300, 440, x - 150 * k, y - 425 * k, 300 * k, 440 * k);

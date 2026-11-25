@@ -50,10 +50,10 @@
   // ================================================================
   // 걸을 수 있는 분홍 바닥(그림 좌표 다각형)과 막힌 곳(발 기준 타원)
   var FLOOR = [[24, 694], [388, 646], [404, 562], [1336, 562], [1350, 662], [1380, 712], [1660, 716], [1660, 934], [12, 934]];
-  var TURTLE = { x: 486, y: 652, h: 205 };
+  var TURTLE = { x: 486, y: 652, h: 225 };   // 발 위치·몸 키(모든 로비 안내 캐릭터와 같은 225)
   var BLOCKS = [{ x: TURTLE.x, y: TURTLE.y, rx: 62, ry: 26 }];
   var EXIT_Y = 900;
-  var LOBBY_SCALE = 1.25, FLOOR_TOP = 562;
+  var LOBBY_SCALE = 1.3, FLOOR_TOP = 562;
   var DEBUG = /[?&]debug=1/.test(location.search);
   function inPoly(x, y, p) {
     var c = false;
@@ -184,7 +184,7 @@
   }
   // 대기실 역장 대기 움직임(assets/coaster-src/turtle-idle-hanok.webp → tools/build_hanok_npcs.py, 384×384 고정 캔버스 8프레임: 도면을 펼쳐 보고 접은 뒤 손 흔들기)
   // 대화 중에는 정면 자세(turtle-front) 한 장으로 멈춤. 발 위치는 프레임마다 거의 같음(아래 끝 353)
-  var IDLE = { size: 384, ms: [1200, 180, 220, 1200, 220, 180, 250, 1000], foot: 353, draw: 236 };
+  var IDLE = { size: 384, ms: [1200, 180, 220, 1200, 220, 180, 250, 1000], foot: 353, draw: 260 };   // 384 캔버스 안 몸 키 333 → 그리면 225
   IDLE.total = IDLE.ms.reduce(function (a, b) { return a + b; }, 0);
   function idleFrame(t) {
     var ms = (t * 1000) % IDLE.total;
