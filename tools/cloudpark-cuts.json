@@ -1,0 +1,188 @@
+{
+ "path-brick": {
+  "w": 224,
+  "h": 224,
+  "footX": 112,
+  "footY": 223
+ },
+ "path-stone": {
+  "w": 218,
+  "h": 218,
+  "footX": 108,
+  "footY": 217
+ },
+ "path-wood": {
+  "w": 220,
+  "h": 220,
+  "footX": 110,
+  "footY": 219
+ },
+ "tree-pine": {
+  "w": 297,
+  "h": 258,
+  "footX": 132,
+  "footY": 251
+ },
+ "tree-round": {
+  "w": 279,
+  "h": 269,
+  "footX": 140,
+  "footY": 262
+ },
+ "tree-cherry": {
+  "w": 292,
+  "h": 259,
+  "footX": 146,
+  "footY": 252
+ },
+ "shrub": {
+  "w": 237,
+  "h": 160,
+  "footX": 120,
+  "footY": 153
+ },
+ "flower-pink": {
+  "w": 243,
+  "h": 141,
+  "footX": 112,
+  "footY": 134
+ },
+ "flower-white": {
+  "w": 243,
+  "h": 142,
+  "footX": 121,
+  "footY": 135
+ },
+ "rock": {
+  "w": 230,
+  "h": 161,
+  "footX": 114,
+  "footY": 154
+ },
+ "bench": {
+  "w": 278,
+  "h": 176,
+  "footX": 138,
+  "footY": 169
+ },
+ "lantern": {
+  "w": 152,
+  "h": 285,
+  "footX": 33,
+  "footY": 279
+ },
+ "wall": {
+  "w": 282,
+  "h": 177,
+  "footX": 140,
+  "footY": 170
+ },
+ "hanok": {
+  "w": 309,
+  "h": 227,
+  "footX": 154,
+  "footY": 220
+ },
+ "pavilion": {
+  "w": 271,
+  "h": 277,
+  "footX": 136,
+  "footY": 271
+ },
+ "bench-front": {
+  "w": 273,
+  "h": 194,
+  "footX": 136,
+  "footY": 187
+ },
+ "bench-right": {
+  "w": 172,
+  "h": 212,
+  "footX": 86,
+  "footY": 205
+ },
+ "bench-back": {
+  "w": 265,
+  "h": 194,
+  "footX": 132,
+  "footY": 187
+ },
+ "bench-left": {
+  "w": 171,
+  "h": 212,
+  "footX": 84,
+  "footY": 205
+ },
+ "wall-h": {
+  "w": 303,
+  "h": 182,
+  "footX": 151,
+  "footY": 174
+ },
+ "wall-v": {
+  "w": 172,
+  "h": 232,
+  "footX": 85,
+  "footY": 225
+ },
+ "wall-corner-bl": {
+  "w": 286,
+  "h": 231,
+  "footX": 48,
+  "footY": 224
+ },
+ "wall-corner-br": {
+  "w": 285,
+  "h": 230,
+  "footX": 235,
+  "footY": 223
+ },
+ "wall-corner-tl": {
+  "w": 280,
+  "h": 243,
+  "footX": 44,
+  "footY": 236
+ },
+ "wall-corner-tr": {
+  "w": 276,
+  "h": 242,
+  "footX": 232,
+  "footY": 235
+ },
+ "wall-end-left": {
+  "w": 288,
+  "h": 197,
+  "footX": 144,
+  "footY": 190
+ },
+ "wall-end-right": {
+  "w": 288,
+  "h": 197,
+  "footX": 144,
+  "footY": 190
+ },
+ "wall-end-top": {
+  "w": 160,
+  "h": 266,
+  "footX": 80,
+  "footY": 259
+ },
+ "wall-end-bottom": {
+  "w": 158,
+  "h": 257,
+  "footX": 77,
+  "footY": 250
+ },
+ "path-wood-h": {
+  "w": 218,
+  "h": 218,
+  "footX": 108,
+  "footY": 217
+ },
+ "path-wood-v": {
+  "w": 219,
+  "h": 219,
+  "footX": 109,
+  "footY": 218
+ }
+}

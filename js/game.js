@@ -717,7 +717,7 @@
     if (!f || state.modalFacility || state.rideOpen) return;
     stopMoving(); state.keys = {};
     // 놀이기구 화면이 따로 있는 시설: 바람 타는 구름열차(코딩), 유령의 집(문지기의 비밀 규칙), 별소리 음악당(댄스·자유 연주), 토리네 도시락(도시락 주문 수학 놀이), 무지개 행진길(현수막 꾸미기), 별줍는 오락실(별빛 팡팡·캡슐 뽑기), 콩콩 범퍼카(토토의 범퍼카 연구소), 우리말 글마루(범이와 낱말 놀이)
-    var ride = f.id === 'coaster' ? window.MPCoaster : f.id === 'ghost' ? window.MPGate : f.id === 'melody' ? window.MPMelody : f.id === 'picnic' ? window.MPPicnic : f.id === 'parade' ? window.MPParade : f.id === 'arcade' ? window.MPArcade : f.id === 'thrill' ? window.MPThrill : f.id === 'star' ? window.MPGeulmaru : null;
+    var ride = f.id === 'coaster' ? window.MPCoaster : f.id === 'ghost' ? window.MPGate : f.id === 'melody' ? window.MPMelody : f.id === 'picnic' ? window.MPPicnic : f.id === 'parade' ? window.MPParade : f.id === 'arcade' ? window.MPArcade : f.id === 'thrill' ? window.MPThrill : f.id === 'star' ? window.MPGeulmaru : f.id === 'mypark' ? window.MPCloudPark : null;
     if (ride) {
       state.rideOpen = f.id; state.nearby = null; ui.enter.hidden = true;
       ride.open();
@@ -1175,6 +1175,7 @@
       else if (state.rideOpen === 'arcade' && window.MPArcade) MPArcade.close();
       else if (state.rideOpen === 'thrill' && window.MPThrill) MPThrill.close();
       else if (state.rideOpen === 'star' && window.MPGeulmaru) MPGeulmaru.close();
+      else if (state.rideOpen === 'mypark' && window.MPCloudPark) MPCloudPark.close();
       if (state.modalFacility) closeFacility();
       if (state.charOpen) closeChars();
       if (state.profileOpen) closeProfile();
@@ -1215,7 +1216,11 @@
     exitParade: function () { exitRide('parade'); },
     exitArcade: function () { exitRide('arcade'); },
     exitThrill: function () { exitRide('thrill'); },
-    exitGeulmaru: function () { exitRide('star'); }
+    exitGeulmaru: function () { exitRide('star'); },
+    exitCloudPark: function () { exitRide('mypark'); },
+    // 구름동산: 같은 걷기 속도·카메라 배율
+    playScale: function () { return playScale(); },
+    walkSpeed: function () { return PARK.player.speed; }
   };
 
   // 개발·검증용 핸들 (게임 동작에는 쓰이지 않음)

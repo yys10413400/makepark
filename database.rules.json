@@ -273,6 +273,116 @@
           "$gid": {
             ".write": "auth != null && (root.child('rooms').child($code).child('games').child($gid).child('a').val() === auth.uid || root.child('rooms').child($code).child('games').child($gid).child('b').val() === auth.uid || root.child('rooms').child($code).child('meta/owner').val() === auth.uid)"
           }
+        },
+        "parks": {
+          ".read": "auth != null && (root.child('rooms').child($code).child('claims').child(auth.uid).exists() || root.child('rooms').child($code).child('meta/owner').val() === auth.uid)",
+          ".write": "auth != null && root.child('rooms').child($code).child('meta/owner').val() === auth.uid",
+          "$key": {
+            ".write": "auth != null && root.child('rooms').child($code).child('claims').child(auth.uid).child('key').val() === $key",
+            ".validate": "newData.hasChildren(['v', 'updated'])",
+            "v": {
+              ".validate": "newData.isNumber()"
+            },
+            "name": {
+              ".validate": "newData.isString() && newData.val().length <= 14"
+            },
+            "bg": {
+              ".validate": "newData.isString() && newData.val().length <= 20"
+            },
+            "updated": {
+              ".validate": "newData.isNumber()"
+            },
+            "inv": {
+              "$t": {
+                ".validate": "newData.isNumber() && newData.val() >= 0"
+              }
+            },
+            "items": {
+              "$id": {
+                ".validate": "$id.matches(/^[A-Za-z0-9_-]{1,24}$/) && newData.hasChildren(['t', 'x', 'y'])",
+                "t": {
+                  ".validate": "newData.isString() && newData.val().length <= 24"
+                },
+                "x": {
+                  ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 1448"
+                },
+                "y": {
+                  ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 1086"
+                },
+                "d": {
+                  ".validate": "newData.isString() && newData.val().length <= 8"
+                },
+                "$other": {
+                  ".validate": false
+                }
+              }
+            },
+            "$other": {
+              ".validate": false
+            }
+          }
+        },
+        "parkinfo": {
+          ".read": "auth != null && (root.child('rooms').child($code).child('claims').child(auth.uid).exists() || root.child('rooms').child($code).child('meta/owner').val() === auth.uid)",
+          ".write": "auth != null && root.child('rooms').child($code).child('meta/owner').val() === auth.uid",
+          "$key": {
+            ".write": "auth != null && root.child('rooms').child($code).child('claims').child(auth.uid).child('key').val() === $key",
+            ".validate": "newData.hasChildren(['n', 'u'])",
+            "n": {
+              ".validate": "newData.isString() && newData.val().length >= 1 && newData.val().length <= 12"
+            },
+            "pn": {
+              ".validate": "newData.isString() && newData.val().length <= 14"
+            },
+            "s": {
+              ".validate": "newData.isString() && newData.val().length <= 8"
+            },
+            "gd": {
+              ".validate": "newData.val() === 'boy' || newData.val() === 'girl'"
+            },
+            "u": {
+              ".validate": "newData.isNumber()"
+            },
+            "c": {
+              ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 5000"
+            },
+            "$other": {
+              ".validate": false
+            }
+          }
+        },
+        "parkstars": {
+          ".read": "auth != null && (root.child('rooms').child($code).child('claims').child(auth.uid).exists() || root.child('rooms').child($code).child('meta/owner').val() === auth.uid)",
+          ".write": "auth != null && root.child('rooms').child($code).child('meta/owner').val() === auth.uid",
+          "$owner": {
+            "$visitor": {
+              ".write": "auth != null && root.child('rooms').child($code).child('claims').child(auth.uid).child('key').val() === $visitor && $visitor !== $owner",
+              ".validate": "newData.val() === true && root.child('rooms').child($code).child('names').child($owner).exists()"
+            }
+          }
+        },
+        "parkvisits": {
+          ".write": "auth != null && root.child('rooms').child($code).child('meta/owner').val() === auth.uid",
+          "$owner": {
+            ".read": "auth != null && (root.child('rooms').child($code).child('claims').child(auth.uid).child('key').val() === $owner || root.child('rooms').child($code).child('meta/owner').val() === auth.uid)",
+            "$visitor": {
+              ".read": "auth != null && root.child('rooms').child($code).child('claims').child(auth.uid).child('key').val() === $visitor",
+              ".write": "auth != null && root.child('rooms').child($code).child('claims').child(auth.uid).child('key').val() === $visitor && $visitor !== $owner",
+              ".validate": "newData.hasChildren(['n', 'at', 'c']) && root.child('rooms').child($code).child('names').child($owner).exists()",
+              "n": {
+                ".validate": "newData.isString() && newData.val().length >= 1 && newData.val().length <= 12"
+              },
+              "at": {
+                ".validate": "newData.isNumber()"
+              },
+              "c": {
+                ".validate": "newData.isNumber() && newData.val() >= 1 && newData.val() <= 100000"
+              },
+              "$other": {
+                ".validate": false
+              }
+            }
+          }
         }
       }
     }

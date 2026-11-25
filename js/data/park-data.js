@@ -106,7 +106,7 @@ window.MP_PARK = {
       entrance: { x: 825, y: 838 }, radius: 60, pin: { x: 806, y: 727 }, label: { x: 806, y: 746 } },
     { id: 'star', name: '우리말 글마루', desc: '호랑이 임금님 범이와 까치 소리랑 낱말의 뜻을 알아보는 한옥 서재예요.',
       entrance: { x: 1180, y: 410 }, radius: 60, pin: { x: 1170, y: 282 }, label: { x: 1170, y: 298 } },
-    { id: 'mypark', name: '마이파크', desc: '내가 만든 놀이기구를 세울 나만의 공원이에요.',
+    { id: 'mypark', name: '구름동산', desc: '나만의 공원을 꾸미고 친구 공원에도 놀러 가는 곳이에요.',
       entrance: { x: 1130, y: 232 }, radius: 60, pin: { x: 1130, y: 150 }, label: { x: 1131, y: 168 } },
     // 예전 매표소 건물 → 토리네 도시락(아기 다람쥐 토리와 도시락 주문 수학 놀이). 지도 그림·가림 레이어(occluders 'ticket')는 그대로
     { id: 'picnic', name: '토리네 도시락', desc: '아기 다람쥐 토리와 소풍 도시락을 만드는 가게예요.',

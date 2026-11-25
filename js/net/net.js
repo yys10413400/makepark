@@ -13,6 +13,10 @@
  *   rooms/{code}/invites/{pid}  { from, fromNick, fromGrade, id, at, reply?, gid? }   같이 놀기 초대(받는 사람 pid)
  *   rooms/{code}/games/{gid}    { a, b, aNick, bNick, band, maker, stage, round, rule? }  같이 하는 '친구랑 문지기'
  *   rooms/{code}/gameviews/{gid}  판정하는 친구 화면 모습(규칙 만든 친구가 구경)
+ *   rooms/{code}/parks/{학생}      구름동산(개인 공원) { v, name, bg, updated, items } — 같은 반은 읽기만, 주인만 쓰기
+ *   rooms/{code}/parkinfo/{학생}   친구 목록용 짧은 정보 { n 닉네임, pn 공원 이름, s 캐릭터, gd, u 수정 시각, c 아이템 수 }
+ *   rooms/{code}/parkstars/{주인}/{방문자}   별 남기기(true) — 방문자 한 명당 공원마다 하나
+ *   rooms/{code}/parkvisits/{주인}/{방문자}  방문 기록 { n, at, c } — 주인·선생님만 읽기
  *
  * 쓰는 법
  *   MPNet.ready().then(...)                    연결 준비
@@ -336,8 +340,9 @@
   }
   function clearStudents(code) {
     return ready().then(function () {
-      if (mode === 'local') { var all = localStudents(); delete all[code]; saveLocalStudents(all); return; }
+      if (mode === 'local') { var all = localStudents(); delete all[code]; saveLocalStudents(all); var kv = kvAll(); Object.keys(kv).forEach(function (k) { if (k.indexOf('rooms/' + code + '/park') === 0) delete kv[k]; }); kvSave(kv); return; }
       var u = {}; u['rooms/' + code + '/students'] = null; u['rooms/' + code + '/names'] = null; u['rooms/' + code + '/claims'] = null;
+      ['parks', 'parkinfo', 'parkstars', 'parkvisits'].forEach(function (k) { u['rooms/' + code + '/' + k] = null; });   // 구름동산
       return fb.ref().update(u);
     });
   }
@@ -407,11 +412,12 @@
       if (mode === 'local') {
         var r = rooms(); delete r[code]; saveRooms(r); roomChanged();
         var st = localStudents(); delete st[code]; saveLocalStudents(st);
+        var kv = kvAll(); Object.keys(kv).forEach(function (k) { if (k.indexOf('rooms/' + code + '/') === 0) delete kv[k]; }); kvSave(kv);
         var all = localMine(); if (all[uid]) delete all[uid][code]; try { localStorage.setItem(MKEY, JSON.stringify(all)); } catch (e) { /* 무시 */ }
         return;
       }
       var u = {}, base = 'rooms/' + code + '/';
-      ['players', 'cmd', 'names', 'students', 'claims', 'invites', 'games', 'gameviews', 'meta'].forEach(function (k) { u[base + k] = null; });   // meta 는 마지막(권한 확인에 씀)
+      ['players', 'cmd', 'names', 'students', 'claims', 'invites', 'games', 'gameviews', 'parks', 'parkinfo', 'parkstars', 'parkvisits', 'meta'].forEach(function (k) { u[base + k] = null; });   // meta 는 마지막(권한 확인에 씀)
       return fb.ref().update(u).then(function () { return fbRef('teachers/' + uid + '/rooms/' + code).remove(); });
     });
   }
@@ -442,6 +448,18 @@
   function kvAll() { try { return JSON.parse(localStorage.getItem(KKEY)) || {}; } catch (e) { return {}; } }
   function kvSave(v) { try { localStorage.setItem(KKEY, JSON.stringify(v)); } catch (e) { /* 저장 안 됨 */ } }
   function kvGet(full) { var v = kvAll()[full]; return v == null ? null : v; }
+  // 시험 모드에서 윗 경로 읽기(Firebase 처럼): 'rooms/1/parkinfo' → 그 아래 칸들을 모아 { 학생: 값 } 모양으로
+  function kvTree(full) {
+    var all = kvAll(), pre = full + '/', out = null;
+    if (all[full] != null) return all[full];
+    Object.keys(all).forEach(function (k) {
+      if (k.indexOf(pre) !== 0 || all[k] == null) return;
+      var parts = k.slice(pre.length).split('/'), node = out = out || {};
+      for (var i = 0; i < parts.length - 1; i++) node = node[parts[i]] = node[parts[i]] && typeof node[parts[i]] === 'object' ? node[parts[i]] : {};
+      node[parts[parts.length - 1]] = all[k];
+    });
+    return out;
+  }
   // 바뀐 값을 소식에 같이 실어 보냄(다른 탭이 저장소를 너무 빨리 읽어 예전 값을 보지 않게)
   function kvNotify(full) {
     var v = kvGet(full);
@@ -479,6 +497,14 @@
         return fbRef(f).remove();
       });
     },
+    // 한 번만 읽기 → Promise(value | null)
+    get: function (code, path) {
+      var f = full(code, path);
+      return ready().then(function () {
+        if (mode === 'local') return kvTree(f);
+        return fbRef(f).once('value').then(function (s) { return s.val(); });
+      });
+    },
     on: function (code, path, fn) {
       var f = full(code, path), stop = false, off = function () { stop = true; };
       ready().then(function () {
@@ -513,6 +539,19 @@
     }
   };
 
+  // 반에 등록된 학생 key 목록(구름동산 친구 목록). 닉네임은 key 에서 되살릴 수 있음(keyNick)
+  function listNames(code) {
+    return ready().then(function () {
+      if (mode === 'local') return Object.keys(localStudents()[code] || {});
+      return fbRef('rooms/' + code + '/names').once('value').then(function (s) { return Object.keys(s.val() || {}); });
+    });
+  }
+  function keyNick(key) {
+    var out = '';
+    String(key || '').slice(1).split('_').forEach(function (c) { if (c) out += String.fromCharCode(parseInt(c, 36)); });
+    return out;
+  }
+
   function myId() {
     if (mode === 'firebase') return uid;
     try {
@@ -529,6 +568,6 @@
     listStudents: listStudents, resetPin: resetPin, clearStudents: clearStudents, validPin: validPin,
     teacher: teacher, myRooms: myRooms, deleteRoom: deleteRoom, renameRoom: renameRoom, countStudents: countStudents,
     isOwner: function (meta) { return !!(meta && uid && meta.owner === uid); },
-    shared: shared
+    shared: shared, listNames: listNames, keyNick: keyNick
   };
 })();

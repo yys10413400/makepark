@@ -23,6 +23,7 @@
   <link rel="stylesheet" href="css/arcade.css">
   <link rel="stylesheet" href="css/thrill.css">
   <link rel="stylesheet" href="css/geulmaru.css">
+  <link rel="stylesheet" href="css/cloudpark.css">
   <link rel="stylesheet" href="css/net.css">
   <link rel="stylesheet" href="css/title.css">
   <link rel="stylesheet" href="css/buttons.css">
@@ -119,6 +120,9 @@
 
     <!-- 콩콩 범퍼카: 토토의 범퍼카 연구소 — 광장 걷기·토토에게 말 걸기 → 학년 → 범퍼카 미션. 화면은 js/thrill/ui.js 가 만듦 -->
     <section id="thrill" class="th-overlay" hidden aria-label="콩콩 범퍼카 — 토토의 범퍼카 연구소"></section>
+
+    <!-- 구름동산: 나만의 공원 꾸미기 · 산책 · 친구 공원 놀러 가기 (예전 마이파크 자리, 시설 id mypark. 화면은 js/cloudpark/ui.js 가 만듦) -->
+    <section id="cloudpark" class="cp-overlay" hidden aria-label="구름동산"></section>
 
     <!-- 게임 화면 UI -->
     <div id="hud" hidden>
@@ -218,6 +222,10 @@
   <script>document.write('<script src="js/thrill/ui.js?t=' + Date.now() + '"><' + '/script>');</script>
   <script>document.write('<script src="js/geulmaru/words.js?t=' + Date.now() + '"><' + '/script>');</script>
   <script>document.write('<script src="js/geulmaru/ui.js?t=' + Date.now() + '"><' + '/script>');</script>
+  <script>document.write('<script src="js/cloudpark/items.js?t=' + Date.now() + '"><' + '/script>');</script>
+  <script>document.write('<script src="js/data/cloudpark-mask.js?t=' + Date.now() + '"><' + '/script>');</script>
+  <script>document.write('<script src="js/cloudpark/logic.js?t=' + Date.now() + '"><' + '/script>');</script>
+  <script>document.write('<script src="js/cloudpark/ui.js?t=' + Date.now() + '"><' + '/script>');</script>
   <script>document.write('<script src="js/data/teacher-sprites.js?t=' + Date.now() + '"><\/script>');</script>
   <script>document.write('<script src="js/teacher-chars.js?t=' + Date.now() + '"><' + '/script>');</script>
   <!-- 선생님 모드(?teacher=반코드): 선생님 구글 계정으로 연결 -->

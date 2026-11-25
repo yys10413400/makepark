@@ -11,7 +11,7 @@
   var NET = window.MPNet, PARK = window.MP_PARK;
   var $ = function (id) { return document.getElementById(id); };
   var S = { user: null, code: null, meta: null, handle: null, players: {}, owner: false };
-  var WHERE = { park: '공원', coaster: '바람 타는 구름열차', ghost: '쉿! 유령의 집', melody: '별소리 음악당', picnic: '토리네 도시락', star: '우리말 글마루' };
+  var WHERE = { park: '공원', coaster: '바람 타는 구름열차', ghost: '쉿! 유령의 집', melody: '별소리 음악당', picnic: '토리네 도시락', star: '우리말 글마루', mypark: '구름동산' };
   function msg(id, text) { $(id).textContent = text || ''; }
 
   // 화면 안 확인창: 브라우저의 confirm·prompt·alert 는 '이 페이지의 대화상자 막기'를 한 번 체크하면

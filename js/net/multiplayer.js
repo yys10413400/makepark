@@ -16,7 +16,7 @@
   if (!NET) return;
   var SEND_MS = 200, BEAT_MS = 3000;   // 움직일 때 1초에 5번, 가만히 있으면 3초마다
   var GATHER = { x: 690, y: 600 };      // 모두 모으기: 분수 광장 앞
-  var WHERE = { coaster: '바람 타는 구름열차', ghost: '쉿! 유령의 집', melody: '별소리 음악당', picnic: '토리네 도시락', star: '우리말 글마루' };
+  var WHERE = { coaster: '바람 타는 구름열차', ghost: '쉿! 유령의 집', melody: '별소리 음악당', picnic: '토리네 도시락', star: '우리말 글마루', mypark: '구름동산' };
 
   var S = { code: null, handle: null, pid: null, others: {}, last: null, lastSend: 0, joinedAt: 0, mySay: null, chatOff: false, lastSay: 0 };
   // 보낼 수 있는 말(번호로만 주고받음 — 번호를 바꾸면 예전 기기와 뜻이 달라지므로 끝에만 더하기)
@@ -571,6 +571,8 @@
   window.MPMulti = {
     askRoom: askRoom, onEnter: onEnter, leave: leave, tick: tick, drawOthers: drawOthers, drawNames: drawNames,
     active: function () { return !!S.handle; }, say: say,
+    // 구름동산: 지금 들어와 있는 반과 내 학생 key(혼자 둘러보기면 null). 선생님은 key 없이 teacher: true
+    me: function () { return S.code ? { code: S.code, key: S.studentKey || null, teacher: !!S.isTeacher } : null; },
     // 건물 안에 같이 있는 친구(유령의 집 로비): 부드럽게 따라가는 위치 + 그릴 캐릭터
     roomOthers: function (where, dt) {
       if (!S.handle) return [];
