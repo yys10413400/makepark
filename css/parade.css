@@ -165,7 +165,7 @@ body.parade-open #hud, body.parade-open #enterFacility, body.parade-open #chatBa
   animation: pr-pop-in 0.28s ease-out;
 }
 @keyframes pr-pop-in { from { transform: scale(0.92); opacity: 0; } to { transform: none; opacity: 1; } }
-.pr-pop-canvas { display: block; width: 100%; height: 100%; }
+.pr-pop-canvas { display: block; width: 100%; height: 100%; pointer-events: none; }   /* 퍼레이드·꽃가루 캔버스는 버튼 조작을 막지 않음 */
 .pr-pop-x {
   position: absolute; right: 1.6%; top: 2.4%; width: 3.6cqw; height: 3.6cqw; border-radius: 50%; padding: 0;
   font-size: 1.7cqw; line-height: 1; background: #fff8f1; color: #8b3a48; border: 0.16cqw solid #e2b357;
