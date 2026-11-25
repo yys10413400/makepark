@@ -244,3 +244,20 @@ body.arcade-open #hud, body.arcade-open #enterFacility, body.arcade-open #chatBa
   background: #fff; color: #24407a; border: 0.14cqw solid #d9b878;
 }
 .ac-result .ac-btns-sub { margin-top: 0.1cqw; margin-bottom: 0.2cqw; }
+
+/* 로비 픽셀 대화창(코스터역 역장 대화창과 같은 틀) */
+.ac-hot-pixel:hover { background: transparent; box-shadow: none; }
+.ac-dialog {
+  left: 10%; right: 10%; bottom: 4%; z-index: 8; display: flex; gap: 1.6cqw; align-items: center;
+  padding: 1.4cqw 2cqw; border-radius: 1.6cqw; font-size: 1.5cqw;
+  background: #fffaf0; border: 0.25cqw solid #e2b357; box-shadow: 0 0.6cqw 0 rgba(30, 40, 80, 0.45);
+}
+.ac-dialog-face {
+  flex: none; width: 9cqw; aspect-ratio: 300 / 420;
+  background: 0 0 / 800% 100% no-repeat;   /* 손 흔들기 띠의 1번 칸 */
+}
+.ac-dialog-body { flex: 1; min-width: 0; }
+.ac-dialog-name { margin: 0; font-size: 1.3cqw; color: #12837a; }
+.ac-dialog-text { margin: 0.3cqw 0 0.9cqw; font-size: 1.8cqw; line-height: 1.4; color: #3b2410; }
+.ac-dialog-acts { display: flex; gap: 0.8cqw; flex-wrap: wrap; }
+.ac-dialog-acts .ac-choice { font-size: 1.5cqw; }

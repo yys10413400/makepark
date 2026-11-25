@@ -19,7 +19,8 @@
   'use strict';
   var BASE = 'assets/arcade/';
   var IW = 1672, IH = 941;
-  var TIP = '방향키나 바닥을 눌러 걸어가서, 오락기를 눌러 봐요';
+  var TIP = '방향키나 바닥을 눌러 걸어가서, 픽셀에게 말을 걸어 봐요';
+  var PIXEL_SAYS = '어서 와! 나는 이 오락실을 지키는 픽셀이야. 떨어지는 별을 바구니로 받으면 쿠폰을 줄게. 쿠폰 2장이면 캡슐을 뽑을 수 있어!';
   var GAME_SEC = 30, CAPSULE_COST = 2;
   // 난이도: speed 떨어지는 속도 배율 · gap 별 간격(초, 최소~최대) · ramp 30초 동안 빨라지는 정도 · big 큰 별 비율 · reach 바구니 판정 여유(px)
   // 처음엔 공원 학년에 맞춰 미리 골라 둠(1~2학년 쉬움 · 3~4학년 보통 · 5~6학년 어려움), 아이가 바꾸면 그 단계를 기억
@@ -88,8 +89,11 @@
   // ================================================================
   // 걸을 수 있는 분홍 바닥(그림 좌표 다각형). 오락기·캡슐 기계 앞까지
   var FLOOR = [[0, 660], [225, 640], [505, 640], [525, 604], [1195, 604], [1210, 636], [1465, 636], [1545, 646], [1671, 664], [1671, 934], [0, 934]];
+  // 로비 주인공 픽셀 자리(발바닥) · 손 흔들기 그림 칸(300×420, 발 y=400, 몸 x=160) · 못 지나가는 발밑 타원
+  var NPC = { x: 700, y: 676, cw: 300, ch: 420, foot: 400, bx: 160, bodyH: 396, rx: 58, ry: 22 };
   var SPOTS = {
     game: { x: 364, y: 668, box: [222, 230, 506, 640], stand: { x: 364, y: 712 }, label: '별빛 팡팡 하기', top: 220 },
+    pixel: { x: NPC.x, y: NPC.y, box: [NPC.x - 95, NPC.y - 330, NPC.x + 95, NPC.y + 20], stand: { x: NPC.x + 150, y: NPC.y + 40 }, label: '픽셀에게 말 걸기', top: NPC.y - 360 },
     capsule: { x: 1335, y: 664, box: [1205, 220, 1465, 634], stand: { x: 1335, y: 708 }, label: '캡슐 뽑기', top: 212 }
   };
   var EXIT_Y = 900, LOBBY_SCALE = 1.2, FLOOR_TOP = 604;
@@ -100,7 +104,20 @@
     }
     return c;
   }
-  function walkable(x, y) { return inPoly(x, y, FLOOR); }
+  // 로비 주인공 픽셀(한옥 옷, 손 흔들기 8프레임 assets/arcade/pixel-wave.webp: 칸 300×420, 발 y=400, 몸 x=160)
+  var WAVE_MS = [900, 110, 110, 130, 130, 110, 110, 140];   // 1번(차렷)에서 잠깐 쉬고 손을 흔듦
+  var WAVE_T = WAVE_MS.reduce(function (a, b) { return a + b; }, 0);
+  var pixWave = new Image(); pixWave.src = BASE + 'pixel-wave.webp';
+  function waveFrame(t) {
+    var ms = (t * 1000) % WAVE_T;
+    for (var i = 0; i < WAVE_MS.length; i++) { if (ms < WAVE_MS[i]) return i; ms -= WAVE_MS[i]; }
+    return 0;
+  }
+  function walkable(x, y) {
+    if (!inPoly(x, y, FLOOR)) return false;
+    var dx = (x - NPC.x) / NPC.rx, dy = (y - NPC.y) / NPC.ry;
+    return dx * dx + dy * dy >= 1;
+  }
   function charH(y) {
     var r = ui.canvas.getBoundingClientRect(), px = api().charScreenH ? api().charScreenH() : 94;
     var base = r.height ? px * IH / r.height : 125;
@@ -119,12 +136,33 @@
     // 오락기·캡슐 기계를 바로 누를 수 있는 버튼(화면 읽기 프로그램·키보드용으로도)
     ui.hot = {};
     Object.keys(SPOTS).forEach(function (k) {
+      if (k === 'pixel') return;   // 픽셀 버튼은 아래에서 따로
       var s = SPOTS[k], b = btn('ac-hot', '', function () { goSpot(k); });
       b.setAttribute('aria-label', k === 'game' ? '별빛 팡팡 오락기' : '캡슐 뽑기 기계');
       b.style.left = pct(s.box[0], IW); b.style.top = pct(s.box[1], IH);
       b.style.width = pct(s.box[2] - s.box[0], IW); b.style.height = pct(s.box[3] - s.box[1], IH);
       ui.hot[k] = b; lobby.appendChild(b);
     });
+    var ph = btn('ac-hot ac-hot-pixel', '', function () { goSpot('pixel'); });
+    ph.setAttribute('aria-label', '픽셀에게 말 걸기');
+    var pb = SPOTS.pixel.box;
+    ph.style.left = pct(pb[0], IW); ph.style.top = pct(pb[1], IH); ph.style.width = pct(pb[2] - pb[0], IW); ph.style.height = pct(pb[3] - pb[1], IH);
+    ui.hot.pixel = ph; lobby.appendChild(ph);
+    // 픽셀 대화창: 인사 → 별빛 팡팡 하기 / 캡슐 뽑기 / 나중에 할래
+    var d = ui.dlg = el('div', 'ac-dialog'); d.hidden = true;
+    d.setAttribute('role', 'dialog'); d.setAttribute('aria-modal', 'true'); d.setAttribute('aria-labelledby', 'acDlgName');
+    ui.dlgFace = el('div', 'ac-dialog-face'); ui.dlgFace.style.backgroundImage = 'url(' + BASE + 'pixel-wave.webp)';
+    d.appendChild(ui.dlgFace);
+    var body = el('div', 'ac-dialog-body');
+    var nm = el('p', 'ac-dialog-name', '픽셀'); nm.id = 'acDlgName'; body.appendChild(nm);
+    body.appendChild(el('p', 'ac-dialog-text', PIXEL_SAYS));
+    var acts = el('div', 'ac-dialog-acts');
+    ui.dlgGo = btn('ac-choice', '⭐ 별빛 팡팡 하기', function () { closeTalk(); openGame(); });
+    acts.appendChild(ui.dlgGo);
+    acts.appendChild(btn('ac-choice light', '🎁 캡슐 뽑기', function () { closeTalk(); openCapsule(); }));
+    acts.appendChild(btn('ac-choice light', '나중에 할래', closeTalk));
+    body.appendChild(acts); d.appendChild(body);
+    lobby.appendChild(d);
     ui.sign = el('p', 'ac-sign', '별빛 팡팡'); place(ui.sign, 364, 196); lobby.appendChild(ui.sign);
     ui.talk = btn('ac-prompt', '', function () { if (S.near) openSpot(S.near); });
     ui.talk.hidden = true;
@@ -162,7 +200,7 @@
   }
   function openSpot(k) {
     S.pending = null; S.dest = null; S.keys = {}; S.me.moving = false;
-    if (k === 'game') openGame(); else openCapsule();
+    if (k === 'game') openGame(); else if (k === 'pixel') openTalk(); else openCapsule();
   }
 
   var KEYMAP = { ArrowUp: 'up', KeyW: 'up', ArrowDown: 'down', KeyS: 'down', ArrowLeft: 'left', KeyA: 'left', ArrowRight: 'right', KeyD: 'right' };
@@ -186,7 +224,8 @@
     }
     me.moving = moved;
     S.near = null;
-    Object.keys(SPOTS).forEach(function (k) { var s = SPOTS[k]; if (Math.hypot(me.x - s.x, (me.y - s.y) * 1.4) < 220) S.near = k; });
+    var nd = 220;
+    Object.keys(SPOTS).forEach(function (k) { var s = SPOTS[k], dd = Math.hypot(me.x - s.x, (me.y - s.y) * 1.4); if (dd < nd) { nd = dd; S.near = k; } });
     S.nearExit = !S.near && me.y > EXIT_Y;
     ui.talk.hidden = !S.near;
     if (S.near) {
@@ -200,13 +239,35 @@
   function drawLobby(t) {
     var c = ui.canvas.getContext('2d');
     c.clearRect(0, 0, IW, IH);
-    drawMe(c, t);
+    var items = [{ y: NPC.y, draw: function () { drawPixel(c, t); } }, { y: S.me.y, draw: function () { drawMe(c, t); } }];
+    items.sort(function (a, b) { return a.y - b.y; }).forEach(function (i) { i.draw(); });
     if (DEBUG) {
       c.strokeStyle = 'lime'; c.lineWidth = 3; c.beginPath();
       FLOOR.forEach(function (p, i) { if (i) c.lineTo(p[0], p[1]); else c.moveTo(p[0], p[1]); }); c.closePath(); c.stroke();
       c.strokeStyle = 'red'; Object.keys(SPOTS).forEach(function (k) { var b = SPOTS[k].box; c.strokeRect(b[0], b[1], b[2] - b[0], b[3] - b[1]); });
       c.beginPath(); c.moveTo(0, EXIT_Y); c.lineTo(IW, EXIT_Y); c.stroke();
     }
+  }
+  // 픽셀: 공원 캐릭터보다 조금 크게, 발바닥을 NPC.y 에 맞춤. 대화 중이면 손을 계속 흔듦
+  function drawPixel(c, t) {
+    var h = charH(NPC.y) * 1.12, k = h / NPC.bodyH;
+    var g = c.createRadialGradient(NPC.x, NPC.y, 0, NPC.x, NPC.y, 80);
+    g.addColorStop(0, 'rgba(110,40,50,0.35)'); g.addColorStop(1, 'rgba(110,40,50,0)');
+    c.save(); c.translate(NPC.x, NPC.y); c.scale(1, 0.28); c.translate(-NPC.x, -NPC.y);
+    c.fillStyle = g; c.beginPath(); c.arc(NPC.x, NPC.y, 80, 0, Math.PI * 2); c.fill(); c.restore();
+    if (!pixWave.complete || !pixWave.naturalWidth) return;
+    var fi = S.win === 'talk' ? 1 + Math.floor(t * 8) % 7 : waveFrame(t);
+    c.drawImage(pixWave, fi * NPC.cw, 0, NPC.cw, NPC.ch, NPC.x - NPC.bx * k, NPC.y - NPC.foot * k, NPC.cw * k, NPC.ch * k);
+  }
+  function openTalk() {
+    S.win = 'talk'; S.keys = {}; S.dest = null; S.me.moving = false;
+    ui.dlg.hidden = false; ui.talk.hidden = true; ui.leave.hidden = true; ui.tip.hidden = true;
+    setTimeout(function () { ui.dlgGo.focus(); }, 30);
+  }
+  function closeTalk() {
+    ui.dlg.hidden = true;
+    if (S.win === 'talk') S.win = null;
+    S.keys = {}; S.last = performance.now();
   }
   function drawMe(c, t) {
     var me = S.me, h = charH(me.y), sid = api().character ? api().character().sid : 'F1';
@@ -785,7 +846,7 @@
   function loop(now) {
     if (!S.open) return;
     var dt = Math.min(0.05, (now - S.last) / 1000); S.last = now;
-    stepLobby(dt); if (!S.win) drawLobby(now / 1000);   // 창이 열려 있으면 뒤 로비는 다시 그리지 않음(가볍게)
+    stepLobby(dt); if (!S.win || S.win === 'talk') drawLobby(now / 1000);   // 창이 열려 있으면 뒤 로비는 다시 그리지 않음(가볍게)
     if (S.win === 'game') { stepGame(dt); drawGame(); drawCam(); }
     S.raf = requestAnimationFrame(loop);
   }
@@ -796,6 +857,7 @@
     document.body.classList.add('arcade-open');
     S.me = { x: 836, y: 860, dir: 'up', moving: false };
     S.dest = null; S.pending = null; S.keys = {}; S.win = null; S.drawing = false; S.near = null; S.nearExit = false;
+    ui.dlg.hidden = true;
     ui.talk.hidden = true; ui.leave.hidden = true;
     ui.win.hidden = true; ui.capWin.hidden = true; ui.tip.hidden = false;
     // 아케이드 첫 방문 쿠폰 1장(한 번만)
@@ -831,6 +893,7 @@
       if (down && e.code === 'Escape') { e.preventDefault(); closeWin(); }
       return;
     }
+    if (S.win === 'talk') { if (down && e.code === 'Escape') { e.preventDefault(); closeTalk(); } return; }
     if (S.win === 'capsule') { if (down && e.code === 'Escape') { e.preventDefault(); closeWin(); } return; }
     if (KEYMAP[e.code]) { e.preventDefault(); S.keys[KEYMAP[e.code]] = down; return; }
     if (down && e.code === 'Space' && !e.repeat) {
