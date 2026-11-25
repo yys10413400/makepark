@@ -16,7 +16,8 @@ window.MP_CHAR_PACKS = {
     'hanbok-basic': { dir: 'assets/characters/packs/hanbok-basic/', bodyPx: 276 },
     'hanbok-nine': { dir: 'assets/characters/packs/hanbok-nine/', bodyPx: 276 },
     'star-flute-sogo': { dir: 'assets/characters/packs/star-flute-sogo/', bodyPx: 276 },
-    'park-trio': { dir: 'assets/characters/packs/park-trio/', bodyPx: 276 }
+    'park-trio': { dir: 'assets/characters/packs/park-trio/', bodyPx: 276 },
+    'arcade-trio': { dir: 'assets/characters/packs/arcade-trio/', bodyPx: 276 }
   },
   // 게임 그림 id: [팩, walk.json 의 캐릭터 id, 고르기 화면 이름]
   map: {
@@ -29,8 +30,11 @@ window.MP_CHAR_PACKS = {
     R3b: ['hanbok-nine', 'flute-boy', '피리 소년'],
     R3g: ['star-flute-sogo', 'flute', '피리 소녀'],
     R4b: ['park-trio', 'lightning', '번개 소년'],
+    R4g: ['arcade-trio', 'lightning-girl', '번개 소녀'],
+    R5b: ['arcade-trio', 'lantern-boy', '등불 소년'],
     R5g: ['park-trio', 'lantern', '등불 소녀'],
     R6b: ['park-trio', 'coin', '동전 소년'],
+    R6g: ['arcade-trio', 'coin-girl', '코인 소녀'],
     R7b: ['star-flute-sogo', 'star', '별 소년'],
     R7g: ['hanbok-nine', 'star-girl', '별마당 소녀'],
     R8b: ['hanbok-nine', 'lunchbox-boy', '도시락 소년'],
@@ -55,6 +59,9 @@ window.MP_CHAR_PACKS = {
     'star-flute-sogo/sogo': { front: 5, left: 10, right: 4, back: 2 },
     'park-trio/coin': { front: 5, left: 3, right: 4, back: 8 },
     'park-trio/lantern': { front: 11, left: 10, right: 4, back: 8 },
-    'park-trio/lightning': { front: 5, left: 3, right: 4, back: 2 }
+    'park-trio/lightning': { front: 5, left: 3, right: 4, back: 2 },
+    'arcade-trio/coin-girl': { front: 11, left: 0, right: 6, back: 2 },
+    'arcade-trio/lantern-boy': { front: 11, left: 9, right: 3, back: 2 },
+    'arcade-trio/lightning-girl': { front: 5, left: 4, right: 10, back: 2 }
   }
 };

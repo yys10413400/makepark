@@ -1,0 +1,110 @@
+{
+  "frameWidth": 224,
+  "frameHeight": 320,
+  "columns": 12,
+  "rows": 4,
+  "frameDurationMs": 80,
+  "loop": true,
+  "anchorPixels": {
+    "x": 112,
+    "y": 294
+  },
+  "directions": [
+    "front",
+    "left",
+    "right",
+    "back"
+  ],
+  "characters": {
+    "coin-girl": {
+      "name": "코인 소녀",
+      "texture": "coin-girl-walk.png",
+      "animations": {
+        "front": {
+          "row": 0,
+          "firstColumn": 0,
+          "frameCount": 12,
+          "file": "loops/coin-girl/front.webp"
+        },
+        "left": {
+          "row": 1,
+          "firstColumn": 0,
+          "frameCount": 12,
+          "file": "loops/coin-girl/left.webp"
+        },
+        "right": {
+          "row": 2,
+          "firstColumn": 0,
+          "frameCount": 12,
+          "file": "loops/coin-girl/right.webp"
+        },
+        "back": {
+          "row": 3,
+          "firstColumn": 0,
+          "frameCount": 12,
+          "file": "loops/coin-girl/back.webp"
+        }
+      }
+    },
+    "lantern-boy": {
+      "name": "등불 소년",
+      "texture": "lantern-boy-walk.png",
+      "animations": {
+        "front": {
+          "row": 0,
+          "firstColumn": 0,
+          "frameCount": 12,
+          "file": "loops/lantern-boy/front.webp"
+        },
+        "left": {
+          "row": 1,
+          "firstColumn": 0,
+          "frameCount": 12,
+          "file": "loops/lantern-boy/left.webp"
+        },
+        "right": {
+          "row": 2,
+          "firstColumn": 0,
+          "frameCount": 12,
+          "file": "loops/lantern-boy/right.webp"
+        },
+        "back": {
+          "row": 3,
+          "firstColumn": 0,
+          "frameCount": 12,
+          "file": "loops/lantern-boy/back.webp"
+        }
+      }
+    },
+    "lightning-girl": {
+      "name": "번개 소녀",
+      "texture": "lightning-girl-walk.png",
+      "animations": {
+        "front": {
+          "row": 0,
+          "firstColumn": 0,
+          "frameCount": 12,
+          "file": "loops/lightning-girl/front.webp"
+        },
+        "left": {
+          "row": 1,
+          "firstColumn": 0,
+          "frameCount": 12,
+          "file": "loops/lightning-girl/left.webp"
+        },
+        "right": {
+          "row": 2,
+          "firstColumn": 0,
+          "frameCount": 12,
+          "file": "loops/lightning-girl/right.webp"
+        },
+        "back": {
+          "row": 3,
+          "firstColumn": 0,
+          "frameCount": 12,
+          "file": "loops/lightning-girl/back.webp"
+        }
+      }
+    }
+  }
+}
