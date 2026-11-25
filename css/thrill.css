@@ -5,11 +5,11 @@
          납작한 가로 화면(휴대폰 가로)은 방향 패드와 버튼을 경기장 양옆으로 */
 .th-overlay {
   position: fixed; inset: 0; z-index: 40; display: flex; align-items: center; justify-content: center;
-  background: #3a2a30; font-family: var(--font); overflow: hidden;
+  background: #3a2a30; font-family: var(--font-body); overflow: hidden;
   user-select: none; -webkit-user-select: none; word-break: keep-all;
 }
 body.thrill-open #hud, body.thrill-open #enterFacility { display: none !important; }
-.th-overlay button { font-family: inherit; cursor: pointer; }
+.th-overlay button { font-family: var(--font-sign); cursor: pointer; }
 .th-overlay button:focus-visible, .th-overlay [tabindex]:focus-visible { outline: 3px solid #ffb300; outline-offset: 2px; }
 .th-overlay kbd { font-family: inherit; font-size: 0.75em; padding: 0 0.4em; border-radius: 0.4em; background: rgba(255, 255, 255, 0.3); }
 

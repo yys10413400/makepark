@@ -561,7 +561,7 @@
     c.translate(x, y); c.rotate(Math.sin(t * 2 + k.i) * 0.08);
     rr(c, -40, -52, 80, 104, 14); c.fillStyle = '#fffaf0'; c.fill(); c.lineWidth = 6; c.strokeStyle = '#e2a72e'; c.stroke();
     starPath(c, 0, -8, 30); c.fillStyle = '#ffd23f'; c.fill(); c.lineWidth = 3; c.strokeStyle = '#b87a00'; c.stroke();
-    c.font = "30px 'Song Myung', serif"; c.textAlign = 'center'; c.fillStyle = '#c0392b'; c.fillText(String(k.i + 1), 0, 42);
+    c.font = "30px 'Gowun Dodum', 'Malgun Gothic', sans-serif"; c.textAlign = 'center'; c.fillStyle = '#c0392b'; c.fillText(String(k.i + 1), 0, 42);
     c.restore();
   }
   function drawAt(c, im, x, footY, k) { c.drawImage(im, x - im.naturalWidth * k / 2, footY - im.naturalHeight * k, im.naturalWidth * k, im.naturalHeight * k); }

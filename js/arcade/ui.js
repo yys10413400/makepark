@@ -369,7 +369,7 @@
       var k = Math.max(W / v.videoWidth, H / v.videoHeight), vw = v.videoWidth * k, vh = v.videoHeight * k;
       c.drawImage(v, (W - vw) / 2, (H - vh) / 2, vw, vh);
       c.restore();
-    } else { c.fillStyle = '#cbd6ff'; c.font = "14px 'Song Myung', serif"; c.textAlign = 'center'; c.fillText('카메라 준비 중…', W / 2, H / 2); }
+    } else { c.fillStyle = '#cbd6ff'; c.font = "14px 'Gowun Dodum', 'Malgun Gothic', sans-serif"; c.textAlign = 'center'; c.fillText('카메라 준비 중…', W / 2, H / 2); }
     if (p.range) {
       c.strokeStyle = 'rgba(255,214,64,0.9)'; c.lineWidth = 3; c.setLineDash([8, 6]);
       p.range.forEach(function (x) { c.beginPath(); c.moveTo(x * W, 0); c.lineTo(x * W, H); c.stroke(); });
@@ -669,7 +669,7 @@
       c.save(); c.globalAlpha = Math.max(0, a);
       if (f.kind === 'spark') { c.fillStyle = '#ffe27a'; c.shadowColor = '#ffb300'; c.shadowBlur = 14; starPath(c, f.x, f.y, f.r * (0.6 + a * 0.6)); c.fill(); }
       else {
-        c.font = (f.big ? 84 : 64) + "px 'Song Myung', serif"; c.textAlign = 'center';
+        c.font = (f.big ? 84 : 64) + "px 'Gowun Dodum', 'Malgun Gothic', sans-serif"; c.textAlign = 'center';
         c.lineWidth = 10; c.strokeStyle = '#7a3d00'; c.strokeText(f.text, f.x, f.y);
         c.fillStyle = f.big ? '#ffd23f' : '#fff4c2'; c.fillText(f.text, f.x, f.y);
       }

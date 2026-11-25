@@ -3,11 +3,11 @@
    게임: 화면 전체를 위(잔디 격자)·아래(조작대)로 나눔. PC·태블릿 가로 화면에서 페이지 스크롤 없이 한눈에 */
 .coaster-overlay {
   position: fixed; inset: 0; z-index: 40; display: flex; align-items: center; justify-content: center;
-  background: #4a2a3a; font-family: var(--font); overflow: hidden;
+  background: #4a2a3a; font-family: var(--font-body); overflow: hidden;
   user-select: none; -webkit-user-select: none; word-break: keep-all;
 }
 body.coaster-open #hud, body.coaster-open #enterFacility { display: none !important; }
-.coaster-overlay button { font-family: inherit; cursor: pointer; }
+.coaster-overlay button { font-family: var(--font-sign); cursor: pointer; }
 .coaster-overlay button:focus-visible, .coaster-overlay [tabindex]:focus-visible { outline: 3px solid #ffb300; outline-offset: 2px; }
 .coaster-overlay kbd { font-family: inherit; font-size: 0.75em; padding: 0 0.4em; border-radius: 0.4em; background: rgba(255, 255, 255, 0.3); }
 

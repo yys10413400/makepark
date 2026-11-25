@@ -410,7 +410,7 @@
   function mateTag(c, m, tnow) {
     var h = charH(m.y), fs = Math.round(h * 0.16), text = (m.tc ? 'GM ' : '') + m.nick;
     c.save();
-    c.font = '400 ' + fs + 'px "Song Myung", Gungsuh, Batang, serif';
+    c.font = '400 ' + fs + 'px "Gowun Dodum", "Malgun Gothic", sans-serif';
     c.textAlign = 'center'; c.textBaseline = 'middle';
     var w = c.measureText(text).width + fs, hh = fs * 1.45, x = m.x, y = m.y - h - hh * 0.4;
     c.fillStyle = 'rgba(255,255,255,0.92)';
@@ -418,7 +418,7 @@
     c.fillStyle = '#4a2370'; c.fillText(text, x, y + 1);
     if (m.say && m.say.until > tnow) {
       var st = m.say.text, sf = Math.round(fs * (m.say.emoji ? 1.8 : 1.1));
-      c.font = '400 ' + sf + 'px "Song Myung", Gungsuh, Batang, serif';
+      c.font = '400 ' + sf + 'px "Gowun Dodum", "Malgun Gothic", sans-serif';
       var sw = c.measureText(st).width + sf, sh = sf * 1.6, sy = y - hh / 2 - sh / 2 - fs * 0.4;
       c.globalAlpha = Math.max(0, Math.min(1, (m.say.until - tnow) / 400));
       c.fillStyle = '#fff'; c.strokeStyle = 'rgba(226,179,87,0.9)'; c.lineWidth = 2;

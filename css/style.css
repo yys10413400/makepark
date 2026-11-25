@@ -25,6 +25,8 @@
   --font: 'Song Myung', 'Gungsuh', '궁서', 'Batang', 'Jua', serif;
   /* 간판 글씨: 궁서체 느낌의 얇은 붓글씨 명조(Song Myung). 지도 이름표·입장 버튼 이름·제목 */
   --font-sign: 'Song Myung', 'Gungsuh', '궁서', 'Batang', serif;
+  /* 미니게임 글씨: 작게 써도 잘 읽히는 둥근 고딕(고운돋움). 미니게임 버튼만 간판 글씨(--font-sign) */
+  --font-body: 'Gowun Dodum', 'Malgun Gothic', 'Apple SD Gothic Neo', sans-serif;
 }
 
 * { box-sizing: border-box; }

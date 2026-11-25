@@ -3,7 +3,7 @@
    그림 좌표 x → x/1672*100%, y → y/941*100% */
 .gk-overlay {
   position: fixed; inset: 0; z-index: 40; display: flex; align-items: center; justify-content: center;
-  background: #1c0f2e; font-family: var(--font);
+  background: #1c0f2e; font-family: var(--font-body);
 }
 body.gate-open #hud, body.gate-open #enterFacility { display: none !important; }
 .gk-stage {
@@ -13,7 +13,7 @@ body.gate-open #hud, body.gate-open #enterFacility { display: none !important; }
 }
 .gk-scene { position: absolute; inset: 0; background: center / 100% 100% no-repeat; }
 .gk-scene > * { position: absolute; margin: 0; }
-.gk-stage button { font-family: inherit; cursor: pointer; }
+.gk-stage button { font-family: var(--font-sign); cursor: pointer; }
 .gk-stage button:focus-visible { outline: 0.3cqw solid #ffe28a; outline-offset: 0.2cqw; }
 kbd { font-family: inherit; font-size: 0.75em; padding: 0 0.4em; border-radius: 0.4em; background: rgba(255, 255, 255, 0.25); }
 

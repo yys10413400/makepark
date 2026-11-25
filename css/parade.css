@@ -3,7 +3,7 @@
    색: 장밋빛(#c9566b) · 크림(#fff8f1) · 금테(#e2b357) · 진한 장미(#8b3a48) */
 .pr-overlay {
   position: fixed; inset: 0; z-index: 40; display: flex; align-items: center; justify-content: center;
-  background: #ebc6c0; font-family: var(--font);
+  background: #ebc6c0; font-family: var(--font-body);
 }
 body.parade-open #hud, body.parade-open #enterFacility, body.parade-open #chatBar { display: none !important; }
 .pr-stage {
@@ -13,7 +13,7 @@ body.parade-open #hud, body.parade-open #enterFacility, body.parade-open #chatBa
 }
 .pr-scene { position: absolute; inset: 0; background: center / 100% 100% no-repeat; }
 .pr-scene > * { position: absolute; margin: 0; }
-.pr-stage button { font-family: inherit; cursor: pointer; }
+.pr-stage button { font-family: var(--font-sign); cursor: pointer; }
 .pr-stage button:focus-visible { outline: 0.3cqw solid #ffd15c; outline-offset: 0.2cqw; }
 .pr-stage kbd { font-family: inherit; font-size: 0.75em; padding: 0 0.4em; border-radius: 0.4em; background: rgba(255, 255, 255, 0.25); }
 

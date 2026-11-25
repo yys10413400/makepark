@@ -3,7 +3,7 @@
    색: 크림(#fbf1e2) · 옅은 나무(#ecc995) · 딸기빛(#c8323f) · 금테(#e2b357) */
 .pc-overlay {
   position: fixed; inset: 0; z-index: 40; display: flex; align-items: center; justify-content: center;
-  background: #4a2a16; font-family: var(--font);
+  background: #4a2a16; font-family: var(--font-body);
 }
 /* 주문 화면: 화면 비율이 달라 위아래가 남으면 위는 크림, 아래는 나무색으로 이어지게 */
 .pc-overlay.is-game { background: linear-gradient(#fbf1e2 40%, #ebc58f 40%); }
@@ -15,7 +15,7 @@ body.picnic-open #hud, body.picnic-open #enterFacility, body.picnic-open #chatBa
 }
 .pc-scene { position: absolute; inset: 0; background: center / 100% 100% no-repeat; }
 .pc-scene > * { position: absolute; margin: 0; }
-.pc-stage button { font-family: inherit; cursor: pointer; }
+.pc-stage button { font-family: var(--font-sign); cursor: pointer; }
 .pc-stage button:focus-visible { outline: 0.3cqw solid #ffd15c; outline-offset: 0.2cqw; }
 .pc-stage kbd { font-family: inherit; font-size: 0.75em; padding: 0 0.4em; border-radius: 0.4em; background: rgba(255, 255, 255, 0.25); }
 
