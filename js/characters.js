@@ -10,14 +10,14 @@
  *
  * 캐릭터 종류
  *  free   : 처음부터 고를 수 있음 (기본 남자아이 F1, 기본 여자아이 F2)
- *  reward : 그 건물(스테이지)을 통과하면 받음. 남자아이(b)·여자아이(g) 그림이 따로 있고 고르기 화면에서 하나를 고름
+ *  reward : 그 건물(스테이지)을 통과하면 받음. 남자아이(b)·여자아이(g) 그림이 따로 있고,
+ *           고르기 화면에는 처음에 고른 성별(기본 남자아이/여자아이)의 그림만 나옴
  *
  * 걷기 그림 팩(js/data/character-packs.js 의 map 에 있는 그림 id):
  *  walk.json 의 texture PNG 에서 224x320 한 칸만 잘라 그대로 그림(좌우 뒤집기·여백 자르기 없음).
  *  방향 줄: 아래로 front(0) · 왼쪽 left(1) · 오른쪽 right(2) · 위로 back(3).
  *  칸 안의 발 기준점(anchorPixels)이 캐릭터의 지도 좌표(발밑)에 오고, 몸 키 bodyPx 를 DRAW_H 로 맞춰 같은 비율로 줄임.
  *  걸을 때만 frameDurationMs(80ms)마다 다음 열(0~11 반복), 멈추면 그 방향의 서 있기 열(idle)을 고정.
- *  shop   : 추억 상점 티켓으로 삼
  */
 (function () {
   'use strict';
@@ -36,17 +36,7 @@
     { id: 'R6', kind: 'reward', facility: 'arcade', name: '게임 챔피언' },
     { id: 'R7', kind: 'reward', facility: 'star', name: '별빛 요정' },
     { id: 'R8', kind: 'reward', facility: 'picnic', name: '소풍 도시락 친구' },
-    { id: 'R9', kind: 'reward', facility: 'shop', name: '추억 수집가' },
-    { id: 'S1', kind: 'shop', price: 2, name: '정글 탐험가' },
-    { id: 'S2', kind: 'shop', price: 2, name: '꼬마 요리사' },
-    { id: 'S3', kind: 'shop', price: 2, name: '해변 서퍼' },
-    { id: 'S4', kind: 'shop', price: 4, name: '공룡 잠옷' },
-    { id: 'S5', kind: 'shop', price: 4, name: '꼬마 해적' },
-    { id: 'S6', kind: 'shop', price: 4, name: '꼬마 마법사' },
-    { id: 'S7', kind: 'shop', price: 6, name: '우주 비행사' },
-    { id: 'S8', kind: 'shop', price: 6, name: '꼬마 닌자' },
-    { id: 'S9', kind: 'shop', price: 6, name: '꼬마 기사' },
-    { id: 'S10', kind: 'shop', price: 6, name: '공주님' }
+    { id: 'R9', kind: 'reward', facility: 'shop', name: '추억 수집가' }
   ];
   var BY_ID = {};
   ROSTER.forEach(function (c) { BY_ID[c.id] = c; });

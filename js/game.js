@@ -376,15 +376,18 @@
   });
 
   // ---------- 캐릭터 고르기 ----------
-  // 저장: makepark.save.v1 의 character = { id, gender, owned: [산 캐릭터 id] }, tickets(코스터 미션이 줌)
-  // 무료(F1·F2)는 언제나, 건물 보상(R)은 그 건물을 통과하면, 가게(S)는 티켓으로 사면 고를 수 있습니다.
-  // 보상 캐릭터는 남자아이(b)·여자아이(g) 카드가 따로 있고, 고른 카드의 gender 를 저장해 그 그림을 씁니다.
+  // 저장: makepark.save.v1 의 character = { id, gender, owned: [예전 티켓 가게에서 산 캐릭터 id] }
+  // 무료(F1·F2)는 언제나, 건물 보상(R)은 그 건물을 통과하면 고를 수 있습니다. (티켓 가게 캐릭터는 없앰)
+  // 성별: 처음에 기본 남자아이(F1)·여자아이(F2) 중 고른 것이 gender 로 저장되고,
+  //       보상 캐릭터는 그 성별의 그림(R1b / R1g)만 보여 주고 고를 수 있습니다.
   function charSave(s) {
-    var c = (s && s.character) || {}, M = window.MPChars;
+    var c = (s && s.character) || {}, M = window.MPChars, gender = c.gender === 'girl' ? 'girl' : 'boy';
     return {
-      id: M && M.byId(c.id) ? c.id : 'F1',
-      gender: c.gender === 'girl' ? 'girl' : 'boy',
-      owned: Array.isArray(c.owned) ? c.owned.filter(function (x) { return M && M.byId(x); }) : []
+      // 없어진 캐릭터(예전 티켓 가게 S1~S10)를 쓰던 저장은 같은 성별의 기본 캐릭터로
+      id: M && M.byId(c.id) ? c.id : (gender === 'girl' ? 'F2' : 'F1'),
+      gender: gender,
+      // 예전에 산 기록은 지우지 않음(추억 상점 보상 R9 를 이미 받은 친구가 그대로 쓰게)
+      owned: Array.isArray(c.owned) ? c.owned.filter(function (x) { return typeof x === 'string'; }) : []
     };
   }
   // 건물(스테이지) 통과: 코스터역은 선로 만들기 미션을 하나라도 성공하면(예전 코스터 스탬프도 인정)
@@ -398,7 +401,7 @@
     if (fid === 'thrill') return !!(s.thrill && s.thrill.cleared);   // 콩콩 범퍼카 토토의 범퍼카 연구소: 어느 학년이든 미션 하나 완료
     if (fid === 'picnic') return !!(s.picnic && s.picnic.cleared);   // 토리네 도시락: 어느 학년이든 주문 3개를 모두 전달
     if (fid === 'star') return !!(s.geulmaru && s.geulmaru.cleared);   // 우리말 글마루: 어느 학년이든 낱말 10문제를 끝까지
-    if (fid === 'shop') return charSave(s).owned.length > 0;         // 추억 상점: 티켓 가게 캐릭터를 하나라도 삼
+    if (fid === 'shop') return charSave(s).owned.length > 0;         // 추억 상점: 예전 티켓 가게에서 캐릭터를 하나라도 산 적 있음
     return false;
   }
   // 받침에 따라 조사 고르기: josa('탐험가', '을', '를') → '탐험가를'
@@ -417,13 +420,14 @@
     return TESTERS.indexOf(nick) >= 0;
   }
   function charUnlocked(d, cs) {
-    return CHAR_TEST || isTester() || d.kind === 'free' || (d.kind === 'reward' && facilityCleared(d.facility)) || (d.kind === 'shop' && cs.owned.indexOf(d.id) >= 0);
+    return CHAR_TEST || isTester() || d.kind === 'free' || (d.kind === 'reward' && facilityCleared(d.facility));
   }
-  var charMode = 'edit', charEntry = null, pendingBuy = null;
-  var CHAR_SECTIONS = [['free', '기본 캐릭터', '처음부터 고를 수 있어요'], ['reward', '건물 보상 캐릭터', '건물을 통과하면 받아요'], ['shop', '티켓 가게', '티켓으로 사요']];
+  var charMode = 'edit', charEntry = null;
+  var CHAR_SECTIONS = [['free', '기본 캐릭터', '처음부터 고를 수 있어요'], ['reward', '건물 보상 캐릭터', '건물을 통과하면 받아요']];
   function renderChars() {
-    var s = readSave() || {}, cs = charSave(s), tickets = s.tickets || 0;
-    ui.charTickets.textContent = charMode === 'create' ? '건물 보상·티켓 가게 캐릭터는 공원에서 모을 수 있어요.' : '내 티켓 ' + tickets + '장';
+    var s = readSave() || {}, cs = charSave(s);
+    ui.charTickets.textContent = charMode === 'create' ? '건물 보상 캐릭터는 공원에서 모을 수 있어요. 고른 성별의 친구로 받아요.'
+      : '건물 보상 캐릭터는 ' + (cs.gender === 'girl' ? '여자아이' : '남자아이') + ' 그림으로 받아요.';
     if (CHAR_TEST || isTester()) ui.charTickets.textContent = (CHAR_TEST ? '시험 모드' : '테스터') + ': 모든 캐릭터를 골라 볼 수 있어요';
     ui.charList.textContent = '';
     CHAR_SECTIONS.forEach(function (sec) {
@@ -434,15 +438,18 @@
       var grid = document.createElement('div'); grid.className = 'char-grid';
       var cards = [];
       MPChars.ROSTER.filter(function (d) { return d.kind === sec[0]; }).forEach(function (d) {
-        if (d.kind === 'reward') { cards.push([d, 'boy']); cards.push([d, 'girl']); }
-        else cards.push([d, d.kind === 'free' ? d.gender : null]);
+        // 보상 캐릭터는 지금 성별 카드 하나만(시험 모드·테스터는 둘 다 볼 수 있음)
+        if (d.kind === 'reward') {
+          if (CHAR_TEST || isTester()) { cards.push([d, 'boy']); cards.push([d, 'girl']); }
+          else cards.push([d, cs.gender]);
+        } else cards.push([d, d.gender]);
       });
       cards.forEach(function (cd) {
         var d = cd[0], gd = cd[1], sid = MPChars.spriteId(d.id, gd || cs.gender);
         var label = (MPChars.spriteName && MPChars.spriteName(sid)) || (d.kind === 'reward' ? d.name + (gd === 'girl' ? ' (여)' : ' (남)') : d.name);
         var open = charUnlocked(d, cs), cur = charMode !== 'create' && cs.id === d.id && (d.kind !== 'reward' || cs.gender === gd);
         var b = document.createElement('button'); b.type = 'button';
-        b.className = 'char-card' + (cur ? ' current' : '') + (open ? '' : ' locked') + (pendingBuy === d.id ? ' confirm' : '');
+        b.className = 'char-card' + (cur ? ' current' : '') + (open ? '' : ' locked');
         b.dataset.id = d.id;
         if (d.kind === 'reward') b.dataset.gender = gd;
         b.dataset.name = label;
@@ -451,8 +458,7 @@
         var nm = document.createElement('span'); nm.className = 'char-name'; nm.textContent = label;
         var st = document.createElement('span'); st.className = 'char-state';
         st.textContent = cur ? '지금 캐릭터' : open ? '고르기'
-          : d.kind === 'reward' ? '🔒 ' + facilityName(d.facility)
-          : pendingBuy === d.id ? '한 번 더 누르면 사요' : '🎟 ' + d.price + '장';
+          : '🔒 ' + facilityName(d.facility);
         b.setAttribute('aria-label', label + ', ' + st.textContent);
         b.appendChild(cv); b.appendChild(nm); b.appendChild(st); grid.appendChild(b);
       });
@@ -476,7 +482,7 @@
     var e = thumb ? ae : MPChars.load(sid), tries = 0;
     (function wait() { if ((ae ? ae.ok || ae.done : e.done) || tries++ > 400) paint(); else setTimeout(wait, 60); })();
   }
-  // gender: 보상 캐릭터는 누른 카드(남/여), 기본은 그 캐릭터의 성별, 가게 캐릭터는 지금 성별 그대로
+  // gender: 기본은 그 캐릭터의 성별, 보상 캐릭터는 누른 카드(= 지금 성별)
   function selectChar(d, cs, gender, label) {
     gender = d.kind === 'free' ? d.gender : (gender === 'girl' || gender === 'boy') ? gender : cs.gender;
     patchSave({ character: { id: d.id, gender: gender, owned: cs.owned } });
@@ -489,9 +495,9 @@
     var b = e.target.closest && e.target.closest('.char-card');
     if (!b) return;
     var d = MPChars.byId(b.dataset.id), s = readSave() || {}, cs = charSave(s);
-    if (charUnlocked(d, cs)) { pendingBuy = null; selectChar(d, cs, b.dataset.gender, b.dataset.name); return; }
+    if (charUnlocked(d, cs)) { selectChar(d, cs, b.dataset.gender, b.dataset.name); return; }
     if (d.kind === 'reward') {
-      pendingBuy = null; renderChars();
+      renderChars();
       ui.charMsg.textContent = d.facility === 'coaster'
         ? facilityName(d.facility) + '에서 거북이 역장과 선로 만들기 미션을 하나 끝내면 받을 수 있어요.'
         : d.facility === 'ghost' ? '유령의 집 문지기와 혼자 추리하기 한 판을 끝내면 받을 수 있어요.'
@@ -501,28 +507,10 @@
         : d.facility === 'thrill' ? '콩콩 범퍼카에서 토토와 범퍼카 미션을 하나 끝내면 받을 수 있어요.'
         : d.facility === 'picnic' ? '토리네 도시락에서 토리와 도시락 주문 3개를 모두 전달하면 받을 수 있어요.'
         : d.facility === 'star' ? '우리말 글마루에서 범이와 낱말 10문제를 끝까지 풀면 받을 수 있어요.'
-        : d.facility === 'shop' ? '추억 상점에서 티켓으로 캐릭터를 하나 사면 받을 수 있어요.'
+        : d.facility === 'shop' ? '추억 상점 친구는 지금 받을 수 없어요.'
         : josa(facilityName(d.facility), '이', '가') + ' 문을 열면 받을 수 있어요.';
       return;
     }
-    var t = s.tickets || 0;
-    if (t < d.price) {
-      pendingBuy = null; renderChars();
-      ui.charMsg.textContent = '티켓이 ' + (d.price - t) + '장 모자라요. 놀이기구 미션을 하면 티켓을 받아요.';
-      return;
-    }
-    if (pendingBuy !== d.id) {
-      pendingBuy = d.id; renderChars();
-      ui.charMsg.textContent = '티켓 ' + d.price + '장으로 ' + josa(d.name, '을', '를') + ' 살까요? 한 번 더 누르면 사요.';
-      var again = ui.charList.querySelector('.char-card.confirm'); if (again) again.focus();
-      return;
-    }
-    pendingBuy = null;
-    cs.owned.push(d.id);
-    patchSave({ tickets: t - d.price, character: { id: cs.id, gender: cs.gender, owned: cs.owned } });
-    selectChar(d, cs);
-    ui.charMsg.textContent = josa(d.name, '을', '를') + ' 샀어요! 남은 티켓 ' + (t - d.price) + '장';
-    if (!storageOk) toast('샀지만 이 기기에는 저장되지 않아요');
   }
   function openChars(mode, entry) {
     if (teacherAvatar) return;   // 선생님 모드: 동물 선생님 캐릭터를 그대로 씀
@@ -530,7 +518,7 @@
     if (mode === 'edit' && (state.phase !== 'play' || state.modalFacility || state.profileOpen || state.rideOpen)) return;
     if (mode === 'edit') { stopMoving(); ui.enter.hidden = true; state.nearby = null; }
     state.keys = {};
-    charMode = mode; charEntry = entry || null; pendingBuy = null;
+    charMode = mode; charEntry = entry || null;
     ui.charTitle.textContent = mode === 'create' ? '내 캐릭터 고르기' : '내 캐릭터';
     ui.charClose.textContent = mode === 'create' ? '뒤로' : '닫기';
     ui.charMsg.textContent = '';
@@ -540,7 +528,7 @@
     if (f) f.focus();
   }
   function closeChars() {
-    state.charOpen = false; ui.charDlg.hidden = true; state.keys = {}; pendingBuy = null;
+    state.charOpen = false; ui.charDlg.hidden = true; state.keys = {};
     if (charMode === 'create') ui.enterPark.focus(); else if (ui.charBtn) ui.charBtn.focus();
   }
   if (ui.charBtn) {
