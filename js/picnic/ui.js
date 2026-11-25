@@ -23,7 +23,7 @@
     3: '두 도시락에 하나씩 번갈아 담으면 똑같이 나눌 수 있어요. 다 담고 나서 두 도시락을 비교해 봐요.',
     4: '조건을 하나씩 확인해요. 조건만 맞으면 다른 재료는 마음대로 골라도 돼요. 정답이 여러 가지예요!',
     5: '전체를 똑같은 묶음으로 나눠 생각해요. 12개의 ⅓ → 12개를 3묶음으로 나눈 것 중 1묶음!',
-    6: '2:3은 딸기 2개와 방울토마토 3개가 한 묶음이라는 뜻이에요. 그 묶음을 몇 번 담으면 될까요?'
+    6: '2:3은 귤 2개와 달걀말이 3개가 한 묶음이라는 뜻이에요. 그 묶음을 몇 번 담으면 될까요?'
   };
   var PRAISE = ['고마워요! 주문대로 딱 맞아요!', '와, 맛있겠다! 손님이 좋아할 거예요!', '완벽해요! 다음 손님 주문도 부탁해요!'];
 
@@ -102,15 +102,8 @@
     ui.order = el('p', 'pc-order'); ui.order.setAttribute('aria-live', 'polite'); game.appendChild(ui.order);
     ui.feedback = el('p', 'pc-feedback'); ui.feedback.setAttribute('role', 'status'); ui.feedback.hidden = true; game.appendChild(ui.feedback);
     ui.boxRow = el('div', 'pc-boxes'); game.appendChild(ui.boxRow);
-    var foods = el('div', 'pc-foods');
-    ui.foodBtns = P.FOODS.map(function (f) {
-      var b = btn('pc-food', '', function () { addFood(f); });
-      b.appendChild(img('food-' + f, 'pc-food-img'));
-      b.appendChild(el('span', 'pc-food-name', P.NAME[f]));
-      b.setAttribute('aria-label', P.NAME[f] + ' 담기');
-      foods.appendChild(b); return b;
-    });
-    game.appendChild(foods);
+    ui.foods = el('div', 'pc-foods');   // 재료 버튼 4개: 판마다 12가지 음식 중에서 새로 골라 채움(renderFoods)
+    game.appendChild(ui.foods);
     ui.deliver = btn('pc-deliver', '전달하기', deliver); game.appendChild(ui.deliver);
     ui.modal = el('div', 'pc-modal'); ui.modal.hidden = true;
     ui.modalCard = el('div', 'pc-card'); ui.modalCard.setAttribute('role', 'dialog'); ui.modalCard.setAttribute('aria-modal', 'true');
@@ -127,7 +120,7 @@
     ui.tickets.setAttribute('aria-live', 'polite');
     st.appendChild(ui.tickets);
 
-    ['lunchbox', 'food-onigiri', 'food-sandwich', 'food-strawberry', 'food-tomato'].forEach(function (n) { var i = new Image(); i.src = BASE + n + '.webp'; });
+    ['lunchbox'].concat(P.ALL.map(function (f) { return 'food-' + f; })).forEach(function (n) { var i = new Image(); i.src = BASE + n + '.webp'; });
   }
 
   // ---------- 시작 창: 학년 고르기 → 도시락 만들기 ----------
@@ -354,6 +347,7 @@
     // 바로 전 판과 같은 주문은 피함(picnic.last 에 문장 저장)
     var pc0 = save().picnic || {}, key = 'g' + S.grade;
     S.orders = P.makeRound(S.grade, { first: !(pc0.done && pc0.done[key]), avoid: (pc0.last && pc0.last[key]) || [] });
+    renderFoods(S.orders.foods);
     if (api() && pc0.done && pc0.done[key]) {   // 새 주문 판만 기억(예시 주문은 기억할 필요 없음)
       pc0.last = pc0.last && typeof pc0.last === 'object' ? pc0.last : {};
       pc0.last[key] = S.orders.map(function (o) { return o.text; });
@@ -377,10 +371,11 @@
     }
     function sub(text) { return el('p', 'pc-howto-sub', text); }
     var ex = el('p', 'pc-howto-sub');
-    richText(ex, '예) 주먹밥 {2}개랑 딸기 {3}개 → 주먹밥 2번, 딸기 3번 누르기');
+    var fa = P.NAME[S.orders.foods[0]], fb = P.NAME[S.orders.foods[1]];
+    richText(ex, '예) ' + fa + ' {2}개랑 ' + fb + ' {3}개 → ' + fa + ' 2번, ' + fb + ' 3번 누르기');
     row('1', '토리의 주문을 끝까지 읽어요. 빨간 숫자가 중요해요!', ex);
     var pics = el('div', 'pc-howto-pics');
-    P.FOODS.forEach(function (f) { var c = el('span', 'pc-howto-chip'); c.appendChild(img('food-' + f, '')); c.appendChild(document.createTextNode(P.NAME[f])); pics.appendChild(c); });
+    S.orders.foods.forEach(function (f) { var c = el('span', 'pc-howto-chip'); c.appendChild(img('food-' + f, '')); c.appendChild(document.createTextNode(P.NAME[f])); pics.appendChild(c); });
     row('2', '아래 재료 버튼을 한 번 누르면 도시락에 하나 들어가요', pics);
     row('3', '잘못 담았으면 도시락 안의 재료를 눌러요. 하나만 쏙 빠져요', null);
     row('4', '도시락이 두 개면, 담을 도시락을 먼저 눌러 골라요', sub('금빛 테두리와 ‘여기에 담아요’가 보이는 도시락에 들어가요.'));
@@ -408,6 +403,17 @@
     S.help = false; ui.modal.hidden = true; ui.modalCard.classList.remove('pc-help-card');
     var pc = save().picnic;
     if (!(pc && pc.howto) && api()) { pc = pc && typeof pc === 'object' ? pc : {}; pc.howto = true; api().patchSave({ picnic: pc }); }
+  }
+  // 이번 판 재료 버튼 4개(같은 판 안에서는 그대로)
+  function renderFoods(set) {
+    ui.foods.textContent = '';
+    set.forEach(function (f) {
+      var b = btn('pc-food', '', function () { addFood(f); });
+      b.appendChild(img('food-' + f, 'pc-food-img'));
+      b.appendChild(el('span', 'pc-food-name', P.NAME[f]));
+      b.setAttribute('aria-label', P.NAME[f] + ' 담기');
+      ui.foods.appendChild(b);
+    });
   }
   function loadOrder() {
     var o = S.order = S.orders[S.idx];
@@ -442,7 +448,9 @@
       box.addEventListener('click', function () { if (two) selectBox(i); });
       box.appendChild(img('lunchbox', 'pc-box-img'));
       var inner = el('div', 'pc-items'), list = [];
-      P.FOODS.forEach(function (f) { for (var k = 0; k < b[f]; k++) list.push(f); });   // 같은 재료끼리 모아 정렬
+      // 같은 재료끼리 모아 아래 재료 버튼과 같은 순서로 정렬
+      var set = S.orders.foods, order = set.concat(P.FOODS.filter(function (f) { return set.indexOf(f) < 0; }));
+      order.forEach(function (f) { for (var k = 0; k < b[f]; k++) list.push(f); });
       var gdim = gridFor(list.length, two ? 3.6 : 4.2);
       inner.style.setProperty('--cw', (100 / gdim.cols) + '%');
       inner.style.setProperty('--rh', (100 / gdim.rows) + '%');
