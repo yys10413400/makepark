@@ -2,7 +2,7 @@
  * 구름동산 규칙 (화면과 분리된 순수 로직 — node tools/verify_cloudpark.js 로 자동 검증)
  * ------------------------------------------------------------
  * 공원 데이터(저장 모양)
- *   { v: 1, name: '공원 이름', bg: 'hanok-sage', updated: 시각(ms),
+ *   { v: 2, name: '공원 이름', bg: 'hanok-sage', updated: 시각(ms),
  *     items: { <인스턴스 ID>: { t: 아이템 ID, x, y: 발 기준점 월드 좌표, d: 방향 } } }
  *   - 좌표는 화면 CSS 픽셀이 아니라 지도 그림(1448×1086) 기준 → 화면 크기가 바뀌어도 그대로
  *   - 돌담 방향(d)은 저장하지 않고 이웃을 보고 매번 다시 계산
@@ -24,7 +24,7 @@
     for (var i = 0; i < 9; i++) s += abc[Math.floor(Math.random() * abc.length)];
     return s;
   }
-  function emptyPark(name) { return { v: 1, name: name || '', bg: 'hanok-sage', updated: 0, items: {} }; }
+  function emptyPark(name) { return { v: D.VERSION, name: name || '', bg: 'hanok-sage', updated: 0, items: {} }; }
 
   // ---------- 저장값 읽기·고치기(마이그레이션) ----------
   // 모르는 아이템·지도 밖 좌표는 빼고(지우지 않고 dropped 로 알려 줌), 예전 버전은 지금 모양으로 바꿈
@@ -41,6 +41,7 @@
       src = o;
     }
     src = src && typeof src === 'object' ? src : {};
+    if (!(raw.v >= 2)) src = migrateWalls(src);
     Object.keys(src).forEach(function (id) {
       var it = src[id], def = it && item(it.t);
       if (!def || typeof it.x !== 'number' || typeof it.y !== 'number' || !isFinite(it.x) || !isFinite(it.y) ||
@@ -53,6 +54,37 @@
       Object.keys(raw.inv).forEach(function (k) { if (item(k) && +raw.inv[k] > 0) p.inv[k] = Math.floor(+raw.inv[k]); });
     }
     return { park: p, dropped: dropped };
+  }
+  // v1 돌담(가로 64 × 세로 48 칸) → v2(48 × 48 칸). 이어진 돌담 덩어리마다 모양(이웃 연결)을 그대로 두고
+  // 덩어리 가운데가 원래 자리에 가장 가깝게 옮김(칸 크기만 바뀌어 틈이 생기지 않게)
+  function migrateWalls(src) {
+    var out = {}, cells = {}, ids = Object.keys(src);
+    ids.forEach(function (id) {
+      var it = src[id];
+      if (it && item(it.t) && item(it.t).kind === 'wall' && typeof it.x === 'number' && typeof it.y === 'number') {
+        cells[Math.floor(it.x / 64) + ',' + (Math.round(it.y / 48) - 1)] = id;
+      } else out[id] = it;
+    });
+    var seen = {};
+    Object.keys(cells).forEach(function (k) {
+      if (seen[k]) return;
+      var comp = [], stack = [k]; seen[k] = true;
+      while (stack.length) {
+        var c = stack.pop(), ij = c.split(',').map(Number); comp.push(ij);
+        [[1, 0], [-1, 0], [0, 1], [0, -1]].forEach(function (d) {
+          var n = (ij[0] + d[0]) + ',' + (ij[1] + d[1]);
+          if (cells[n] && !seen[n]) { seen[n] = true; stack.push(n); }
+        });
+      }
+      var mx = comp.reduce(function (a, ij) { return a + ij[0] * 64 + 32; }, 0) / comp.length;
+      var mi = comp.reduce(function (a, ij) { return a + ij[0]; }, 0) / comp.length;
+      var shift = Math.round((mx - D.WALL_CELL.w / 2) / D.WALL_CELL.w - mi);
+      comp.forEach(function (ij) {
+        var id = cells[ij[0] + ',' + ij[1]], it = src[id], ni = ij[0] + shift;
+        out[id] = { t: it.t, x: ni * D.WALL_CELL.w + D.WALL_CELL.w / 2, y: (ij[1] + 1) * D.WALL_CELL.h, d: it.d };
+      });
+    });
+    return out;
   }
   function clone(p) { return JSON.parse(JSON.stringify(p)); }
   function count(p) { return Object.keys(p.items).length; }
@@ -105,8 +137,20 @@
     return null;   // 세 갈래 이상
   }
   function wallImg(walls, x, y) {
-    var c = wallCell(x, y - 1), k = shapeKey(wallLinks(walls, c.i, c.j));
+    var k = wallShape(walls, x, y);
     return D.WALL_SHAPES[k == null ? '' : k];
+  }
+  // 돌담 모양 글자: '' · 'E' · 'W' · 'EW' · 'N' · 'S' · 'NS' · 'ES' · 'SW' · 'EN' · 'NW' (세 갈래 이상이면 null)
+  function wallShape(walls, x, y) {
+    var c = wallCell(x, y - 1);
+    return shapeKey(wallLinks(walls, c.i, c.j));
+  }
+  // 고르기·가림 판정용 돌담 그림 네모(월드): 가로 돌담 높이 + 남쪽으로 이어지면 아래 칸까지
+  function wallBox(walls, x, y) {
+    var k = wallShape(walls, x, y) || '', hw = D.WALL_CELL.w / 2;
+    var top = y - (k.indexOf('N') >= 0 || k.indexOf('S') >= 0 ? 52 : 42);
+    var bottom = k.indexOf('S') >= 0 ? y + D.WALL_CELL.h - D.WALL_ART.ridge : y;
+    return [x - hw - 4, top, x + hw + 4, bottom];
   }
 
   // ---------- 바닥 점유 영역(월드 사각형 [x0, y0, x1, y1]) ----------
@@ -118,8 +162,8 @@
       var c = wallCell(it.x, it.y - 1), L = idx ? wallLinks(idx.walls, c.i, c.j) : '', cx = it.x, by = it.y;
       var hw = D.WALL_CELL.w / 2, out = [];
       if (L.indexOf('N') < 0 && L.indexOf('S') < 0) return [[cx - hw, by - 14, cx + hw, by]];
-      out.push([cx - 13, by - 14, cx + 13, by]);
-      if (L.indexOf('N') >= 0) out.push([cx - 13, by - D.WALL_CELL.h, cx + 13, by]);
+      out.push([cx - 11, by - 14, cx + 11, by]);
+      if (L.indexOf('N') >= 0) out.push([cx - 11, by - D.WALL_CELL.h, cx + 11, by]);
       if (L.indexOf('E') >= 0) out.push([cx, by - 14, cx + hw, by]);
       if (L.indexOf('W') >= 0) out.push([cx - hw, by - 14, cx, by]);
       return out;
@@ -219,7 +263,12 @@
         if (Math.abs(x - it.x) <= D.PATH_CELL / 2 && Math.abs(y - it.y) <= D.PATH_CELL / 2) floorHit = id;
         return;
       }
-      var s = D.sprite(def, it.d, def.kind === 'wall' ? wallImg(idx.walls, it.x, it.y) : null);
+      if (def.kind === 'wall') {
+        var b = wallBox(idx.walls, it.x, it.y);
+        if (x >= b[0] + 4 && x <= b[2] - 4 && y >= b[1] && y <= Math.max(b[3], it.y + 4) && it.y > bestY) { best = id; bestY = it.y; }
+        return;
+      }
+      var s = D.sprite(def, it.d);
       var x0 = it.x - s.ax, y0 = it.y - s.ay;
       if (x >= x0 + s.w * 0.12 && x <= x0 + s.w * 0.88 && y >= y0 + s.h * 0.08 && y <= it.y + 4 && it.y > bestY) { best = id; bestY = it.y; }
     });
@@ -228,7 +277,7 @@
 
   root.MP_CLOUD = {
     emptyPark: emptyPark, normalize: normalize, clone: clone, count: count, newId: newId,
-    snap: snap, index: index, wallImg: wallImg, wallLinks: wallLinks, wallCell: wallCell, pathKey: pathKey,
+    snap: snap, index: index, wallImg: wallImg, wallShape: wallShape, wallBox: wallBox, wallLinks: wallLinks, wallCell: wallCell, pathKey: pathKey,
     rectsOf: rectsOf, canPlace: canPlace, blockers: blockers, badWalls: badWalls, pick: pick, maskOk: maskOk, hit: hit
   };
 })(typeof window !== 'undefined' ? window : globalThis);

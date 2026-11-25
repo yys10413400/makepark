@@ -237,10 +237,14 @@
     Object.keys(S.park.items).forEach(function (id) {
       var it = S.park.items[id], def = D.ITEMS[it.t];
       if (def.kind === 'path') return;
-      var spr = D.sprite(def, it.d, def.kind === 'wall' ? L.wallImg(S.idx.walls, it.x, it.y) : null);
-      list.push({ id: id, y: it.y, x: it.x, spr: spr });
+      if (def.kind === 'wall') {
+        var shp = L.wallShape(S.idx.walls, it.x, it.y) || '', bx = L.wallBox(S.idx.walls, it.x, it.y);
+        list.push({ id: id, y: it.y, x: it.x, wall: shp, pri: shp === 'EW' ? 1 : 0, spr: { w: bx[2] - bx[0], h: bx[3] - bx[1], ax: it.x - bx[0], ay: it.y - bx[1] } });
+        return;
+      }
+      list.push({ id: id, y: it.y, x: it.x, pri: 0, spr: D.sprite(def, it.d) });
     });
-    list.sort(function (a, b) { return a.y - b.y || a.x - b.x; });
+    list.sort(function (a, b) { return a.y - b.y || a.pri - b.pri || a.x - b.x; });
     S.sorted = list;
     S.floorDirty = true;
     buildWalkGrid();
@@ -485,7 +489,8 @@
       if (!drawnMe && o.y > me.y) { drawMe(c, t); drawnMe = true; }
       if (o.id === dragId) continue;
       var it0 = S.park.items[o.id];
-      drawItem(c, it0, o.spr, o.id === S.sel ? 'sel' : null);
+      if (o.wall != null) drawWall(c, it0, o.wall, o.id === S.sel ? 'sel' : null);
+      else drawItem(c, it0, o.spr, o.id === S.sel ? 'sel' : null);
       // 캐릭터 앞에 그려져 캐릭터를 덮는 아이템이 있는지(그림 네모의 가운데 부분으로 대강)
       if (drawnMe && !hidden) {
         var x0 = it0.x - o.spr.ax, y0 = it0.y - o.spr.ay;
@@ -512,6 +517,45 @@
     if (spr.mirror) {
       c.save(); c.translate(x0 + spr.w, y0); c.scale(-1, 1); c.drawImage(im, 0, 0, spr.w, spr.h); c.restore();
     } else c.drawImage(im, x0, y0, spr.w, spr.h);
+    if (mark === 'sel') c.restore();
+  }
+  // 돌담 한 칸 그리기 — 원본 조각을 자르고 겹쳐서만(items.js WALL_ART 설명 참고)
+  //  남쪽으로 이어지면(S) 이 칸이 아래 칸까지 남북 지붕 줄을 먼저 깔고, 모서리 그림을 그 위에 얹음
+  //  가로로 이어지는 칸(EW)은 wall-h 가운데 4주기 조각 → 칸마다 틈·마감 없이 이어짐
+  function drawWall(c, it, shape, mark) {
+    var A = D.WALL_ART, K = D.WALL_K, cx = it.x, by = it.y, hw = D.WALL_CELL.w / 2;
+    if (mark === 'sel') { c.save(); c.shadowColor = 'rgba(255, 226, 122, 0.95)'; c.shadowBlur = 12; }
+    if (shape.indexOf('S') >= 0) {
+      var st = A.strip, sim = image(st.img);
+      if (ready(sim)) {
+        var sw = st.w * K, sh = st.h * K, y = by - A.ridge, end = by + D.WALL_CELL.h - A.ridge;
+        while (y < end - 0.01) {
+          var hh = Math.min(sh, end - y);
+          c.drawImage(sim, st.x, st.y, st.w, hh / K, cx - sw / 2, y, sw, hh + 0.4);
+          y += hh;
+        }
+      }
+    }
+    function slice(x0, x1) {
+      var sl = A.slice, im = image(sl.img);
+      if (!ready(im)) return;
+      var sx = sl.x + (x0 - (cx - hw)) / K, swid = (x1 - x0) / K;
+      c.drawImage(im, sx, 0, swid, sl.h, x0, by - sl.footY * K, x1 - x0 + 0.4, sl.h * K);
+    }
+    if (shape === 'EW') { slice(cx - hw, cx + hw); if (mark === 'sel') c.restore(); return; }
+    if (shape === 'NS') { if (mark === 'sel') c.restore(); return; }   // 남북 가운데: 지붕 줄만(위 칸이 이미 깔아 둠)
+    var pc = A.pieces[shape] || A.pieces[''], im = image(pc.img);
+    if (pc.under === 'right') slice(cx, cx + hw);
+    else if (pc.under === 'left') slice(cx - hw, cx);
+    if (ready(im)) {
+      var W0 = im.naturalWidth, H0 = pc.clipH || im.naturalHeight, x0 = cx - pc.ax * K, y0 = by - pc.ay * K;
+      if (pc.cut) {   // 모서리 다리의 남쪽 끝 면은 빼고(아래로 이어지는 지붕 줄이 대신 보임)
+        var a = pc.cut[0], b = pc.cut[1], cy = pc.cut[2];
+        if (a > 0) c.drawImage(im, 0, 0, a, H0, x0, y0, a * K, H0 * K);
+        if (b < W0) c.drawImage(im, b, 0, W0 - b, H0, x0 + b * K, y0, (W0 - b) * K, H0 * K);
+        c.drawImage(im, a, 0, b - a, cy, x0 + a * K, y0, (b - a) * K, cy * K);
+      } else c.drawImage(im, 0, 0, W0, H0, x0, y0, W0 * K, H0 * K);
+    }
     if (mark === 'sel') c.restore();
   }
   function ensureWalker() {
@@ -557,13 +601,14 @@
         var wc = L.wallCell(gh.x, gh.y - 1); walls[wc.i + ',' + wc.j] = '_g';
         idx = { walls: walls, paths: idx.paths };
       }
-      var spr = D.sprite(def, gh.d, def.kind === 'wall' ? L.wallImg(idx.walls, gh.x, gh.y) : null);
+      var spr = def.kind === 'wall' ? null : D.sprite(def, gh.d);
       L.rectsOf(gh, idx).forEach(function (r) {
         c.fillStyle = col; c.fillRect(r[0], r[1], r[2] - r[0], r[3] - r[1]);
         c.strokeStyle = line; c.lineWidth = 1.2 / s * 1.4; c.strokeRect(r[0], r[1], r[2] - r[0], r[3] - r[1]);
       });
       c.globalAlpha = ok ? 0.72 : 0.5;
-      drawItem(c, gh, spr);
+      if (def.kind === 'wall') drawWall(c, gh, L.wallShape(idx.walls, gh.x, gh.y) || '');
+      else drawItem(c, gh, spr);
     }
     c.restore();
   }

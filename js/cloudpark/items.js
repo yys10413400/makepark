@@ -48,10 +48,34 @@
     { id: 'prop', name: '소품' }
   ];
 
-  // 산책로 칸(32px), 돌담 칸(가로 64 × 세로 48px — 돌담 그림의 가로 한 칸·세로 한 칸 길이에 맞춤)
-  var PATH_CELL = 32, WALL_CELL = { w: 64, h: 48 }, SNAP = 8;
-  // 돌담 그림 배율: 가로 직선(303px, 양 끝 둥근 마감 포함)이 한 칸(64px)보다 길게(80px) 그려져 이음새가 겹치게
-  var WALL_K = 80 / 303;
+  // 산책로 칸(32px), 돌담 칸(48 × 48px)
+  var PATH_CELL = 32, WALL_CELL = { w: 48, h: 48 }, SNAP = 8;
+  // 돌담 그림 배율: 가로 직선 그림(wall-h)의 기와 막새가 55px 마다 되풀이 → 가운데 4주기(220px)가 한 칸(48px)에 딱 맞게.
+  // 이웃 칸의 가운데 조각끼리 틈·이음 마감 없이 이어짐
+  var WALL_K = 48 / 220;
+  // 돌담 그리기(원본 조각을 자르고 겹쳐서만 씀 — 새 그림을 만들지 않음). 좌표는 원본 그림 px
+  //  slice: 가로로 이어지는 칸 — wall-h 가운데 4주기
+  //  strip: 남북으로 이어지는 돌담 지붕 — 남쪽 끝 조각(wall-end-bottom)의 남북 기와말이 줄(폭이 일정한 부분)을 세로로 이어 그림.
+  //         위에서 내려다본 남북 돌담은 지붕만 보이고, 돌 면은 남쪽 끝에서만 보임(모서리 그림과 같은 표현)
+  //  ridge: 남북 지붕이 바닥보다 위로 떠 보이는 높이(월드 px, 가로 돌담 지붕 높이와 같게)
+  //  pieces: 모양별 그림과 기준점(ax: 남북 기와말이 가운데, ay: 바닥 줄). cut: 모서리 다리의 남쪽 끝 면을 안 그릴 부분(x0~x1 열, y0 아래)
+  //          under: 모서리 팔 아래 돌 면을 가운데 조각으로 채울 쪽(모서리 그림은 팔 아래 돌 면이 짧음)
+  var WALL_ART = {
+    slice: { img: 'wall-h', x: 41, w: 220, h: 182, footY: 174 },
+    strip: { img: 'wall-end-bottom', x: 30, y: 16, w: 98, h: 20 },
+    ridge: 34,
+    pieces: {
+      '': { img: 'wall', ax: 140, ay: 170 },
+      'E': { img: 'wall-end-left', ax: 144, ay: 190 },
+      'W': { img: 'wall-end-right', ax: 144, ay: 190 },
+      'ES': { img: 'wall-corner-tl', ax: 30, ay: 170, cut: [0, 90, 104], under: 'right' },
+      'SW': { img: 'wall-corner-tr', ax: 246, ay: 168, cut: [186, 276, 104], under: 'left' },
+      'EN': { img: 'wall-corner-bl', ax: 36, ay: 224 },
+      'NW': { img: 'wall-corner-br', ax: 249, ay: 223 },
+      'N': { img: 'wall-end-bottom', ax: 77, ay: 250 },
+      'S': { img: 'wall-end-top', ax: 80, ay: 186, clipH: 110 }   // 북쪽 끝: 지붕 마감만(아래 돌 면은 남쪽을 보지 않음)
+    }
+  };
 
   var ITEMS = {
     'path-brick': { name: '분홍 벽돌길', cat: 'path', kind: 'path', layer: 'floor', icon: 'path-brick',
@@ -145,8 +169,8 @@
   }
 
   window.MP_CLOUD_ITEMS = {
-    VERSION: 1, CATS: CATS, ITEMS: ITEMS, ORDER: ORDER, IMG: IMG, WALL_SHAPES: WALL_SHAPES,
-    PATH_CELL: PATH_CELL, WALL_CELL: WALL_CELL, SNAP: SNAP,
+    VERSION: 2, CATS: CATS, ITEMS: ITEMS, ORDER: ORDER, IMG: IMG, WALL_SHAPES: WALL_SHAPES,
+    PATH_CELL: PATH_CELL, WALL_CELL: WALL_CELL, SNAP: SNAP, WALL_K: WALL_K, WALL_ART: WALL_ART,
     BASE: 'assets/cloudpark/', sprite: sprite, footOf: footOf, scaleOf: scaleOf,
     WORLD: { w: 1448, h: 1086 },
     // 캐릭터가 나타나는 곳(한옥 입구 안쪽)과 나가는 곳
