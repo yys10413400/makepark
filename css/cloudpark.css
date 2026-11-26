@@ -200,6 +200,44 @@ body.cloudpark-open #toast { z-index: 60; }   /* 알림(저장·별·방문)이 
   .cp-home { font-size: 19px; }
 }
 
+/* 가로 휴대폰 꾸미기: 아이템 패널을 오른쪽 세로 칸으로(아래에 두면 공원 절반을 가림).
+   조건은 js/cloudpark/ui.js 의 SIDE_MQ 와 같게. 공원은 패널 왼쪽 빈 곳에 맞춰 그림 */
+@media (orientation: landscape) and (max-height: 600px) {
+  .cp-overlay { --cp-side: 236px; }
+  .cp-panel {
+    left: auto; right: 8px; top: 112px; bottom: 8px; transform: none; width: var(--cp-side); box-sizing: border-box;
+    display: flex; flex-direction: column; padding: 6px 6px 6px; border-radius: 18px;
+  }
+  .cp-tabs { flex: none; flex-wrap: wrap; gap: 3px; padding: 0 2px 6px; }
+  .cp-tab { padding: 4px 9px; font-size: 13px; }
+  .cp-cards {
+    flex: 1; min-height: 0; display: grid; grid-template-columns: repeat(2, 1fr); align-content: start;
+    gap: 6px; padding: 6px 2px 2px; overflow-x: hidden; overflow-y: auto;
+  }
+  .cp-itemcard { width: auto; height: 92px; }
+  .cp-itemimg { max-height: 50px; }
+  .cp-itemname { font-size: 12.5px; }
+  .cp-home { padding: 7px 12px; font-size: 14px; }
+  /* 꾸미기 도구 줄은 오른쪽 칸 맨 위(돌아가기 아래), 안내·고른 아이템 줄은 패널 왼쪽 빈 곳 아래 가운데 */
+  .cp-overlay.is-edit .cp-tools {
+    left: auto; right: 8px; top: 54px; transform: none; width: var(--cp-side); box-sizing: border-box; justify-content: space-between;
+  }
+  .cp-overlay.is-edit .cp-tbtn { flex: 1; min-width: 0; padding: 3px 4px 2px; font-size: 12px; }
+  .cp-overlay.is-edit .cp-tbtn .cp-ico { font-size: 17px; }
+  .cp-overlay.is-edit .cp-hint,
+  .cp-overlay.is-edit .cp-selbar { left: calc((100% - var(--cp-side) - 16px) / 2); }
+  .cp-overlay.is-edit .cp-hint { bottom: 10px; max-width: calc(100% - var(--cp-side) - 40px); font-size: 13px; }
+  .cp-overlay.is-edit .cp-selbar { bottom: 10px; }
+  .cp-overlay.is-edit.has-sel .cp-hint { bottom: 72px; }
+  .cp-overlay.is-edit .cp-zoom { right: calc(var(--cp-side) + 16px); }
+  .cp-overlay.is-edit .cp-save { left: 12px; top: auto; bottom: 12px; transform: none; }
+}
+/* 세로 휴대폰 꾸미기: 위 도구 줄이 왼쪽 위 이름판과 겹치지 않게 그 아래로 */
+@media (max-width: 520px) and (orientation: portrait) {
+  .cp-overlay.is-edit .cp-tools { top: 104px; }
+  .cp-overlay.is-edit .cp-save { top: 176px; }
+}
+
 /* 구름동산 패널: 산 개수를 다 놓은 상점 아이템 · 추억 상점 안내 카드 */
 .cp-itemcard.is-empty { opacity: 0.5; }
 .cp-shophint { justify-content: center; background: #fff3e0; border-style: dashed; border-color: #e2b357; cursor: default; }

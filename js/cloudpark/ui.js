@@ -27,7 +27,7 @@
   var S = {
     open: false, mode: 'walk', visit: null, park: L.emptyPark(''), idx: null, sorted: [], blockers: [],
     me: { x: D.SPAWN.x, y: D.SPAWN.y, dir: 'down', moving: false }, keys: {}, route: null,
-    cam: { cx: W / 2, cy: H / 2, s: 1 }, zoom: 1, panned: false, view: { w: 0, h: 0, dpr: 1 },
+    cam: { cx: W / 2, cy: H / 2, s: 1 }, zoom: 1, panned: false, view: { w: 0, h: 0, fw: 0, dpr: 1 },
     tool: null, sel: null, drag: null, hover: null, history: [], future: [], stroke: null,
     save: { state: 'saved', timer: 0, tries: 0 }, emote: null, raf: 0, last: 0, floorDirty: true, nearExit: false, nearBench: null,
     pointers: {}, pinch: null
@@ -390,8 +390,16 @@
     S.view = { w: r.width || window.innerWidth, h: r.height || window.innerHeight, dpr: dpr };
     ui.canvas.width = Math.round(S.view.w * dpr); ui.canvas.height = Math.round(S.view.h * dpr);
     ui.canvas.style.width = S.view.w + 'px'; ui.canvas.style.height = S.view.h + 'px';
+    updateSide();
   }
-  function fitScale() { return Math.min(S.view.w / W, S.view.h / H); }
+  // 가로 휴대폰 꾸미기: 아이템 패널이 오른쪽 세로 칸에 붙음(css/cloudpark.css 와 같은 조건).
+  // 공원은 패널 왼쪽 빈 곳(S.view.fw)에 맞춰 보이고, 화면 가운데도 그 빈 곳 가운데로 잡음
+  var SIDE_MQ = window.matchMedia ? window.matchMedia('(orientation: landscape) and (max-height: 600px)') : null;
+  function updateSide() {
+    var side = S.mode === 'edit' && SIDE_MQ && SIDE_MQ.matches && !ui.panel.hidden;
+    S.view.fw = Math.max(120, S.view.w - (side ? ui.panel.offsetWidth + 16 : 0));
+  }
+  function fitScale() { return Math.min(S.view.fw / W, S.view.h / H); }
   // 산책: 별마당 공원과 같은 배율(캐릭터가 같은 크기로 보임). 꾸미기: 공원 전체가 보이는 배율에서 시작
   function walkScale() { return (api() && api().playScale) ? api().playScale() : Math.max(fitScale(), Math.min(S.view.w, S.view.h) / 540); }
   function fitZoom() { return fitScale() / walkScale(); }
@@ -402,12 +410,12 @@
       var w = toWorld(sx, sy);
       S.zoom = z;
       var s1 = curScale();
-      S.cam.cx = w.x - (sx - S.view.w / 2) / s1; S.cam.cy = w.y - (sy - S.view.h / 2) / s1;
+      S.cam.cx = w.x - (sx - S.view.fw / 2) / s1; S.cam.cy = w.y - (sy - S.view.h / 2) / s1;
       S.panned = true;
     } else S.zoom = z;
   }
   function clampCam(c, s) {
-    var hw = S.view.w / (2 * s), hh = S.view.h / (2 * s);
+    var hw = S.view.fw / (2 * s), hh = S.view.h / (2 * s);
     c.cx = hw * 2 >= W ? W / 2 : Math.min(Math.max(c.cx, hw), W - hw);
     c.cy = hh * 2 >= H ? H / 2 : Math.min(Math.max(c.cy, hh), H - hh);
     return c;
@@ -424,8 +432,8 @@
     if (S.mode === 'edit' || S.panned) { S.cam.cx = t.cx; S.cam.cy = t.cy; return; }
     S.cam.cx += (t.cx - S.cam.cx) * k; S.cam.cy += (t.cy - S.cam.cy) * k;
   }
-  function toWorld(sx, sy) { var s = S.cam.s; return { x: S.cam.cx + (sx - S.view.w / 2) / s, y: S.cam.cy + (sy - S.view.h / 2) / s }; }
-  function toScreen(x, y) { var s = S.cam.s; return { x: (x - S.cam.cx) * s + S.view.w / 2, y: (y - S.cam.cy) * s + S.view.h / 2 }; }
+  function toWorld(sx, sy) { var s = S.cam.s; return { x: S.cam.cx + (sx - S.view.fw / 2) / s, y: S.cam.cy + (sy - S.view.h / 2) / s }; }
+  function toScreen(x, y) { var s = S.cam.s; return { x: (x - S.cam.cx) * s + S.view.fw / 2, y: (y - S.cam.cy) * s + S.view.h / 2 }; }
 
   // ---------- 바닥 캐시(지도 + 산책로) ----------
   function buildFloor() {
@@ -467,7 +475,7 @@
     c.setTransform(1, 0, 0, 1, 0, 0);
     c.fillStyle = '#2f6b55'; c.fillRect(0, 0, cv.width, cv.height);
     if (S.floorDirty) buildFloor();
-    c.setTransform(s * dpr, 0, 0, s * dpr, (S.view.w / 2 - S.cam.cx * s) * dpr, (S.view.h / 2 - S.cam.cy * s) * dpr);
+    c.setTransform(s * dpr, 0, 0, s * dpr, (S.view.fw / 2 - S.cam.cx * s) * dpr, (S.view.h / 2 - S.cam.cy * s) * dpr);
     c.imageSmoothingEnabled = true; c.imageSmoothingQuality = 'high';
     // 1·2 배경 + 바닥 산책로
     if (floor) c.drawImage(floor, 0, 0, W, H);
@@ -589,6 +597,7 @@
     ui.menu.hidden = m === 'edit' || !!S.visit;
     ui.myEmotes.hidden = m === 'edit' || !!S.visit;
     ui.leave.hidden = true; S.nearExit = false;
+    updateSide();
     if (m === 'edit') {
       S.zoom = fitZoom();   // 꾸미기는 공원 전체가 보이게 시작(확대·이동 가능)
       S.cam.cx = W / 2; S.cam.cy = H / 2; S.panned = true;
