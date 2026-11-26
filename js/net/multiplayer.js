@@ -416,7 +416,6 @@
   var inv = { off: null, out: null, card: null, cardInv: null, btn: null };
   function josa(w, a, b) { var c = String(w).charCodeAt(String(w).length - 1) - 0xAC00, has = c >= 0 && c <= 11171 && c % 28 !== 0; return w + (has ? a : b); }
   function bandOf(g) { g = Number(g) || 1; return g <= 2 ? 'low' : g <= 4 ? 'middle' : 'high'; }
-  function myNick() { return api().player().nickname; }
   function playBtn() {
     if (inv.btn) return inv.btn;
     var b = inv.btn = el('button', 'play-with'); b.type = 'button'; b.hidden = true;

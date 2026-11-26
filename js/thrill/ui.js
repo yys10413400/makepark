@@ -564,7 +564,6 @@
     c.font = "30px 'Gowun Dodum', 'Malgun Gothic', sans-serif"; c.textAlign = 'center'; c.fillStyle = '#c0392b'; c.fillText(String(k.i + 1), 0, 42);
     c.restore();
   }
-  function drawAt(c, im, x, footY, k) { c.drawImage(im, x - im.naturalWidth * k / 2, footY - im.naturalHeight * k, im.naturalWidth * k, im.naturalHeight * k); }
   function rr(c, x, y, w, h, r) { c.beginPath(); c.moveTo(x + r, y); c.arcTo(x + w, y, x + w, y + h, r); c.arcTo(x + w, y + h, x, y + h, r); c.arcTo(x, y + h, x, y, r); c.arcTo(x, y, x + w, y, r); c.closePath(); }
   function arenaPath(c) {
     var A = P.ARENA;

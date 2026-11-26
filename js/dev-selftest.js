@@ -27,6 +27,14 @@ window.MP_SELFTEST = async function () {
     var g = document.querySelector('input[name=grade]:checked') || document.querySelector('input[name=grade]');
     g.checked = true; $('titleForm').dispatchEvent(new Event('change'));
     $('enterPark').click();
+    await sleep(200);
+    // '우리 반 공원' 창(js/net/multiplayer.js) → 혼자 둘러보기
+    var solo = Array.prototype.filter.call(document.querySelectorAll('.join-btn.light'), function (b) { return b.offsetParent; })[0];
+    if (solo) { solo.click(); await sleep(300); }
+    // 처음이면 캐릭터 고르기 창 → 첫 캐릭터
+    var card = !$('charDlg') || $('charDlg').hidden ? null : document.querySelector('#charDlg .char-card:not(.locked)');
+    if (card) { card.click(); await sleep(300); }
+    check(st.phase === 'play', '공원 입장 실패(반 코드 창·캐릭터 고르기)');
   }
   await sleep(300);
   check(inView($('hud')) && inView($('miniMap')) && inView($('ticketChip')) && inView($('playerChip')), '상단 UI 잘림');
@@ -38,24 +46,35 @@ window.MP_SELFTEST = async function () {
     var f = D.park.facilities[i];
     st.player.x = D.park.start.x; st.player.y = D.park.start.y; st.path = null; await sleep(700);
     tap(f.entrance.x, f.entrance.y);
-    var d0 = st.dest ? Math.hypot(st.dest.x - f.entrance.x, st.dest.y - f.entrance.y) : -1;
+    // 입구가 걷는 길 밖이면 가장 가까운 길로 목적지가 잡힘
+    var snap = D.grid.nearestWalkable(f.entrance.x, f.entrance.y) || f.entrance;
+    var d0 = st.dest ? Math.hypot(st.dest.x - snap.x, st.dest.y - snap.y) : -1;
     for (var t = 0; st.path && t < 80; t++) await sleep(100);
     await sleep(150);
     var ok = d0 >= 0 && d0 < 1 && st.nearby === f && !$('enterFacility').hidden && inView($('enterFacility'));
-    R.facilities[f.id] = ok ? 'OK' : ('실패 dest=' + d0.toFixed(1) + ' nearby=' + (st.nearby && st.nearby.id));
-    check(ok, f.name + ' 도달/입장버튼 실패');
+    var ride = '';
+    if (ok) {
+      // 들어가기 → 놀이 화면이 열리고, 닫으면 공원으로 돌아옴
+      $('enterFacility').click(); await sleep(800);
+      if (st.rideOpen !== f.id) ride = ' 놀이 화면 안 열림';
+      window.MP_API.closeRide(); await sleep(300);
+      if (st.rideOpen) { ride += ' 놀이 화면 안 닫힘'; st.rideOpen = false; }
+    }
+    R.facilities[f.id] = ok && !ride ? 'OK' : ('실패 dest=' + d0.toFixed(1) + ' nearby=' + (st.nearby && st.nearby.id) + ride);
+    check(ok && !ride, f.name + (ok ? ride : ' 도달/입장버튼 실패'));
   }
   D.park.player.speed = speed;
 
-  // 2) 안내창
-  key('Space'); await sleep(100);
-  check(!$('modal').hidden && $('modalTitle').textContent === st.modalFacility.name, '스페이스로 안내창 안 열림');
-  check(inView(document.querySelector('.modal-card')), '안내창 잘림');
+  // 2) 스페이스로 들어가기(모든 시설에 놀이 화면이 있음) · 열린 동안 공원 캐릭터는 멈춤
+  var near = D.park.facilities[0], ns = D.grid.nearestWalkable(near.entrance.x, near.entrance.y);
+  st.player.x = ns.x; st.player.y = ns.y; st.path = null; await sleep(400);
+  key('Space'); await sleep(800);
+  check(st.rideOpen === near.id, '스페이스로 놀이 화면 안 열림');
   var p = { x: st.player.x, y: st.player.y };
-  key('KeyA'); await sleep(400); key('KeyA', 'keyup'); tap(D.park.start.x, D.park.start.y); await sleep(300);
-  check(p.x === st.player.x && p.y === st.player.y && !st.dest, '안내창 열린 동안 캐릭터가 움직임');
-  $('modalClose').click(); await sleep(50);
-  check($('modal').hidden, '닫기 버튼 동작 안 함');
+  key('KeyA'); await sleep(400); key('KeyA', 'keyup');
+  check(p.x === st.player.x && p.y === st.player.y && !st.dest, '놀이 화면 열린 동안 캐릭터가 움직임');
+  window.MP_API.closeRide(); await sleep(300);
+  check(!st.rideOpen, '놀이 화면 닫기 안 됨');
 
   // 3) 이동 중 목적지 변경
   st.player.x = D.park.start.x; st.player.y = D.park.start.y; await sleep(600);
@@ -74,7 +93,13 @@ window.MP_SELFTEST = async function () {
   check(st.dest && Math.abs(st.dest.x - tgt.x) < 1 && Math.abs(st.dest.y - tgt.y) < 1, '이동 중 목적지 변경 실패');
 
   // 4) 갈 수 없는 곳
-  var before = st.dest; tap(820, 15);
+  // 지도가 바뀌어도 되게: 길에서 maxSnapDistance 보다 먼 곳을 찾아 누름
+  var far = null;
+  for (var fy = 0; fy < D.park.world.height && !far; fy += 20) for (var fx = 0; fx < D.park.world.width && !far; fx += 20) {
+    var fn = D.grid.nearestWalkable(fx, fy); if (!fn || fn.dist > D.park.maxSnapDistance) far = { x: fx, y: fy };
+  }
+  var before = st.dest; if (far) tap(far.x, far.y);
+  check(!!far, '갈 수 없는 곳을 찾지 못함');
   check(st.dest === before && !$('toast').hidden, '갈 수 없는 곳 안내 실패');
 
   // 5) 전체 지도
