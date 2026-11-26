@@ -214,11 +214,13 @@
         api().patchSave({ cloudpark: L.clone(S.park) });
       } else if ((S.park.updated || 0) > ((srv && srv.updated) || 0) && L.count(S.park)) {
         scheduleSave(10);   // 이 기기에만 있던 최근 공원 → 친구들이 볼 수 있게 올림
-      } else if (!srv) publishInfo();
+      } else if (!srv) publishShare(L.clone(S.park));   // 친구 목록에 보이게(못 올려도 내 공원과는 상관없음)
     }, function (err) {
       ui.loading.hidden = true;
+      // 내 공원은 반 기록(save.cloudpark)으로 이미 불러왔음. 친구 공개 칸을 못 읽은 것뿐이라 알리지 않음
+      if (isDenied(err)) { S.shareOff = true; console.warn('구름동산 친구 공개 칸을 읽지 못했어요(규칙 게시 전)', err); return; }
       console.warn('구름동산 불러오기 실패', err);
-      toast('서버에서 공원을 불러오지 못했어요. 이 기기에 저장된 공원을 보여 줘요.');
+      if (navigator.onLine === false) toast('인터넷이 끊겨 있어요. 이 기기에 저장된 공원을 보여 줘요.');
     });
   }
 
@@ -237,14 +239,9 @@
     Object.keys(S.park.items).forEach(function (id) {
       var it = S.park.items[id], def = D.ITEMS[it.t];
       if (def.kind === 'path') return;
-      if (def.kind === 'wall') {
-        var shp = L.wallShape(S.idx.walls, it.x, it.y) || '', bx = L.wallBox(S.idx.walls, it.x, it.y);
-        list.push({ id: id, y: it.y, x: it.x, wall: shp, pri: shp === 'EW' ? 1 : 0, spr: { w: bx[2] - bx[0], h: bx[3] - bx[1], ax: it.x - bx[0], ay: it.y - bx[1] } });
-        return;
-      }
-      list.push({ id: id, y: it.y, x: it.x, pri: 0, spr: D.sprite(def, it.d) });
+      list.push({ id: id, y: it.y, x: it.x, spr: D.sprite(def, it.d) });
     });
-    list.sort(function (a, b) { return a.y - b.y || a.pri - b.pri || a.x - b.x; });
+    list.sort(function (a, b) { return a.y - b.y || a.x - b.x; });
     S.sorted = list;
     S.floorDirty = true;
     buildWalkGrid();
@@ -489,8 +486,7 @@
       if (!drawnMe && o.y > me.y) { drawMe(c, t); drawnMe = true; }
       if (o.id === dragId) continue;
       var it0 = S.park.items[o.id];
-      if (o.wall != null) drawWall(c, it0, o.wall, o.id === S.sel ? 'sel' : null);
-      else drawItem(c, it0, o.spr, o.id === S.sel ? 'sel' : null);
+      drawItem(c, it0, o.spr, o.id === S.sel ? 'sel' : null);
       // 캐릭터 앞에 그려져 캐릭터를 덮는 아이템이 있는지(그림 네모의 가운데 부분으로 대강)
       if (drawnMe && !hidden) {
         var x0 = it0.x - o.spr.ax, y0 = it0.y - o.spr.ay;
@@ -517,45 +513,6 @@
     if (spr.mirror) {
       c.save(); c.translate(x0 + spr.w, y0); c.scale(-1, 1); c.drawImage(im, 0, 0, spr.w, spr.h); c.restore();
     } else c.drawImage(im, x0, y0, spr.w, spr.h);
-    if (mark === 'sel') c.restore();
-  }
-  // 돌담 한 칸 그리기 — 원본 조각을 자르고 겹쳐서만(items.js WALL_ART 설명 참고)
-  //  남쪽으로 이어지면(S) 이 칸이 아래 칸까지 남북 지붕 줄을 먼저 깔고, 모서리 그림을 그 위에 얹음
-  //  가로로 이어지는 칸(EW)은 wall-h 가운데 4주기 조각 → 칸마다 틈·마감 없이 이어짐
-  function drawWall(c, it, shape, mark) {
-    var A = D.WALL_ART, K = D.WALL_K, cx = it.x, by = it.y, hw = D.WALL_CELL.w / 2;
-    if (mark === 'sel') { c.save(); c.shadowColor = 'rgba(255, 226, 122, 0.95)'; c.shadowBlur = 12; }
-    if (shape.indexOf('S') >= 0) {
-      var st = A.strip, sim = image(st.img);
-      if (ready(sim)) {
-        var sw = st.w * K, sh = st.h * K, y = by - A.ridge, end = by + D.WALL_CELL.h - A.ridge;
-        while (y < end - 0.01) {
-          var hh = Math.min(sh, end - y);
-          c.drawImage(sim, st.x, st.y, st.w, hh / K, cx - sw / 2, y, sw, hh + 0.4);
-          y += hh;
-        }
-      }
-    }
-    function slice(x0, x1) {
-      var sl = A.slice, im = image(sl.img);
-      if (!ready(im)) return;
-      var sx = sl.x + (x0 - (cx - hw)) / K, swid = (x1 - x0) / K;
-      c.drawImage(im, sx, 0, swid, sl.h, x0, by - sl.footY * K, x1 - x0 + 0.4, sl.h * K);
-    }
-    if (shape === 'EW') { slice(cx - hw, cx + hw); if (mark === 'sel') c.restore(); return; }
-    if (shape === 'NS') { if (mark === 'sel') c.restore(); return; }   // 남북 가운데: 지붕 줄만(위 칸이 이미 깔아 둠)
-    var pc = A.pieces[shape] || A.pieces[''], im = image(pc.img);
-    if (pc.under === 'right') slice(cx, cx + hw);
-    else if (pc.under === 'left') slice(cx - hw, cx);
-    if (ready(im)) {
-      var W0 = im.naturalWidth, H0 = pc.clipH || im.naturalHeight, x0 = cx - pc.ax * K, y0 = by - pc.ay * K;
-      if (pc.cut) {   // 모서리 다리의 남쪽 끝 면은 빼고(아래로 이어지는 지붕 줄이 대신 보임)
-        var a = pc.cut[0], b = pc.cut[1], cy = pc.cut[2];
-        if (a > 0) c.drawImage(im, 0, 0, a, H0, x0, y0, a * K, H0 * K);
-        if (b < W0) c.drawImage(im, b, 0, W0 - b, H0, x0 + b * K, y0, (W0 - b) * K, H0 * K);
-        c.drawImage(im, a, 0, b - a, cy, x0 + a * K, y0, (b - a) * K, cy * K);
-      } else c.drawImage(im, 0, 0, W0, H0, x0, y0, W0 * K, H0 * K);
-    }
     if (mark === 'sel') c.restore();
   }
   function ensureWalker() {
@@ -594,21 +551,13 @@
       c.globalAlpha = 1; c.fillStyle = col; c.fillRect(gh.x - h, gh.y - h, h * 2, h * 2);
       c.strokeStyle = line; c.lineWidth = 1.5 / s * 1.4; c.strokeRect(gh.x - h, gh.y - h, h * 2, h * 2);
     } else {
-      var idx = S.idx;
-      if (def.kind === 'wall') {   // 이웃 돌담에 맞춘 모양으로 미리 보기
-        var walls = Object.assign({}, idx.walls);
-        if (gh.ignore) Object.keys(walls).forEach(function (k) { if (walls[k] === gh.ignore) delete walls[k]; });
-        var wc = L.wallCell(gh.x, gh.y - 1); walls[wc.i + ',' + wc.j] = '_g';
-        idx = { walls: walls, paths: idx.paths };
-      }
-      var spr = def.kind === 'wall' ? null : D.sprite(def, gh.d);
-      L.rectsOf(gh, idx).forEach(function (r) {
+      var spr = D.sprite(def, gh.d);
+      L.rectsOf(gh).forEach(function (r) {
         c.fillStyle = col; c.fillRect(r[0], r[1], r[2] - r[0], r[3] - r[1]);
         c.strokeStyle = line; c.lineWidth = 1.2 / s * 1.4; c.strokeRect(r[0], r[1], r[2] - r[0], r[3] - r[1]);
       });
       c.globalAlpha = ok ? 0.72 : 0.5;
-      if (def.kind === 'wall') drawWall(c, gh, L.wallShape(idx.walls, gh.x, gh.y) || '');
-      else drawItem(c, gh, spr);
+      drawItem(c, gh, spr);
     }
     c.restore();
   }
@@ -660,7 +609,6 @@
   function toolHint() {
     var def = D.ITEMS[S.tool.t];
     if (def.kind === 'path') return def.name + ': 누르거나 끌어서 길을 이어 놓아요';
-    if (def.kind === 'wall') return '기와 돌담: 끌어서 이어 놓으면 저절로 연결돼요(세 갈래는 안 돼요)';
     return def.name + ': 놓을 곳을 눌러요' + (def.rotatable ? ' · 방향 바꾸기는 R' : '');
   }
 
@@ -765,7 +713,7 @@
     ui.undo.disabled = !S.history.length; ui.redo.disabled = !S.future.length;
   }
 
-  // 놓기(산책로·돌담은 끌면서 여러 칸)
+  // 놓기(산책로는 끌면서 여러 칸)
   function candAt(w) {
     var p = L.snap(S.tool.t, w.x, w.y);
     return { t: S.tool.t, x: p.x, y: p.y, d: S.tool.d };
@@ -816,7 +764,7 @@
     // 꾸미기
     if (S.tool) {
       var cand = candAt(w), def = D.ITEMS[S.tool.t];
-      if (def.kind === 'path' || def.kind === 'wall') {
+      if (def.kind === 'path') {
         S.history.push(snapshot()); if (S.history.length > 60) S.history.shift(); S.future = [];
         S.stroke = { n: 0, last: null, lastW: w };
         if (placeAt(cand, true)) S.stroke.n++;
@@ -992,19 +940,47 @@
     }
     setSaveChip('saving', '저장 중…');
     var my = S.saveSeq = (S.saveSeq || 0) + 1;
-    return net().shared.set(c.code, 'parks/' + c.key, data)
-      .then(function () { return publishInfo(); })
+    // ① 내 공원은 내 반 기록(students/{나}/save — 원래 있던 서버 칸)에 바로 저장: 다른 기기에서도 이걸로 복원
+    // ② 친구가 볼 사본(parks·parkinfo)은 따로 올림. 이 칸 규칙이 아직 Firebase 에 게시되지 않았으면(PERMISSION_DENIED)
+    //    내 공원 저장은 성공으로 보고, 친구 공개만 '준비 중'으로 둠(인터넷 문제가 아님)
+    return net().studentSave(c.code, c.key, JSON.parse(JSON.stringify(a.readSave() || {})))
       .then(function () {
-        if (my !== S.saveSeq) return true;
-        S.save.tries = 0;
-        setSaveChip('saved', '✓ 저장됨');
-        return true;
+        return publishShare(data).then(function (shared) {
+          if (my !== S.saveSeq) return true;
+          S.save.tries = 0;
+          setSaveChip('saved', shared ? '✓ 저장됨' : '✓ 저장됨 · 친구 공개 준비 중');
+          return true;
+        });
       }, function (err) {
         console.error('구름동산 저장 실패', err);
         if (my !== S.saveSeq) return false;
         S.save.tries++;
+        S.save.dirty = true;
+        var why = saveWhy(err);
         setSaveChip('error', '⚠ 저장 실패 · 다시 저장');
-        if (manual || S.save.tries === 1) toast('공원을 서버에 저장하지 못했어요. 인터넷을 확인하고 ‘다시 저장’을 눌러 주세요.');
+        if (manual || S.save.tries === 1) toast(why);
+        // 인터넷이 끊긴 거면 다시 연결될 때 저절로 한 번 더
+        if (navigator.onLine === false) window.addEventListener('online', function retry() { window.removeEventListener('online', retry); if (S.save.state === 'error') flushSave(false); });
+        return false;
+      });
+  }
+  function isDenied(err) { return !!err && (/permission/i.test(String(err.code || '')) || /permission/i.test(String(err.message || ''))); }
+  function saveWhy(err) {
+    if (navigator.onLine === false) return '인터넷이 끊겨서 서버에 저장하지 못했어요. 이 기기에는 저장해 두었고, 다시 연결되면 저절로 저장해요.';
+    if (isDenied(err)) return '서버가 저장을 막았어요(권한). 반 공원에서 나갔다가 다시 들어와 주세요. 계속되면 선생님께 알려 주세요.';
+    return '서버에 저장하지 못했어요. 이 기기에는 저장해 두었어요. ‘다시 저장’을 눌러 주세요.';
+  }
+  // 친구에게 보일 사본 올리기 → Promise(true 올림 | false 못 올림 — 내 공원 저장 결과와는 상관없음)
+  function publishShare(data) {
+    var c = cls();
+    if (!(c && c.key && net())) return Promise.resolve(false);
+    return net().shared.set(c.code, 'parks/' + c.key, data)
+      .then(function () { return publishInfo(); })
+      .then(function () { S.shareOff = false; return true; }, function (err) {
+        if (isDenied(err)) {
+          if (!S.shareOff) console.warn('구름동산 친구 공개 칸(rooms/{반}/parks·parkinfo) 규칙이 Firebase 에 아직 게시되지 않았어요. database.rules.json 을 게시해 주세요.', err);
+          S.shareOff = true;
+        } else console.warn('구름동산 친구 공개 실패(다음 저장 때 다시 올림)', err);
         return false;
       });
   }
@@ -1174,7 +1150,9 @@
       }, function (err) {
         console.error('친구 목록 실패', err);
         list.textContent = '';
-        list.appendChild(el('p', 'cp-err', '친구 목록을 불러오지 못했어요. 인터넷을 확인하고 다시 열어 주세요.'));
+        list.appendChild(el('p', 'cp-err', isDenied(err)
+          ? '친구 공원은 아직 준비 중이에요. 선생님이 서버 설정(Firebase 규칙)을 한 번 게시하면 열려요. 내 공원은 그대로 저장돼요.'
+          : navigator.onLine === false ? '인터넷이 끊겨 있어요. 연결되면 다시 열어 주세요.' : '친구 목록을 불러오지 못했어요. 잠시 뒤 다시 열어 주세요.'));
       });
     });
   }

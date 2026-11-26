@@ -8,7 +8,7 @@
  * 아이템 하나(ITEMS[id])
  *   id        고유 ID(저장에 쓰임 — 바꾸지 마세요)
  *   name      한국어 이름 · cat 카테고리(CATS 의 id)
- *   kind      'path'(바닥 산책로, 32px 칸에 딱 맞춤, 연속 배치) · 'wall'(돌담, 자동 연결) · 'object'(나머지)
+ *   kind      'path'(바닥 산책로, 32px 칸에 딱 맞춤, 연속 배치) · 'object'(나머지)
  *   layer     'floor'(바닥 — 캐릭터·아이템 아래) · 'sort'(Y축 정렬 — 발 기준점 y 로 앞뒤)
  *   icon      고르기 패널에 보일 그림
  *   width     화면에 그릴 폭(월드 px). 높이는 원본 비율 그대로 계산(그림을 늘리거나 줄이지 않음)
@@ -32,50 +32,18 @@
     'bench': [278, 176, 138, 169], 'bench-front': [273, 194, 136, 187], 'bench-right': [172, 212, 86, 205],
     'bench-back': [265, 194, 132, 187], 'bench-left': [171, 212, 84, 205],
     'lantern': [152, 285, 33, 279],
-    'hanok': [309, 227, 154, 220], 'pavilion': [271, 277, 136, 271],
-    'wall': [282, 177, 140, 170], 'wall-h': [303, 182, 151, 174], 'wall-v': [172, 232, 85, 225],
-    'wall-corner-bl': [286, 231, 48, 224], 'wall-corner-br': [285, 230, 235, 223],
-    'wall-corner-tl': [280, 243, 44, 236], 'wall-corner-tr': [276, 242, 232, 235],
-    'wall-end-left': [288, 197, 144, 190], 'wall-end-right': [288, 197, 144, 190],
-    'wall-end-top': [160, 266, 80, 259], 'wall-end-bottom': [158, 257, 77, 250]
+    'hanok': [309, 227, 154, 220], 'pavilion': [271, 277, 136, 271]
   };
 
   var CATS = [
     { id: 'path', name: '길' },
     { id: 'nature', name: '자연' },
     { id: 'building', name: '건물' },
-    { id: 'fence', name: '울타리' },
     { id: 'prop', name: '소품' }
   ];
 
-  // 산책로 칸(32px), 돌담 칸(48 × 48px)
-  var PATH_CELL = 32, WALL_CELL = { w: 48, h: 48 }, SNAP = 8;
-  // 돌담 그림 배율: 가로 직선 그림(wall-h)의 기와 막새가 55px 마다 되풀이 → 가운데 4주기(220px)가 한 칸(48px)에 딱 맞게.
-  // 이웃 칸의 가운데 조각끼리 틈·이음 마감 없이 이어짐
-  var WALL_K = 48 / 220;
-  // 돌담 그리기(원본 조각을 자르고 겹쳐서만 씀 — 새 그림을 만들지 않음). 좌표는 원본 그림 px
-  //  slice: 가로로 이어지는 칸 — wall-h 가운데 4주기
-  //  strip: 남북으로 이어지는 돌담 지붕 — 남쪽 끝 조각(wall-end-bottom)의 남북 기와말이 줄(폭이 일정한 부분)을 세로로 이어 그림.
-  //         위에서 내려다본 남북 돌담은 지붕만 보이고, 돌 면은 남쪽 끝에서만 보임(모서리 그림과 같은 표현)
-  //  ridge: 남북 지붕이 바닥보다 위로 떠 보이는 높이(월드 px, 가로 돌담 지붕 높이와 같게)
-  //  pieces: 모양별 그림과 기준점(ax: 남북 기와말이 가운데, ay: 바닥 줄). cut: 모서리 다리의 남쪽 끝 면을 안 그릴 부분(x0~x1 열, y0 아래)
-  //          under: 모서리 팔 아래 돌 면을 가운데 조각으로 채울 쪽(모서리 그림은 팔 아래 돌 면이 짧음)
-  var WALL_ART = {
-    slice: { img: 'wall-h', x: 41, w: 220, h: 182, footY: 174 },
-    strip: { img: 'wall-end-bottom', x: 30, y: 16, w: 98, h: 20 },
-    ridge: 34,
-    pieces: {
-      '': { img: 'wall', ax: 140, ay: 170 },
-      'E': { img: 'wall-end-left', ax: 144, ay: 190 },
-      'W': { img: 'wall-end-right', ax: 144, ay: 190 },
-      'ES': { img: 'wall-corner-tl', ax: 30, ay: 170, cut: [0, 90, 104], under: 'right' },
-      'SW': { img: 'wall-corner-tr', ax: 246, ay: 168, cut: [186, 276, 104], under: 'left' },
-      'EN': { img: 'wall-corner-bl', ax: 36, ay: 224 },
-      'NW': { img: 'wall-corner-br', ax: 249, ay: 223 },
-      'N': { img: 'wall-end-bottom', ax: 77, ay: 250 },
-      'S': { img: 'wall-end-top', ax: 80, ay: 186, clipH: 110 }   // 북쪽 끝: 지붕 마감만(아래 돌 면은 남쪽을 보지 않음)
-    }
-  };
+  // 산책로 칸(32px). (기와 돌담은 2026-11-25 사용자 요청으로 뺌 — 잘라 둔 그림 조각은 assets/cloudpark/wall-*.webp 에 그대로 보관)
+  var PATH_CELL = 32, SNAP = 8;
 
   var ITEMS = {
     'path-brick': { name: '분홍 벽돌길', cat: 'path', kind: 'path', layer: 'floor', icon: 'path-brick',
@@ -113,26 +81,15 @@
       dirs: { right: { img: 'lantern', label: '오른쪽' }, left: { img: 'lantern', mirror: true, label: '왼쪽' } },
       foot: { w: 14, d: 8 } },
 
-    'wall': { name: '기와 돌담', cat: 'fence', kind: 'wall', layer: 'sort', icon: 'wall', k: WALL_K,
-      dirs: { base: { img: 'wall' } } },
-
     'hanok': { name: '작은 한옥', cat: 'building', kind: 'object', layer: 'sort', icon: 'hanok', width: 190,
       dirs: { base: { img: 'hanok' } }, foot: { w: 178, d: 52 } },
     'pavilion': { name: '한옥 정자', cat: 'building', kind: 'object', layer: 'sort', icon: 'pavilion', width: 160,
       dirs: { base: { img: 'pavilion' } }, foot: { w: 142, d: 60 } }
   };
 
-  // 돌담 자동 연결: 이웃(위 N·아래 S·왼쪽 W·오른쪽 E)에 돌담이 있는지에 따라 그림을 고름.
-  // T자·십자(세 갈래 이상)는 그림이 없어서 만들지 않음(놓을 때 막음)
-  var WALL_SHAPES = {
-    '': 'wall', 'E': 'wall-end-left', 'W': 'wall-end-right', 'EW': 'wall-h',
-    'S': 'wall-end-top', 'N': 'wall-end-bottom', 'NS': 'wall-v',
-    'ES': 'wall-corner-tl', 'SW': 'wall-corner-tr', 'EN': 'wall-corner-bl', 'NW': 'wall-corner-br'
-  };
-
   // 기본값 채우기: 소스·수량·회전 가능 여부·순서
   var ORDER = ['path-brick', 'path-stone', 'path-wood', 'tree-pine', 'tree-round', 'tree-cherry', 'shrub',
-    'flower-pink', 'flower-white', 'rock', 'bench', 'lantern', 'wall', 'hanok', 'pavilion'];
+    'flower-pink', 'flower-white', 'rock', 'bench', 'lantern', 'hanok', 'pavilion'];
   ORDER.forEach(function (id) {
     var it = ITEMS[id];
     it.id = id;
@@ -169,8 +126,8 @@
   }
 
   window.MP_CLOUD_ITEMS = {
-    VERSION: 2, CATS: CATS, ITEMS: ITEMS, ORDER: ORDER, IMG: IMG, WALL_SHAPES: WALL_SHAPES,
-    PATH_CELL: PATH_CELL, WALL_CELL: WALL_CELL, SNAP: SNAP, WALL_K: WALL_K, WALL_ART: WALL_ART,
+    VERSION: 2, CATS: CATS, ITEMS: ITEMS, ORDER: ORDER, IMG: IMG,
+    PATH_CELL: PATH_CELL, SNAP: SNAP,
     BASE: 'assets/cloudpark/', sprite: sprite, footOf: footOf, scaleOf: scaleOf,
     WORLD: { w: 1448, h: 1086 },
     // 캐릭터가 나타나는 곳(한옥 입구 안쪽)과 나가는 곳

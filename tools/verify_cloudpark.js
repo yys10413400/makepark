@@ -1,6 +1,6 @@
 /*
  * 구름동산 규칙 자동 검증: node tools/verify_cloudpark.js
- * 아이템 15종 배치 · 벤치 4방향 · 돌담 자동 연결(T자 막기) · 산책로 연속 배치 · 겹침 · 이동 · 저장값 고치기
+ * 아이템 14종 배치 · 벤치 4방향 · 산책로 연속 배치 · 겹침 · 이동 · 저장값 고치기(뺀 돌담 정리)
  */
 'use strict';
 global.window = global;
@@ -18,7 +18,7 @@ function put(p, t, x, y, d) {
 }
 
 // 1. 15종, 모두 무료·무제한, 필수 정보
-ok(D.ORDER.length === 15, '아이템 15종');
+ok(D.ORDER.length === 14, '아이템 14종(돌담 뺌)');
 D.ORDER.forEach(t => {
   const it = D.ITEMS[t];
   ok(it.name && it.cat && it.dirs && it.source === 'free' && it.limit === null, t + ' 기본 정보');
@@ -51,37 +51,10 @@ for (let i = 0; i < 10; i++) ok(put(r, 'path-brick', 300 + i * 32, 600).ok, '벽
 ok(!put(r, 'path-brick', 300, 600).ok, '같은 칸 길 중복 없음');
 ok(put(r, 'bench', 400, 610).ok, '길 위에 벤치');
 ok(L.blockers(r).length === 1, '길은 막지 않음, 벤치만 막음');
-// 6. 돌담 자동 연결
-const w = L.emptyPark();
-function wall(i, j) { const a = { x: i * 48 + 24, y: (j + 1) * 48 }; const c = { t: 'wall', x: a.x, y: a.y, d: 'base' }; const res = L.canPlace(w, c, M); if (res.ok) w.items['w' + i + '_' + j] = c; return res; }
-ok(wall(5, 5).ok, '돌담 하나');
-ok(L.wallImg(L.index(w).walls, 5 * 48 + 24, 6 * 48) === 'wall', '혼자 = 기본');
-wall(6, 5); wall(7, 5);
-let ix = L.index(w);
-ok(L.wallImg(ix.walls, 5 * 48 + 24, 6 * 48) === 'wall-end-left', '왼쪽 끝');
-ok(L.wallImg(ix.walls, 6 * 48 + 24, 6 * 48) === 'wall-h', '가로 직선');
-ok(L.wallImg(ix.walls, 7 * 48 + 24, 6 * 48) === 'wall-end-right', '오른쪽 끝');
-wall(7, 6); wall(7, 7);
-ix = L.index(w);
-ok(L.wallImg(ix.walls, 7 * 48 + 24, 6 * 48) === 'wall-corner-tr', '오른쪽 위 모서리');
-ok(L.wallImg(ix.walls, 7 * 48 + 24, 7 * 48) === 'wall-v', '세로 직선');
-ok(L.wallImg(ix.walls, 7 * 48 + 24, 8 * 48) === 'wall-end-bottom', '아래 끝');
-wall(8, 7); ix = L.index(w);
-ok(L.wallImg(ix.walls, 7 * 48 + 24, 8 * 48) === 'wall-corner-bl', '왼쪽 아래 모서리');
-ok(!wall(8, 6).ok, 'T자(세 갈래) 막음');   // (7,6) 이 N,S,E 가 됨
-delete w.items.w7_6; ix = L.index(w);
-ok(L.wallImg(ix.walls, 7 * 48 + 24, 6 * 48) === 'wall-end-right' && L.wallImg(ix.walls, 7 * 48 + 24, 8 * 48) === 'wall-end-left', '회수 후 이웃 다시 계산');
-ok(L.badWalls(w).length === 0, '불러온 돌담 T자 없음');
-// 6-2. 예전(v1, 가로 64px 칸) 돌담을 불러오면 48px 칸으로 옮기되 이어진 모양은 그대로
-const old = { v: 1, items: {} };
-[[3, 10], [4, 10], [5, 10], [5, 11], [5, 12]].forEach(([i, j], k) => { old.items['o' + k] = { t: 'wall', x: i * 64 + 32, y: (j + 1) * 48 }; });
-old.items.tree = { t: 'tree-pine', x: 600, y: 300 };
-const mig = L.normalize(old).park, mix = L.index(mig);
-ok(Object.keys(mix.walls).length === 5 && L.badWalls(mig).length === 0, 'v1 돌담 5칸 모두 옮겨짐');
-const shapes = Object.values(mig.items).filter(i => i.t === 'wall').map(i => L.wallShape(mix.walls, i.x, i.y)).sort().join();
-ok(shapes === ['E', 'EW', 'N', 'NS', 'SW'].sort().join(), 'v1 돌담 연결 모양 그대로: ' + shapes);
-ok(mig.items.tree.x === 600 && mig.v === 2, '다른 아이템은 그대로, 버전 2');
-ok(Object.keys(L.normalize(mig).park.items).length === 6 && JSON.stringify(L.normalize(mig).park.items) === JSON.stringify(mig.items), 'v2 저장값은 다시 옮기지 않음');
+// 6. 기와 돌담은 뺌: 목록에 없고, 예전 저장값의 돌담은 불러올 때 빠짐(다른 아이템은 그대로)
+ok(!D.ITEMS.wall && D.ORDER.indexOf('wall') < 0 && !D.CATS.some(c => c.id === 'fence'), '돌담·울타리 분류 없음');
+const oldp = L.normalize({ v: 2, items: { w1: { t: 'wall', x: 200, y: 300 }, t1: { t: 'tree-pine', x: 600, y: 300 } } });
+ok(!oldp.park.items.w1 && oldp.park.items.t1 && oldp.dropped === 1, '예전 돌담은 빠지고 나무는 남음');
 // 7. 이동(자기 자신은 무시)
 const mv = L.emptyPark(); put(mv, 'hanok', 500, 500); const hid = Object.keys(mv.items)[0];
 ok(L.canPlace(mv, { t: 'hanok', x: 508, y: 500, d: 'base' }, M, hid).ok, '조금 옮기기');
