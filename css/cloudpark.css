@@ -199,3 +199,61 @@ body.cloudpark-open #toast { z-index: 60; }   /* 알림(저장·별·방문)이 
   .cp-parkname { font-size: 22px; }
   .cp-home { font-size: 19px; }
 }
+
+/* 구름동산 패널: 산 개수를 다 놓은 상점 아이템 · 추억 상점 안내 카드 */
+.cp-itemcard.is-empty { opacity: 0.5; }
+.cp-shophint { justify-content: center; background: #fff3e0; border-style: dashed; border-color: #e2b357; cursor: default; }
+.cp-shophint .cp-ico { font-size: 26px; }
+.cp-shophint .cp-itemname { font-size: 12px; color: #8a5a2b; }
+
+/* ---------- 추억 상점 ----------
+   구름동산과 같은 한옥 UI(아이보리 판 · 목재 테두리 · 청록 버튼). 아이템 그림이 주인공이 되게 카드는 단순하게 */
+.sh-overlay {
+  position: fixed; inset: 0; z-index: 40; overflow: auto; box-sizing: border-box; padding: 14px 16px 24px;
+  font-family: var(--font-body); color: #3b2a1e; word-break: keep-all;
+  background: radial-gradient(circle at 50% 0%, #fffaf0, #f3e2c4 70%);
+}
+body.shop-open #hud, body.shop-open #enterFacility, body.shop-open #chatBar, body.shop-open #mapBar { display: none !important; }
+body.shop-open #toast { z-index: 60; }
+.sh-overlay button { font-family: var(--font-sign); cursor: pointer; color: #3b2a1e; }
+.sh-overlay button:focus-visible { outline: 3px solid #ffd15c; outline-offset: 2px; }
+.sh-head { display: flex; align-items: center; gap: 12px; max-width: 1100px; margin: 0 auto 10px; }
+.sh-title { flex: 1; }
+.sh-kicker { margin: 0; font-size: 13px; color: #c0606a; letter-spacing: 0.08em; }
+.sh-name { margin: 0; font-family: var(--font-sign); font-weight: 400; font-size: 30px; color: #0b5f58; }
+.sh-name::before { content: '🏮 '; }
+.sh-tickets { margin: 0; padding: 7px 14px; border-radius: 99px; background: #fff8e7; border: 2px solid #a0682f; box-shadow: 0 3px 0 #c99a5c; font-size: 16px; white-space: nowrap; }
+.sh-tickets b { font-size: 20px; color: #b8860b; }
+.sh-exit { padding: 9px 16px; border-radius: 99px; font-size: 16px; background: #fff8e7; border: 2px solid #a0682f; box-shadow: 0 3px 0 #c99a5c; }
+.sh-tabs { display: flex; flex-wrap: wrap; gap: 6px; max-width: 1100px; margin: 0 auto 6px; }
+.sh-tab { padding: 7px 16px; border-radius: 99px; font-size: 16px; background: #fffdf6; border: 2px solid #ecd6ae; }
+.sh-tab.on { background: #12837a; color: #fff8e7 !important; border-color: #0b5f58; }
+.sh-note { max-width: 1100px; margin: 4px auto 10px; font-size: 14px; color: #6e4b2f; }
+.sh-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(168px, 1fr)); gap: 12px; max-width: 1100px; margin: 0 auto; }
+.sh-group { grid-column: 1 / -1; margin: 8px 0 -2px; font-family: var(--font-sign); font-size: 18px; color: #a0682f; border-bottom: 1.5px dashed #e2c79b; }
+.sh-group.now { color: #0b5f58; }
+.sh-item { display: flex; flex-direction: column; align-items: center; padding: 10px 10px 12px; border-radius: 18px; background: #fff8e7; border: 2px solid #e2c79b; box-shadow: 0 3px 0 rgba(160, 104, 47, 0.25); }
+.sh-item.off-season .sh-pic { filter: grayscale(0.55) opacity(0.7); }
+.sh-pic { width: 100%; height: 132px; display: flex; align-items: flex-end; justify-content: center; }
+.sh-pic img { max-width: 100%; max-height: 100%; object-fit: contain; }
+.sh-iname { margin: 8px 0 0; font-family: var(--font-sign); font-size: 17px; text-align: center; }
+.sh-price { margin: 2px 0 0; font-size: 15px; color: #b8860b; font-weight: 700; }
+.sh-own { margin: 0; min-height: 1.2em; font-size: 12.5px; color: #2e6b45; }
+.sh-buy { margin-top: 6px; width: 100%; padding: 8px 6px; border-radius: 12px; font-size: 15px; background: #12837a; color: #fff8e7 !important; border: 2px solid #0b5f58; box-shadow: 0 3px 0 #08433e; }
+.sh-buy:hover:not(:disabled) { background: #179589; }
+.sh-buy:disabled { background: #efe4cf; color: #8a6a40 !important; border-color: #e2c79b; box-shadow: none; cursor: default; font-family: var(--font-body); font-size: 13px; }
+.sh-modal { position: fixed; inset: 0; z-index: 50; display: flex; align-items: center; justify-content: center; background: rgba(30, 45, 35, 0.45); }
+.sh-card { width: min(92vw, 380px); padding: 20px 22px 18px; border-radius: 22px; text-align: center; background: #fff8e7; border: 3px solid #e2b357; box-shadow: 0 6px 0 rgba(90, 45, 10, 0.4); }
+.sh-cimg { max-width: 70%; max-height: 170px; object-fit: contain; }
+.sh-ctitle { margin: 8px 0 4px; font-family: var(--font-sign); font-weight: 400; font-size: 22px; color: #0b5f58; }
+.sh-cline { margin: 2px 0; font-size: 15px; }
+.sh-cline.small { font-size: 13px; color: #8a6a40; }
+.sh-acts { display: flex; justify-content: center; gap: 10px; margin-top: 14px; }
+.sh-btn { padding: 9px 20px; border-radius: 14px; font-size: 16px; background: #fffdf6; border: 2px solid #e2b357; box-shadow: 0 3px 0 #c9a062; }
+.sh-btn.primary { background: #12837a; color: #fff8e7 !important; border-color: #0b5f58; box-shadow: 0 3px 0 #08433e; }
+@media (max-width: 600px) {
+  .sh-head { flex-wrap: wrap; }
+  .sh-name { font-size: 24px; }
+  .sh-grid { grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 8px; }
+  .sh-pic { height: 104px; }
+}

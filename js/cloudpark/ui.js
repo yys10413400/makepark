@@ -246,6 +246,7 @@
     S.floorDirty = true;
     buildWalkGrid();
     if (full) { S.sel = null; }
+    refreshCounts();
     updateHead();
     updateUndo();
   }
@@ -617,17 +618,26 @@
     S.cat = id;
     Object.keys(ui.tabBtns).forEach(function (k) { ui.tabBtns[k].classList.toggle('on', k === id); ui.tabBtns[k].setAttribute('aria-selected', String(k === id)); });
     ui.cards.textContent = '';
+    var hidden = 0;
     D.ORDER.filter(function (t) { return D.ITEMS[t].cat === id; }).forEach(function (t) {
       var def = D.ITEMS[t];
-      var b = btn('cp-itemcard', '', function () { chooseTool(t); });
+      if (def.limit === 'owned' && ownedCount(t) <= 0) { hidden++; return; }   // 추억 상점 아이템은 산 것만
+      var b = btn('cp-itemcard' + (def.limit === 'owned' && invLeft(t) <= 0 ? ' is-empty' : ''), '', function () { chooseTool(t); });
       var im = el('img', 'cp-itemimg'); im.src = BASE + def.icon + '.webp'; im.alt = ''; im.draggable = false;
       b.appendChild(im);
       b.appendChild(el('span', 'cp-itemname', def.name));
-      b.appendChild(el('span', 'cp-itemtag', def.limit == null ? '무료 · 무제한' : '남은 ' + invLeft(t) + '개'));
+      b.appendChild(el('span', 'cp-itemtag', def.limit == null ? '무료 · 무제한' : '🎟 보관함 ' + invLeft(t) + '개'));
       b.dataset.t = t;
       b.setAttribute('aria-pressed', String(!!(S.tool && S.tool.t === t)));
       ui.cards.appendChild(b);
     });
+    // 추억 상점에서 더 살 수 있는 아이템이 있다는 안내 카드
+    if (hidden) {
+      var more = el('div', 'cp-itemcard cp-shophint');
+      more.appendChild(el('span', 'cp-ico', '🏮'));
+      more.appendChild(el('span', 'cp-itemname', '추억 상점에서 ' + hidden + '가지 더 살 수 있어요'));
+      ui.cards.appendChild(more);
+    }
     // 고른 아이템의 방향 바꾸기(놓기 전에)
     ui.toolRot = btn('cp-itemcard cp-toolrot', '<span class="cp-ico">⟳</span><span class="cp-itemname">방향</span>', function () { rotateTool(); }, '놓을 아이템 방향 바꾸기');
     ui.toolRot.hidden = !(S.tool && D.ITEMS[S.tool.t].rotatable);
@@ -637,7 +647,7 @@
     if (S.tool && S.tool.t === t) { S.tool = null; S.hover = null; }
     else {
       var def = D.ITEMS[t];
-      if (def.limit != null && invLeft(t) <= 0) { flashHint('보관함에 남은 ' + def.name + '이(가) 없어요', true); return; }
+      if (def.limit === 'owned' && invLeft(t) <= 0) { flashHint('보관함에 남은 ' + def.name + '이(가) 없어요. 추억 상점에서 더 살 수 있어요', true); return; }
       S.tool = { t: t, d: def.dirOrder[0] };
       select(null);
       if (S.cat !== def.cat) showCat(def.cat);
@@ -653,8 +663,22 @@
     if (S.hover) { S.hover.d = S.tool.d; S.hover.ok = L.canPlace(S.park, S.hover, M, null, S.idx).ok; }
     flashHint(def.name + ' 방향: ' + (def.dirs[S.tool.d].label || S.tool.d));
   }
-  // 보관함: 수량 제한이 있는 아이템만 개수로 관리(지금 15종은 모두 무제한)
-  function invLeft(t) { var inv = S.park.inv || {}; return inv[t] || 0; }
+  // 보관함 개수: 기본 아이템은 무제한, 추억 상점 아이템은 '산 개수 − 공원에 놓은 개수'
+  //   산 개수는 저장의 cloudShop.own (js/cloudpark/shop.js 가 티켓을 쓰고 늘림). 놓은 개수는 공원에서 셈 → 회수·실행 취소에도 저절로 맞음
+  // 패널 카드의 '보관함 n개' 만 새로(회수·실행 취소 뒤에도 맞게)
+  function refreshCounts() {
+    if (!ui.cards) return;
+    Array.prototype.forEach.call(ui.cards.querySelectorAll('.cp-itemcard[data-t]'), function (b) {
+      var t = b.dataset.t, def = D.ITEMS[t];
+      if (!def || def.limit !== 'owned') return;
+      var left = invLeft(t), tag = b.querySelector('.cp-itemtag');
+      if (tag) tag.textContent = '🎟 보관함 ' + left + '개';
+      b.classList.toggle('is-empty', left <= 0);
+    });
+  }
+  function ownedCount(t) { var sh = save().cloudShop; return (sh && sh.own && +sh.own[t]) || 0; }
+  function placedCount(t) { var n = 0; Object.keys(S.park.items).forEach(function (id) { if (S.park.items[id].t === t) n++; }); return n; }
+  function invLeft(t) { var def = D.ITEMS[t]; return def && def.limit === 'owned' ? Math.max(0, ownedCount(t) - placedCount(t)) : Infinity; }
 
   // ---------- 고르기·옮기기·회전·회수 ----------
   function select(id) {
@@ -685,7 +709,6 @@
     var def = D.ITEMS[it.t];
     commit(function (p) {
       delete p.items[id];
-      if (def.limit != null) { p.inv = p.inv || {}; p.inv[it.t] = (p.inv[it.t] || 0) + 1; }
     });
     select(null);
     flashHint(def.name + '을(를) 보관함에 넣었어요');
@@ -732,11 +755,15 @@
       if (!inStroke) flashHint(chk.why, true);
       return false;
     }
-    var def2 = D.ITEMS[cand.t];
-    commit(function (p) {
-      p.items[L.newId()] = { t: cand.t, x: cand.x, y: cand.y, d: cand.d };
-      if (def2.limit != null) { p.inv[cand.t] = Math.max(0, (p.inv[cand.t] || 0) - 1); }
-    }, inStroke);
+    if (invLeft(cand.t) <= 0) {   // 추억 상점 아이템을 산 개수만큼 다 놓았음
+      if (!inStroke) flashHint('보관함에 남은 ' + D.ITEMS[cand.t].name + '이(가) 없어요', true);
+      return false;
+    }
+    commit(function (p) { p.items[L.newId()] = { t: cand.t, x: cand.x, y: cand.y, d: cand.d }; }, inStroke);
+    if (D.ITEMS[cand.t].limit === 'owned') {
+      showCat(S.cat);   // 남은 개수 다시
+      if (invLeft(cand.t) <= 0) { S.tool = null; S.hover = null; setHint('보관함에 있던 ' + D.ITEMS[cand.t].name + '을(를) 모두 놓았어요'); }
+    }
     return true;
   }
 
@@ -1082,16 +1109,16 @@
       setTimeout(function () { inp.select(); }, 40);
     });
   }
-  // 보관함: 가진 아이템(지금은 기본 무료 15종, 수량 제한 없음)과 공원에 놓은 개수. 누르면 꾸미기에서 바로 고름
+  // 보관함: 기본 무료 아이템(무제한) + 추억 상점에서 산 아이템(보관 개수)과 공원에 놓은 개수. 누르면 꾸미기에서 바로 고름
   function openStorage() {
     var placed = {};
     Object.keys(S.park.items).forEach(function (id) { var t = S.park.items[id].t; placed[t] = (placed[t] || 0) + 1; });
     openModal(function (c) {
       c.classList.add('cp-wide');
       c.appendChild(el('h2', 'cp-card-title', '🧺 보관함'));
-      c.appendChild(el('p', 'cp-card-line', '기본 아이템은 모두 무료이고 몇 개든 놓을 수 있어요. 누르면 바로 꾸미기를 시작해요.'));
+      c.appendChild(el('p', 'cp-card-line', '기본 아이템은 무료이고 몇 개든 놓을 수 있어요. 🎟 아이템은 추억 상점에서 티켓으로 산 만큼 놓을 수 있어요. 누르면 바로 꾸미기를 시작해요.'));
       D.CATS.forEach(function (cat) {
-        var items = D.ORDER.filter(function (t) { return D.ITEMS[t].cat === cat.id; });
+        var items = D.ORDER.filter(function (t) { return D.ITEMS[t].cat === cat.id && (D.ITEMS[t].limit !== 'owned' || ownedCount(t) > 0); });
         if (!items.length) return;
         c.appendChild(el('p', 'cp-group', cat.name));
         var grid = el('div', 'cp-boxgrid');
@@ -1100,7 +1127,7 @@
           var b = btn('cp-boxitem', '', function () { closeModal(); setMode('edit'); showCat(def.cat); chooseTool(t); });
           var im = el('img', ''); im.src = BASE + def.icon + '.webp'; im.alt = ''; b.appendChild(im);
           b.appendChild(el('span', 'cp-itemname', def.name));
-          b.appendChild(el('span', 'cp-itemtag', (def.limit == null ? '∞ 무제한' : '보관 ' + invLeft(t) + '개') + (placed[t] ? ' · 공원에 ' + placed[t] + '개' : '')));
+          b.appendChild(el('span', 'cp-itemtag', (def.limit == null ? '∞ 무제한' : '🎟 보관 ' + invLeft(t) + '개') + (placed[t] ? ' · 공원에 ' + placed[t] + '개' : '')));
           grid.appendChild(b);
         });
         c.appendChild(grid);

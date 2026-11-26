@@ -111,7 +111,7 @@ window.MP_PARK = {
     // 예전 매표소 건물 → 토리네 도시락(아기 다람쥐 토리와 도시락 주문 수학 놀이). 지도 그림·가림 레이어(occluders 'ticket')는 그대로
     { id: 'picnic', name: '토리네 도시락', desc: '아기 다람쥐 토리와 소풍 도시락을 만드는 가게예요.',
       entrance: { x: 605, y: 320 }, radius: 55, pin: { x: 605, y: 207 }, label: { x: 606, y: 226 } },
-    { id: 'shop', name: '추억 상점', desc: '별마당 기념품이 가득한 가게예요.',
+    { id: 'shop', name: '추억 상점', desc: '모은 티켓으로 구름동산 꾸미기를 사는 가게예요.',
       entrance: { x: 850, y: 368 }, radius: 60, pin: { x: 850, y: 272 }, label: { x: 851, y: 290 } }
   ],
 

@@ -4,6 +4,7 @@
  */
 'use strict';
 global.window = global;
+require('../js/data/cloudpark-shop-cuts.js');
 require('../js/cloudpark/items.js');
 require('../js/data/cloudpark-mask.js');
 require('../js/cloudpark/logic.js');
@@ -18,8 +19,10 @@ function put(p, t, x, y, d) {
 }
 
 // 1. 15종, 모두 무료·무제한, 필수 정보
-ok(D.ORDER.length === 14, '아이템 14종(돌담 뺌)');
-D.ORDER.forEach(t => {
+const FREE = D.ORDER.filter(t => D.ITEMS[t].source === 'free'), SHOPI = D.ORDER.filter(t => D.ITEMS[t].source === 'shop');
+ok(FREE.length === 14, '기본 아이템 14종(돌담 뺌)');
+ok(SHOPI.length === 46, '추억 상점 아이템 46종: ' + SHOPI.length);
+FREE.forEach(t => {
   const it = D.ITEMS[t];
   ok(it.name && it.cat && it.dirs && it.source === 'free' && it.limit === null, t + ' 기본 정보');
   ok(D.CATS.some(c => c.id === it.cat), t + ' 카테고리');
@@ -34,7 +37,7 @@ ok(D.ITEMS['path-wood'].dirOrder.join() === 'h,v', '나무길 가로/세로');
 // 2. 15종 모두 잔디에 놓기
 const p = L.emptyPark('시험');
 let x = 160, y = 300;
-D.ORDER.forEach(t => { const r = put(p, t, x, y); ok(r.ok, t + ' 놓기: ' + (r.why || '')); x += 220; if (x > 1250) { x = 160; y += 220; } });
+FREE.forEach(t => { const r = put(p, t, x, y); ok(r.ok, t + ' 놓기: ' + (r.why || '')); x += 220; if (x > 1250) { x = 160; y += 220; } });
 // 3. 개울·숲·입구에는 못 놓음
 ok(!put(L.emptyPark(), 'tree-pine', 30, 30).ok, '외곽 숲에 못 놓음');
 ok(!put(L.emptyPark(), 'rock', 705, 960).ok, '입구에 못 놓음');
@@ -70,5 +73,18 @@ ok(L.normalize({ items: { a: { t: 'bench', x: 300, y: 300, d: 'weird' } } }).par
 // 10. 고르기: 앞쪽 아이템 우선
 const pk = L.emptyPark(); put(pk, 'tree-round', 600, 500); put(pk, 'rock', 600, 560);
 ok(pk.items[L.pick(pk, 600, 540)].t === 'rock', '앞쪽 아이템을 먼저 고름');
+// 11. 추억 상점: 값·계절·그림·놓기
+SHOPI.forEach(t => {
+  const it = D.ITEMS[t];
+  ok(it.price >= 1 && it.price <= 10 && it.limit === 'owned' && !it.rotatable, t + ' 값·수량');
+  ok(D.CATS.some(c => c.id === it.cat), t + ' 카테고리');
+  const s = D.sprite(it, 'base'); ok(s.w > 20 && s.h > 20 && Math.abs(s.ax - s.w / 2) < 0.01, t + ' 그림 크기·기준점');
+  ok(L.canPlace(L.emptyPark(), { t, x: 720, y: 520, d: 'base' }, M).ok, t + ' 잔디 가운데에 놓기');
+});
+const seas = { spring: 0, summer: 0, autumn: 0, winter: 0 };
+SHOPI.forEach(t => { const se = D.ITEMS[t].season; if (se) seas[se]++; });
+ok(seas.spring === 3 && seas.summer === 3 && seas.autumn === 3 && seas.winter === 3, '계절마다 3개: ' + JSON.stringify(seas));
+ok(SHOPI.every(t => !!D.ITEMS[t].season === /^(sp|su|au|wi)-/.test(t)), '계절 장식만 계절이 있음');
+ok(D.seasonNow(new Date(2026, 2, 1)) === 'spring' && D.seasonNow(new Date(2026, 5, 30)) === 'summer' && D.seasonNow(new Date(2026, 10, 26)) === 'autumn' && D.seasonNow(new Date(2026, 11, 1)) === 'winter' && D.seasonNow(new Date(2027, 1, 28)) === 'winter', '계절 날짜');
 console.log((fail ? '실패 ' + fail : '모두 통과') + ' (' + n + '개 확인)');
 process.exit(fail ? 1 : 0);
