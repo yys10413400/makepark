@@ -1208,6 +1208,8 @@
     exitGeulmaru: function () { exitRide('star'); },
     exitCloudPark: function () { exitRide('mypark'); },
     exitShop: function () { exitRide('shop'); },
+    // 테스터(닉네임 TESTERS)·시험 모드(?test=1): 구름동산에서 추억 상점 아이템을 사지 않고 모두 놓아 볼 수 있음
+    isTester: function () { return CHAR_TEST || isTester(); },
     // 구름동산: 같은 걷기 속도·카메라 배율
     playScale: function () { return playScale(); },
     walkSpeed: function () { return PARK.player.speed; }
