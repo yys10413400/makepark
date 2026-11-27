@@ -63,19 +63,24 @@
   function loadSeason(id, urgent) {
     if (!PARK.seasons[id] || seasonLoading[id]) return;
     seasonLoading[id] = true;
-    var img = new Image(), ground = null, groundDone = !PARK.seasons[id].ground;
+    var img = new Image(), ground = null, groundDone = !PARK.seasons[id].ground, gi = null;
     if (urgent) img.fetchPriority = 'high';
     function ready() { // 지도와 땅 지도(있으면)를 모두 받은 뒤 가림 레이어를 만듦
       if (!img.complete || !img.naturalWidth || !groundDone) return;
+      if (!seasonLoading[id]) return;   // 받는 동안 다른 계절로 바뀌어 비운 지도
       // 비율 유지: 지도 좌표계(W×H) 안에 원본 비율 그대로 맞춤
       var k = Math.min(W / img.naturalWidth, H / img.naturalHeight), w = img.naturalWidth * k, h = img.naturalHeight * k;
       seasonImgs[id] = { img: img, rect: { x: (W - w) / 2, y: (H - h) / 2, w: w, h: h }, occ: buildOccluders(img, ground, grids[id]) };
-      if (id === firstSeason) loadOtherSeasons();
+      // 땅 지도는 가림 레이어를 만들 때만 씀(화면에 그리지 않음) → 다 만들었으면 메모리에서 비움(태블릿 메모리 아끼기)
+      ground = null; img.onload = img.onerror = null;
+      if (gi) { gi.onload = gi.onerror = null; gi = null; }
+      if (id === firstSeason) prefetchOtherSeasons();
+      if (id === state.season) dropOtherSeasons();
     }
     img.onload = ready;
-    img.onerror = function () { console.error('지도 이미지를 불러오지 못했습니다: ' + PARK.seasons[id].map); if (id === firstSeason) loadOtherSeasons(); };
+    img.onerror = function () { console.error('지도 이미지를 불러오지 못했습니다: ' + PARK.seasons[id].map); if (id === firstSeason) prefetchOtherSeasons(); };
     if (PARK.seasons[id].ground) {
-      var gi = new Image();
+      gi = new Image();
       gi.onload = function () { ground = gi; groundDone = true; ready(); };
       gi.onerror = function () { console.error('땅 지도를 불러오지 못했습니다: ' + PARK.seasons[id].ground); groundDone = true; ready(); };
       gi.src = PARK.seasons[id].ground;
@@ -83,9 +88,26 @@
     img.src = PARK.seasons[id].map;
   }
   var firstSeason = PARK.seasons[PARK.defaultSeason] ? PARK.defaultSeason : Object.keys(PARK.seasons)[0];
-  function loadOtherSeasons() { Object.keys(PARK.seasons).forEach(function (id) { loadSeason(id, false); }); }
+  // 다른 계절 지도는 파일만 미리 받아 둠(그림으로 펼치지 않아 메모리를 쓰지 않음). 계절을 바꾸면 받아 둔 파일로 바로 펼침
+  var prefetched = {};
+  function prefetchOtherSeasons() {
+    Object.keys(PARK.seasons).forEach(function (id) {
+      if (id === state.season || prefetched[id] || !window.fetch) return;
+      prefetched[id] = true;
+      [PARK.seasons[id].map, PARK.seasons[id].ground].forEach(function (u) { if (u) fetch(u, { priority: 'low' }).then(null, function () { prefetched[id] = false; }); });
+    });
+  }
+  // 지금 계절 지도가 준비되고 겹쳐 바뀌기도 끝나면, 다른 계절 지도·가림 레이어는 메모리에서 비움(다시 바꾸면 다시 펼침)
+  function dropOtherSeasons() {
+    if (!seasonImgs[state.season] || fade.t < 1) return;
+    Object.keys(seasonLoading).forEach(function (id) {
+      if (id === state.season) return;
+      delete seasonImgs[id]; delete seasonLoading[id];
+    });
+    if (mapCache.img && mapCache.img !== seasonImgs[state.season].img) mapCache.img = null;
+  }
   loadSeason(firstSeason, true);
-  setTimeout(loadOtherSeasons, 8000); // 시작 지도가 아주 늦어도 결국 모두 받음
+  setTimeout(prefetchOtherSeasons, 8000); // 시작 지도가 아주 늦어도 결국 모두 받음
   var fade = { from: null, t: 1 };
   var ringImg = new Image(); ringImg.src = 'assets/ui/entrance-ring.png';
 
@@ -181,6 +203,7 @@
     loadSeason(id, true); // 아직 안 받은 계절 지도면 지금 바로 받음
     fade.from = animate ? state.season : null; fade.t = animate ? 0 : 1;
     state.season = id;
+    if (!animate) dropOtherSeasons();
     grid = grids[id];
     // 바뀐 계절에서 막힌 자리(예: 트리)에 서 있으면 가장 가까운 길로 옮기고, 예전 경로는 버림
     var p = state.player;
@@ -708,6 +731,7 @@
     var ride = f.id === 'coaster' ? window.MPCoaster : f.id === 'ghost' ? window.MPGate : f.id === 'melody' ? window.MPMelody : f.id === 'picnic' ? window.MPPicnic : f.id === 'parade' ? window.MPParade : f.id === 'arcade' ? window.MPArcade : f.id === 'thrill' ? window.MPThrill : f.id === 'star' ? window.MPGeulmaru : f.id === 'mypark' ? window.MPCloudPark : f.id === 'shop' ? window.MPShop : null;
     if (ride) {
       state.rideOpen = f.id; state.nearby = null; ui.enter.hidden = true;
+      wakeRideCanvases();
       ride.open();
       return;
     }
@@ -1030,7 +1054,7 @@
   function frame(now) {
     var dt = Math.min(0.05, (now - last) / 1000); last = now; frameDt = dt;
     state.time += dt;
-    if (fade.t < 1) fade.t = Math.min(1, fade.t + dt / 0.6);
+    if (fade.t < 1) { fade.t = Math.min(1, fade.t + dt / 0.6); if (fade.t >= 1) dropOtherSeasons(); }
     if (state.phase === 'play') {
       stepPlayer(dt);
       updateNearby();
@@ -1058,8 +1082,25 @@
 
   // ---------- 놀이기구 화면과 연결 ----------
   // 놀이기구(js/coaster/ui.js)는 이 창구로만 저장·프로필·공원 복귀를 다룸
+  // 놀이기구 앞마당 그림판(캔버스, 한 장에 약 6MB)은 나온 뒤에도 메모리를 계속 차지함 → 나오면 1×1 로 줄이고, 들어갈 때 원래 크기로.
+  // 앞마당은 열려 있는 동안 매 순간 새로 그리므로 화질·모습은 그대로임. (현수막처럼 내가 그린 것이 남는 그림판은 건드리지 않음)
+  var RIDE_CANVAS = 'canvas.ac-canvas, canvas.cs-canvas, canvas.gk-canvas, canvas.gm-canvas, canvas.ml-canvas, canvas.pr-canvas, canvas.pc-canvas, canvas.th-canvas';
+  function sleepRideCanvases() {
+    Array.prototype.forEach.call(document.querySelectorAll(RIDE_CANVAS), function (c) {
+      if (c.dataset.sleepW || c.width <= 1) return;
+      c.dataset.sleepW = c.width; c.dataset.sleepH = c.height; c.width = 1; c.height = 1;
+    });
+  }
+  function wakeRideCanvases() {
+    Array.prototype.forEach.call(document.querySelectorAll(RIDE_CANVAS), function (c) {
+      if (!c.dataset.sleepW) return;
+      c.width = +c.dataset.sleepW; c.height = +c.dataset.sleepH;
+      delete c.dataset.sleepW; delete c.dataset.sleepH;
+    });
+  }
   function exitRide(fid) {
     state.rideOpen = false; state.keys = {};
+    sleepRideCanvases();
     // 시설 입구에서 입장 범위 밖, 이동할 수 있는 가장 가까운 곳에 세워 바로 다시 들어가지 않게
     var f = PARK.facilities.filter(function (x) { return x.id === fid; })[0], e = f.entrance, best = null;
     for (var dist = f.radius + 12; dist < f.radius + 90 && !best; dist += 6) {
@@ -1155,6 +1196,7 @@
       window.MP_API.closeRide();
       stopMoving(); state.keys = {};
       state.rideOpen = id; state.nearby = null; ui.enter.hidden = true;
+      wakeRideCanvases();
       ride.open(opts);
       return true;
     },
