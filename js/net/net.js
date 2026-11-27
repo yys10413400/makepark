@@ -35,6 +35,8 @@
   // ?netlocal=1 : 설정값이 있어도 시험 모드(같은 브라우저 탭끼리)로 — 서버를 건드리지 않고 화면을 확인할 때
   var mode = CFG && CFG.databaseURL && !/[?&]netlocal=1/.test(location.search) ? 'firebase' : 'local';
   var SDK = 'https://www.gstatic.com/firebasejs/10.12.2/';
+  // 학생 기기는 가만히 있어도 3초마다 신호(t)를 보냄 → 30초 넘게 소식이 없으면 나간 것으로 보고 목록·지도에서 숨김
+  var STALE_MS = 30000;
 
   function newId(n) {
     var s = '', abc = 'abcdefghijkmnpqrstuvwxyz23456789';
@@ -99,16 +101,38 @@
 
   function fbHandle(code, pid) {
     var base = 'rooms/' + code, listeners = [], me = pid ? fbRef(base + '/players/' + pid) : null;
+    var prune = 0, offset = 0;
     function on(ref, ev, fn) { ref.on(ev, fn); listeners.push([ref, ev, fn]); }
+    // 서버 시계와 내 시계의 차이(기기 시계가 틀려도 '얼마나 오래 소식이 없었나'를 바르게 셈)
+    on(fbRef('.info/serverTimeOffset'), 'value', function (s) { offset = s.val() || 0; });
     var h = {
       onPlayer: function (fn) {
-        var pr = fbRef(base + '/players');
-        on(pr, 'child_added', function (s) { if (s.key !== pid) fn(s.key, s.val()); });
-        on(pr, 'child_changed', function (s) { if (s.key !== pid) fn(s.key, s.val()); });
+        var pr = fbRef(base + '/players'), seen = {}, hidden = {};
+        // 소식(t)이 오래 끊긴 사람: 태블릿 앱을 끄거나 화면이 꺼지면 서버가 연결 끊김을 몇 분~그 이상 늦게 알아챔.
+        // 그동안 목록에 남지 않게 숨김(기록은 그대로 — 다시 소식이 오면 바로 다시 보임)
+        function got(s) {
+          if (s.key === pid) return;
+          var v = s.val(), now = Date.now();
+          var age = v && typeof v.t === 'number' ? Math.max(0, now + offset - v.t) : 0;
+          seen[s.key] = now - age;
+          if (age > STALE_MS) { if (!hidden[s.key]) { hidden[s.key] = 1; fn(s.key, null); } return; }
+          delete hidden[s.key];
+          fn(s.key, v);
+        }
+        on(pr, 'child_added', got);
+        on(pr, 'child_changed', got);
         on(pr, 'child_removed', function (s) {
+          delete seen[s.key]; delete hidden[s.key];
           if (s.key !== pid) fn(s.key, null);
           else if (h.onRemovedMe) h.onRemovedMe();   // 선생님이 내 기록을 지움(내보내기)
         });
+        clearInterval(prune);
+        prune = setInterval(function () {
+          var now = Date.now();
+          Object.keys(seen).forEach(function (k) {
+            if (!hidden[k] && now - seen[k] > STALE_MS) { hidden[k] = 1; fn(k, null); }
+          });
+        }, 5000);
       },
       // fn(cmd, initial): 처음 한 번은 '들어오기 전부터 있던 명령'(initial=true) — 학생은 무시함
       onCommand: function (fn) {
@@ -126,10 +150,18 @@
       leave: function () {
         listeners.forEach(function (l) { l[0].off(l[1], l[2]); });
         listeners = [];
+        clearInterval(prune); prune = 0;
+        window.removeEventListener('pagehide', bye);
         if (me) { me.onDisconnect().cancel(); me.remove(); }
       }
     };
-    if (me) me.onDisconnect().remove();   // 창을 닫거나 연결이 끊기면 자동으로 공원에서 나감
+    // 창·탭을 닫을 때 서버가 끊김을 알아챌 때까지 기다리지 않고 바로 공원에서 나감
+    // (뒤로 가기로 되살아나면 multiplayer.js 의 pageshow 가 새로고침해서 다시 들어옴)
+    function bye() { if (me) me.remove(); }
+    if (me) {
+      me.onDisconnect().remove();   // 창을 닫거나 연결이 끊기면 자동으로 공원에서 나감
+      window.addEventListener('pagehide', bye);
+    }
     return h;
   }
 
