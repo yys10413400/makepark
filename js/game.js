@@ -1098,7 +1098,11 @@
     else if (r.day.n >= TICKET_DAY_MAX) kind = 'daymax';
     else { kind = 'first'; r.got[key] = true; r.day.n++; }
     var gain = kind === 'first' ? 1 : 0;
-    var patch = { ticketRule: r };
+    // 선생님 진행표용: 건물마다 끝낸 횟수(n)·끝낸 학년(g)·마지막으로 끝낸 때(at). 티켓을 못 받아도(하루 한도) 기록함
+    var pg = s.progress && typeof s.progress === 'object' ? s.progress : {}, pf = pg[fid] && typeof pg[fid] === 'object' ? pg[fid] : {};
+    pf.n = (+pf.n || 0) + 1; pf.g = pf.g && typeof pf.g === 'object' ? pf.g : {}; pf.g[gr] = true; pf.at = Date.now();
+    pg[fid] = pf;
+    var patch = { ticketRule: r, progress: pg };
     if (gain) patch.tickets = before + gain;
     patchSave(patch);
     showTickets();

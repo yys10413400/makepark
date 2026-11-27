@@ -138,7 +138,7 @@
     S.code = code; S.players = {}; S.meta = null;
     show('room');
     $('tCode').textContent = code; $('tClassName').textContent = ''; msg('tMsg', '');
-    $('tRecList').textContent = ''; $('tRecCount').textContent = ''; $('tRecBadge').textContent = ''; $('tRecModal').hidden = true;
+    $('tRecList').textContent = ''; $('tRecCount').textContent = ''; $('tRecBadge').textContent = ''; $('tRecModal').hidden = true; $('tProgModal').hidden = true;
     S.handle = NET.watch(code);
     S.handle.onMeta(function (meta) { S.meta = meta; renderState(); });
     S.handle.onPlayer(function (pid, data) {
@@ -377,5 +377,75 @@
           function (err) { ask('지우지 못했어요: ' + (err.code || err.message), { alone: true }); });
       });
   });
-  setInterval(function () { if (S.code && S.owner && !document.hidden) loadRecords(); }, 15000);
+  setInterval(function () {
+    if (!S.code || !S.owner || document.hidden) return;
+    loadRecords();
+    if (!$('tProgModal').hidden) loadProgress();
+  }, 15000);
+
+  // ---------- 진행표: 학생 × 건물, 끝낸 학년·횟수 ----------
+  // 놀이 건물만(구름동산·추억 상점은 끝내는 게임이 아님). 표 머리는 짧은 이름으로
+  var PROG_SHORT = { coaster: '구름열차', parade: '행진길', melody: '음악당', thrill: '범퍼카', ghost: '유령의 집', arcade: '오락실', star: '글마루', picnic: '도시락' };
+  var PROG = PARK.facilities.filter(function (f) { return f.id !== 'mypark' && f.id !== 'shop'; });
+  // 한 학생·한 건물의 진행: { grades: [끝낸 학년], n: 끝낸 횟수(모르면 0), at: 마지막으로 끝낸 때 }
+  // save.progress(이번에 생김)가 있으면 그것, 없으면 예전 티켓 기록(ticketRule.got '건물:학년')으로 끝낸 학년만 알아냄
+  function progOf(sv, fid) {
+    var p = sv.progress && sv.progress[fid], g = {}, got = (sv.ticketRule && sv.ticketRule.got) || {};
+    Object.keys(got).forEach(function (k) { var m = k.split(':'); if (m[0] === fid && got[k]) g[m[1]] = true; });
+    if (p && p.g) Object.keys(p.g).forEach(function (k) { if (p.g[k]) g[k] = true; });
+    return { grades: Object.keys(g).map(Number).filter(function (x) { return x >= 1 && x <= 6; }).sort(), n: (p && +p.n) || 0, at: (p && p.at) || 0 };
+  }
+  function loadProgress() {
+    if (!S.code || !S.owner) return;
+    NET.listStudents(S.code).then(function (all) {
+      var keys = Object.keys(all || {}).sort(function (a, b) { return (all[a].nick || '').localeCompare(all[b].nick || '', 'ko'); });
+      $('tProgCount').textContent = keys.length + '명';
+      $('tProgEmpty').hidden = keys.length > 0;
+      var head = $('tProgHead'), tb = $('tProgList'), foot = $('tProgFoot');
+      head.textContent = ''; tb.textContent = ''; foot.textContent = '';
+      if (!keys.length) return;
+      var hr = document.createElement('tr');
+      ['닉네임', '학년'].concat(PROG.map(function (f) { return PROG_SHORT[f.id] || f.name; }), ['끝낸 곳']).forEach(function (t, i) {
+        var th = document.createElement('th'); th.textContent = t;
+        if (i >= 2 && i < 2 + PROG.length) th.title = PROG[i - 2].name;
+        hr.appendChild(th);
+      });
+      head.appendChild(hr);
+      var doneBy = PROG.map(function () { return 0; });
+      keys.forEach(function (key) {
+        var st = all[key], sv = st.save || {}, grade = +(sv.grade || st.grade) || 0, tr = document.createElement('tr'), places = 0;
+        [st.nick || '?', grade ? grade + '학년' : '?'].forEach(function (t) { var td = document.createElement('td'); td.textContent = t; tr.appendChild(td); });
+        PROG.forEach(function (f, i) {
+          var p = progOf(sv, f.id), td = document.createElement('td');
+          td.className = 't-prog';
+          if (!p.grades.length) { td.textContent = '·'; td.title = f.name + ': 아직 안 함'; }
+          else {
+            var own = p.grades.indexOf(grade) >= 0;
+            td.classList.add(own ? 'done' : 'some');
+            places++; if (own) doneBy[i]++;
+            var b = document.createElement('b'); b.textContent = p.grades.join('·') + '학년'; td.appendChild(b);
+            if (p.n) { var s = document.createElement('small'); s.textContent = p.n + '번'; td.appendChild(s); }
+            td.title = f.name + ': ' + p.grades.join('·') + '학년 끝냄' + (p.n ? ' · ' + p.n + '번' : '') +
+              (p.at ? ' · 마지막 ' + new Date(p.at).toLocaleString('ko-KR', { month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit' }) : '');
+          }
+          tr.appendChild(td);
+        });
+        var last = document.createElement('td'); last.className = 't-prog-sum'; last.textContent = places + ' / ' + PROG.length; tr.appendChild(last);
+        tb.appendChild(tr);
+      });
+      // 맨 아래: 건물마다 자기 학년을 끝낸 학생 수
+      var fr = document.createElement('tr'), c0 = document.createElement('td');
+      c0.colSpan = 2; c0.textContent = '자기 학년 끝낸 학생'; fr.appendChild(c0);
+      doneBy.forEach(function (n) { var td = document.createElement('td'); td.className = 't-prog'; td.textContent = n + '명'; fr.appendChild(td); });
+      fr.appendChild(document.createElement('td'));
+      foot.appendChild(fr);
+    }, function (err) { msg('tProgMsg', '진행표를 불러오지 못했어요: ' + err.message); });
+  }
+  function openProgress() { msg('tProgMsg', ''); $('tProgModal').hidden = false; loadProgress(); $('tProgClose').focus(); }
+  function closeProgress() { $('tProgModal').hidden = true; $('tProgOpen').focus(); }
+  $('tProgOpen').addEventListener('click', openProgress);
+  $('tProgClose').addEventListener('click', closeProgress);
+  $('tProgRefresh').addEventListener('click', loadProgress);
+  $('tProgModal').addEventListener('click', function (e) { if (e.target === $('tProgModal')) closeProgress(); });
+  document.addEventListener('keydown', function (e) { if (e.key === 'Escape' && !$('tProgModal').hidden) closeProgress(); });
 })();

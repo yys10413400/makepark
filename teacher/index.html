@@ -105,6 +105,7 @@
             <button id="tToggle" class="t-btn owner-only" type="button">공원 닫기</button>
             <button id="tWalkOpen" class="t-btn owner-only" type="button">🐾 공원에 들어가기</button>
             <button id="tRecOpen" class="t-btn owner-only" type="button">📋 학생 기록 <span id="tRecBadge" class="t-count"></span></button>
+            <button id="tProgOpen" class="t-btn owner-only" type="button">📊 진행표</button>
           </div>
           <div class="t-opts owner-only">
             <div class="t-opt">
@@ -152,6 +153,27 @@
             <p id="tRecEmpty" class="t-empty">아직 등록한 학생이 없어요.</p>
           </div>
           <p id="tRecMsg" class="t-msg" aria-live="polite"></p>
+        </div>
+      </div>
+
+      <!-- 진행표: 학생마다 건물별로 어디까지 끝냈는지 -->
+      <div id="tProgModal" class="t-modal" hidden>
+        <div class="t-card t-recordcard t-progcard" role="dialog" aria-modal="true" aria-labelledby="tProgTitle">
+          <div class="t-card-head">
+            <h2 id="tProgTitle">건물별 진행표</h2><span id="tProgCount" class="t-count"></span>
+            <button id="tProgRefresh" class="t-btn ghost sm t-push" type="button">↻ 새로 보기</button>
+            <button id="tProgClose" class="t-btn ghost sm t-close" type="button" aria-label="닫기">✕</button>
+          </div>
+          <p class="t-sub">칸에는 끝낸 학년과 끝낸 횟수가 보여요. <span class="t-prog-key done">초록</span> 자기 학년을 끝냄 · <span class="t-prog-key some">노랑</span> 다른 학년만 끝냄 · <span class="t-prog-key">·</span> 아직 안 함</p>
+          <div class="t-rec-scroll">
+            <table class="t-table t-progtable">
+              <thead id="tProgHead"></thead>
+              <tbody id="tProgList"></tbody>
+              <tfoot id="tProgFoot"></tfoot>
+            </table>
+            <p id="tProgEmpty" class="t-empty">아직 등록한 학생이 없어요.</p>
+          </div>
+          <p id="tProgMsg" class="t-msg" aria-live="polite"></p>
         </div>
       </div>
 

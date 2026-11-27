@@ -203,6 +203,27 @@ body.teacher [hidden] { display: none !important; }
   .t-kick { padding: 0 8px; font-size: 12px; }
 }
 
+/* 진행표: 학생 × 건물 */
+.t-progcard { width: min(1120px, 100%); }
+.t-progtable th, .t-progtable td { text-align: center; }
+.t-progtable th:nth-child(-n+2), .t-progtable td:nth-child(-n+2) { text-align: left; }
+.t-progtable td:last-child { text-align: center; }
+.t-progtable thead th:first-child, .t-progtable tbody td:first-child { position: sticky; left: 0; background: #fff; z-index: 2; }
+.t-progtable thead th:first-child { z-index: 3; }
+.t-prog { min-width: 64px; color: #c3bccb; }
+.t-prog b { display: block; font-weight: 600; font-size: 13px; }
+.t-prog small { display: block; font-size: 11px; opacity: 0.8; }
+.t-prog.done { background: var(--t-green-tint); color: var(--t-green); }
+.t-prog.some { background: #fff6d8; color: #8a6510; }
+.t-progtable tbody tr:hover td.t-prog.done { background: #d8efe2; }
+.t-progtable tbody tr:hover td.t-prog.some { background: #fbedc0; }
+.t-prog-sum { font-family: var(--font); color: var(--t-purple); }
+.t-progtable tfoot td { padding-top: 10px; font-size: 13px; color: var(--t-soft); border-top: 1px solid var(--t-line); border-bottom: 0; }
+.t-progtable tfoot td.t-prog { color: var(--t-purple); background: none; }
+.t-prog-key { display: inline-block; padding: 0 6px; border-radius: 6px; color: #c3bccb; }
+.t-prog-key.done { background: var(--t-green-tint); color: var(--t-green); }
+.t-prog-key.some { background: #fff6d8; color: #8a6510; }
+
 /* 공원에 들어가기: 동물 선생님 고르기 */
 .t-walkcard { width: min(640px, 100%); max-height: 100%; overflow: auto; }
 .t-avatars { display: grid; grid-template-columns: repeat(auto-fill, minmax(118px, 1fr)); gap: 10px; }
